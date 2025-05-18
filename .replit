@@ -1,0 +1,40 @@
+modules = ["nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Next.js Setup"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "check_repo_structure"
+
+[[workflows.workflow]]
+name = "Next.js Setup"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx create-next-app . --ts --eslint --no-tailwind --src-dir --app --import-alias=\"@/*\""
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "check_repo_structure"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "ls -la && cat README.md"
+
+[deployment]
+run = ["sh", "-c", "npx create-next-app . --ts --eslint --no-tailwind --src-dir --app --import-alias=\"@/*\""]
