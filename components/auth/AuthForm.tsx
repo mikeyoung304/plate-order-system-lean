@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useActionState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/lib/AuthContext"
 import {
   Select,
   SelectContent,
@@ -15,43 +14,74 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { signIn, signUp } from "@/lib/modassembly/supabase/auth/actions"
 
 export function AuthForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
-  const [role, setRole] = useState<"server" | "cook" | "">("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null })
   const { toast } = useToast()
   const router = useRouter()
-  const { signIn, signUp } = useAuth()
+  const [isPending, startTransition] = useTransition()
+  
+  // Initialize with the server actions
+  const [signInState, signInAction] = useActionState(signIn, null)
+  const [signUpState, signUpAction] = useActionState(signUp, null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Check states for errors
+  useEffect(() => {
+    if (signInState?.error) {
+      setStatus({
+        message: signInState.error,
+        type: 'error'
+      })
+      toast({
+        title: "Error",
+        description: signInState.error,
+        variant: "destructive",
+      })
+    }
+    
+    if (signUpState?.error) {
+      setStatus({
+        message: signUpState.error,
+        type: 'error'
+      })
+      toast({
+        title: "Error",
+        description: signUpState.error,
+        variant: "destructive",
+      })
+    }
+    
+    if (signUpState?.success) {
+      setStatus({
+        message: "Check your email for the confirmation link.",
+        type: 'success'
+      })
+      toast({
+        title: "Success!",
+        description: "Check your email for the confirmation link.",
+      })
+    }
+  }, [signInState, signUpState, toast])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setStatus({ message: '', type: null })
+
+    const formData = new FormData(e.currentTarget)
     
     try {
       if (isSignUp) {
-        if (!name) {
-          throw new Error("Name is required")
-        }
-        if (!role) {
-          throw new Error("Role is required")
-        }
-        await signUp(email, password, name, role)
-        setStatus({
-          message: "Check your email for the confirmation link.",
-          type: 'success'
-        })
-        toast({
-          title: "Success!",
-          description: "Check your email for the confirmation link.",
-        })
+        startTransition(() => {
+          signUpAction(formData);
+        });
       } else {
-        await signIn(email, password)
+        startTransition(() => {
+          signInAction(formData);
+        });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 
@@ -78,10 +108,9 @@ export function AuthForm() {
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              name="name"
               type="text"
               placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
@@ -90,10 +119,9 @@ export function AuthForm() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
@@ -101,17 +129,16 @@ export function AuthForm() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
+            name="password"
             type="password"
             placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
         {isSignUp && (
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: "server" | "cook") => setRole(value)}>
+            <Select name="role">
               <SelectTrigger>
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
@@ -132,9 +159,9 @@ export function AuthForm() {
         <Button
           type="submit"
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || isPending}
         >
-          {isLoading ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
+          {(isLoading || isPending) ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
         </Button>
         <Button
           type="button"
@@ -143,8 +170,6 @@ export function AuthForm() {
           onClick={() => {
             setIsSignUp(!isSignUp)
             setStatus({ message: '', type: null })
-            setName("")
-            setRole("")
           }}
         >
           {isSignUp ? "Already have an account? Sign in" : "Need an account? Create one"}

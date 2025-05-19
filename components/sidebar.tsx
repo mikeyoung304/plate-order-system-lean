@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
-import { useAuth } from "@/lib/AuthContext"
+import { signOut } from "@/lib/modassembly/supabase/auth/actions"
+import { getUser } from "@/lib/modassembly/supabase/database/users"
 
 // Animation variants
 const container = {
@@ -39,10 +40,6 @@ type NavItem = {
   badge?: number
 }
 
-type UserRole = {
-  role: string
-}
-
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
@@ -50,15 +47,47 @@ export function Sidebar() {
   const [notifications, setNotifications] = useState(3)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const { user, signOut, userRole, userName } = useAuth()
   const { toast } = useToast()
+  const [userData, setUserData] = useState<{ name: string | null, role: string | null }>({
+    name: null,
+    role: null
+  })
 
-  // Reset mobile menu state when screen size changes
+  // Fetch user data on mount and auth state changes
   useEffect(() => {
-    if (!isMobile && isMobileOpen) {
-      setIsMobileOpen(false)
+    fetchUserData()
+  }, [])
+
+  async function fetchUserData() {
+    try {
+      const userData = await getUser();
+      
+      if (!userData.user) {
+        setUserData({ name: null, role: null });
+        return;
+      }
+      
+      setUserData({
+        name: userData.profile?.name || null,
+        role: userData.profile?.role || null
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setUserData({ name: null, role: null });
     }
-  }, [isMobile, isMobileOpen])
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const navItems: NavItem[] = [
     {
@@ -90,24 +119,6 @@ export function Sidebar() {
       icon: <Settings className="h-5 w-5" />,
     },
   ]
-
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      router.push('/')
-      router.refresh()
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   const renderNavItems = () => (
     <motion.ul variants={container} initial="hidden" animate="show" className="space-y-1 px-2">
@@ -156,11 +167,11 @@ export function Sidebar() {
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <Avatar className="h-8 w-8 mr-2">
-            <AvatarFallback>{userName?.[0] || 'U'}</AvatarFallback>
+            <AvatarFallback>{userData.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium sf-pro-text">{userName || 'User'}</p>
-            <p className="text-xs text-gray-400 sf-pro-text capitalize">{userRole || 'Loading...'}</p>
+            <p className="text-sm font-medium sf-pro-text">{userData.name || 'User'}</p>
+            <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
           </div>
         </div>
         <Button 
@@ -181,12 +192,12 @@ export function Sidebar() {
       <div className="flex items-center justify-between">
         <div className="flex items-center min-w-0">
           <Avatar className="h-8 w-8 mr-2 flex-shrink-0">
-            <AvatarFallback>{userName?.[0] || 'U'}</AvatarFallback>
+            <AvatarFallback>{userData.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-medium sf-pro-text truncate">{userName || 'User'}</p>
-              <p className="text-xs text-gray-400 sf-pro-text capitalize">{userRole || 'Loading...'}</p>
+              <p className="text-sm font-medium sf-pro-text truncate">{userData.name || 'User'}</p>
+              <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Image from "next/image"
 import { AuthForm } from "@/components/auth/AuthForm"
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/modassembly/supabase/server'
 
 export default async function LandingPage() {
   const supabase = await createClient()

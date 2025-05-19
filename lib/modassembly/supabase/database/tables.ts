@@ -1,5 +1,5 @@
-import { supabase } from './supabase/client';
-import { Table } from './floor-plan-utils';
+import { createClient } from '@/lib/modassembly/supabase/client';
+import { Table } from '../../../floor-plan-utils';
 
 interface SupabaseTable {
   id: string;
@@ -41,6 +41,8 @@ const GRID_CONFIG = {
 };
 
 export async function fetchTables(): Promise<Table[]> {
+  const supabase = createClient();
+  
   // Fetch tables and their seats in parallel
   const [tablesResponse, seatsResponse] = await Promise.all([
     supabase
