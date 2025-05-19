@@ -1,4 +1,4 @@
-import { supabase } from './supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 interface OrderRow {
   id: string;
@@ -25,6 +25,7 @@ export interface Order extends OrderRow {
 }
 
 export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -57,6 +58,7 @@ export async function createOrder(orderData: {
   transcript: string;
   type: 'food' | 'drink';
 }): Promise<Order> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('orders')
     .insert([
@@ -86,6 +88,7 @@ export async function createOrder(orderData: {
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderRow['status']): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase
     .from('orders')
     .update({ status })

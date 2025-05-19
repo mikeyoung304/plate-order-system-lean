@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 
 // Type definitions
 type OrderSuggestion = {
@@ -19,10 +19,7 @@ export async function getOrderSuggestions(
   limit: number = 5
 ): Promise<OrderSuggestion[]> {
   // Initialize Supabase client
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createClient()
 
   // Fetch user's order history
   const { data: orders, error } = await supabase

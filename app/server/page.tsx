@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
 import { Table } from "@/lib/floor-plan-utils"
 import { fetchTables } from "@/lib/tables"
-import { useAuth } from "@/lib/AuthContext"
+import { getUser } from "@/lib/users"
 import { fetchRecentOrders, createOrder, type Order } from "@/lib/orders"
 import { fetchSeatId } from "@/lib/seats"
 import { getAllResidents, type User as Resident } from "@/lib/users"
@@ -39,11 +39,30 @@ export default function ServerPage() {
   const { toast } = useToast()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const [userData, setUserData] = useState<{ user: any, profile: any } | null>(null)
   const [residents, setResidents] = useState<Resident[]>([])
   const [selectedResident, setSelectedResident] = useState<string | null>(null)
   const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
   const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
+
+  // Fetch user data
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const data = await getUser();
+        setUserData(data);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        toast({ 
+          title: 'Error', 
+          description: 'Failed to load user data', 
+          variant: 'destructive' 
+        });
+      }
+    };
+
+    loadUserData();
+  }, [toast]);
 
   // Fetch tables from Supabase
   useEffect(() => {
@@ -169,7 +188,7 @@ export default function ServerPage() {
 
   // Called by VoiceOrderPanel upon successful transcription
   const handleOrderSubmitted = useCallback(async (orderText: string) => {
-    if (!selectedTable || selectedSeat == null || !user || !selectedResident) {
+    if (!selectedTable || selectedSeat == null || !userData?.user || !selectedResident) {
       toast({ title: "Error", description: "Missing required information.", variant: "destructive" });
       return;
     }
@@ -187,7 +206,7 @@ export default function ServerPage() {
         table_id: selectedTable.id,
         seat_id: seatId,
         resident_id: selectedResident,
-        server_id: user.id,
+        server_id: userData.user.id,
         items: selectedSuggestion 
           ? selectedSuggestion.items
           : orderText.split(",").map(item => item.trim()).filter(item => item),
@@ -212,7 +231,7 @@ export default function ServerPage() {
         variant: 'destructive' 
       });
     }
-  }, [selectedTable, selectedSeat, user, selectedResident, selectedSuggestion, orderType, toast, handleBackToFloorPlan]);
+  }, [selectedTable, selectedSeat, userData, selectedResident, selectedSuggestion, orderType, toast, handleBackToFloorPlan]);
 
   // Resident selection handler
   const handleResidentSelected = useCallback((residentId: string) => {

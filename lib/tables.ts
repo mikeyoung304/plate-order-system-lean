@@ -1,4 +1,4 @@
-import { supabase } from './supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { Table } from './floor-plan-utils';
 
 interface SupabaseTable {
@@ -41,6 +41,8 @@ const GRID_CONFIG = {
 };
 
 export async function fetchTables(): Promise<Table[]> {
+  const supabase = createClient();
+  
   // Fetch tables and their seats in parallel
   const [tablesResponse, seatsResponse] = await Promise.all([
     supabase

@@ -1,9 +1,23 @@
-import { createClient } from '@/lib/supabase/server'
-import { cache } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-// Use React cache to avoid duplicate fetches in the same render cycle
-export const getUser = cache(async () => {
-  const supabase = await createClient()
+// Type definitions
+export type User = {
+  id: string
+  name: string
+}
+
+// Type for the resident data from Supabase
+type ResidentProfile = {
+  user_id: string
+  name: string
+}
+
+/**
+ * Gets the current user and their profile
+ * @returns The user object and profile
+ */
+export async function getUser() {
+  const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   
   if (!session?.user) {
@@ -21,18 +35,6 @@ export const getUser = cache(async () => {
     user: session.user,
     profile: data || { role: null, name: null }
   }
-})
-
-// Type definitions
-export type User = {
-  id: string
-  name: string
-}
-
-// Type for the resident data from Supabase
-type ResidentProfile = {
-  user_id: string
-  name: string
 }
 
 /**
@@ -40,7 +42,7 @@ type ResidentProfile = {
  * @returns Array of residents
  */
 export async function getAllResidents(): Promise<User[]> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Get all residents from profiles
   const { data: residents, error } = await supabase

@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
-import { createClient } from "@/lib/supabase/client"
 import { signOut } from "@/app/auth/actions"
+import { getUser } from "@/lib/users"
 
 // Animation variants
 const container = {
@@ -55,40 +55,26 @@ export function Sidebar() {
 
   // Fetch user data on mount and auth state changes
   useEffect(() => {
-    const supabase = createClient()
-
-    // Initial fetch
     fetchUserData()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchUserData()
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
   }, [])
 
   async function fetchUserData() {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (!session?.user) {
-      setUserData({ name: null, role: null })
-      return
+    try {
+      const userData = await getUser();
+      
+      if (!userData.user) {
+        setUserData({ name: null, role: null });
+        return;
+      }
+      
+      setUserData({
+        name: userData.profile?.name || null,
+        role: userData.profile?.role || null
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setUserData({ name: null, role: null });
     }
-
-    const { data } = await supabase
-      .from('profiles')
-      .select('role, name')
-      .eq('user_id', session.user.id)
-      .single()
-
-    setUserData({
-      name: data?.name || null,
-      role: data?.role || null
-    })
   }
 
   const handleSignOut = async () => {
