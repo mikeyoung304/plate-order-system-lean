@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
-import { signOut } from "@/app/auth/actions"
-import { getUser } from "@/lib/users"
+import { signOut } from "@/lib/modassembly/supabase/auth/actions"
+import { getUser } from "@/lib/modassembly/supabase/database/users"
 
 // Animation variants
 const container = {

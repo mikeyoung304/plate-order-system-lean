@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { signIn, signUp } from "@/app/auth/actions"
+import { signIn, signUp } from "@/lib/modassembly/supabase/auth/actions"
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false)

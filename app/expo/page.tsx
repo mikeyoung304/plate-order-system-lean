@@ -11,7 +11,7 @@ import { Clock, CheckCircle, AlertCircle, ChefHat, Utensils } from "lucide-react
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { motion, AnimatePresence } from "framer-motion"
-import { fetchRecentOrders, type Order, updateOrderStatus } from "@/lib/orders"
+import { fetchRecentOrders, type Order, updateOrderStatus } from "@/lib/modassembly/supabase/database/orders"
 
 export default function ExpoPage() {
   const [orders, setOrders] = useState<Order[]>([])

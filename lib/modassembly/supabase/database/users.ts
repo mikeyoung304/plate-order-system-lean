@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/modassembly/supabase/client'
 
 // Type definitions
 export type User = {

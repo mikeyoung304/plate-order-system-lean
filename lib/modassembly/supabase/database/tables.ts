@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/client';
-import { Table } from './floor-plan-utils';
+import { createClient } from '@/lib/modassembly/supabase/client';
+import { Table } from '../../../floor-plan-utils';
 
 interface SupabaseTable {
   id: string;

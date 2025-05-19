@@ -14,12 +14,12 @@ import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User } from "lucid
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
 import { Table } from "@/lib/floor-plan-utils"
-import { fetchTables } from "@/lib/tables"
-import { getUser } from "@/lib/users"
-import { fetchRecentOrders, createOrder, type Order } from "@/lib/orders"
-import { fetchSeatId } from "@/lib/seats"
-import { getAllResidents, type User as Resident } from "@/lib/users"
-import { getOrderSuggestions } from "@/lib/suggestions"
+import { fetchTables } from "@/lib/modassembly/supabase/database/tables"
+import { getUser } from "@/lib/modassembly/supabase/database/users"
+import { fetchRecentOrders, createOrder, type Order } from "@/lib/modassembly/supabase/database/orders"
+import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
+import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
+import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Add type definition for OrderSuggestion
