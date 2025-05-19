@@ -47,7 +47,7 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 3000
+waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "npx create-next-app . --ts --eslint --no-tailwind --src-dir --app --import-alias=\"@/*\""]
@@ -55,3 +55,7 @@ run = ["sh", "-c", "npx create-next-app . --ts --eslint --no-tailwind --src-dir 
 [[ports]]
 localPort = 3000
 externalPort = 80
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
