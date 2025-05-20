@@ -64,7 +64,7 @@ export async function createOrder(orderData: {
     .insert([
       {
         ...orderData,
-        status: 'new'
+        status: 'in_progress'
       }
     ])
     .select(`
