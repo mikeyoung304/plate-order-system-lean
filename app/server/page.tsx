@@ -21,6 +21,7 @@ import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
 import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AudioRecorder } from "@/lib/modassembly/audio-recording/record"
 
 // Add type definition for OrderSuggestion
 type OrderSuggestion = {
@@ -45,6 +46,8 @@ export default function ServerPage() {
   const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
   const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
   const [showVoiceOrderPanel, setShowVoiceOrderPanel] = useState(false);
+  const [audioRecorder] = useState(() => new AudioRecorder())
+  const [isRecording, setIsRecording] = useState(false)
 
   // Fetch user data
   useEffect(() => {
@@ -171,24 +174,36 @@ export default function ServerPage() {
     setSelectedSeat(null);
     setOrderType(null);
     setShowSeatPicker(false);
+    setShowVoiceOrderPanel(false); // Reset voice order panel state
+    setSelectedResident(null);
+    setOrderSuggestions([]);
+    setSelectedSuggestion(null);
   };
 
   // Go back from Order Type selection to Floor Plan
   const handleBackFromOrderType = () => {
     setSelectedSeat(null); // Go back to floor plan view
     setOrderType(null);
+    setShowVoiceOrderPanel(false); // Reset voice order panel state
   };
 
-  // Go back from Voice Order to Order Type selection
-  const handleBackFromVoiceOrder = () => {
+  // Go back from Resident Selection to Order Type selection
+  const handleBackFromResidentSelect = () => {
     setSelectedResident(null);
     setOrderSuggestions([]);
     setSelectedSuggestion(null);
     setOrderType(null);
+    setShowVoiceOrderPanel(false); // Reset voice order panel state
+  };
+
+  // Go back from Voice Order to Resident Selection
+  const handleBackFromVoiceOrder = () => {
+    setShowVoiceOrderPanel(false);
+    // Don't reset other states - just go back to resident selection
   };
 
   // Called by VoiceOrderPanel upon successful transcription
-  const handleOrderSubmitted = useCallback(async (orderText: string) => {
+  const handleOrderSubmitted = useCallback(async (orderData: string | string[] | { items: string[], transcription: string }) => {
     if (!selectedTable || selectedSeat == null || !userData?.user || !selectedResident) {
       toast({ title: "Error", description: "Missing required information.", variant: "destructive" });
       return;
@@ -203,19 +218,39 @@ export default function ServerPage() {
     }
 
     try {
-      const orderData = {
+      // Handle different input formats
+      let items: string[];
+      let transcript: string;
+      
+      if (selectedSuggestion) {
+        // If using a suggestion, use the suggestion items
+        items = selectedSuggestion.items;
+        transcript = selectedSuggestion.items.join(", ");
+      } else if (typeof orderData === 'object' && 'items' in orderData) {
+        // New format with items and transcription from API
+        items = orderData.items;
+        transcript = orderData.transcription || orderData.items.join(", ");
+      } else if (Array.isArray(orderData)) {
+        // If we have an array of items (legacy format), use them directly
+        items = orderData;
+        transcript = orderData.join(", ");
+      } else {
+        // If we have a string (legacy format), split it into items
+        items = orderData.split(",").map(item => item.trim()).filter(item => item);
+        transcript = orderData;
+      }
+
+      const orderPayload = {
         table_id: selectedTable.id,
         seat_id: seatId,
         resident_id: selectedResident,
         server_id: userData.user.id,
-        items: selectedSuggestion 
-          ? selectedSuggestion.items
-          : orderText.split(",").map(item => item.trim()).filter(item => item),
-        transcript: selectedSuggestion ? orderText : orderText,
+        items: items,
+        transcript: transcript,
         type: orderType || 'food'
       };
 
-      const order = await createOrder(orderData);
+      const order = await createOrder(orderPayload);
       
       toast({ 
         title: 'Order Submitted', 
@@ -233,6 +268,93 @@ export default function ServerPage() {
       });
     }
   }, [selectedTable, selectedSeat, userData, selectedResident, selectedSuggestion, orderType, toast, handleBackToFloorPlan]);
+
+  // Updated voice recording handler with manual control and transcription
+  const handleVoiceRecording = useCallback(async () => {
+    try {
+      if (isRecording) {
+        // Stop recording manually
+        toast({ title: "Processing", description: "Stopping recording and transcribing..." });
+        
+        const result = await audioRecorder.stopRecording();
+        setIsRecording(false);
+        
+        console.log(`Recording completed: ${Math.round(result.durationMs / 1000)}s, ${result.audioBlob.size} bytes`);
+        
+        try {
+          // Send to API route for transcription
+          const formData = new FormData();
+          const audioFile = new File([result.audioBlob], 'recording.webm', { type: result.audioBlob.type });
+          formData.append('audio', audioFile);
+          
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          const transcriptionItems = data.items; // Array of items
+          const transcriptionText = data.transcription; // Full transcription text
+          
+          // Print transcription data to console
+          console.log("Transcription result (items):", transcriptionItems);
+          console.log("Transcription result (text):", transcriptionText);
+          console.log("Individual items:");
+          transcriptionItems.forEach((item: string, index: number) => {
+            console.log(`  ${index + 1}. ${item}`);
+          });
+          
+          // Create a readable text version for the toast
+          const displayText = transcriptionText || transcriptionItems.join(", ");
+          
+          toast({ 
+            title: "Transcription Complete", 
+            description: `Items: ${displayText.substring(0, 50)}${displayText.length > 50 ? '...' : ''}`
+          });
+          
+          // Submit the transcribed order with both items and transcription
+          await handleOrderSubmitted({ items: transcriptionItems, transcription: transcriptionText });
+          
+        } catch (transcriptionError) {
+          console.error("Transcription failed:", transcriptionError);
+          toast({ 
+            title: "Transcription Failed", 
+            description: "Could not transcribe audio. Please try again.", 
+            variant: "destructive" 
+          });
+        }
+        
+      } else {
+        // Start recording
+        const hasPermission = await audioRecorder.requestPermission();
+        if (!hasPermission) {
+          toast({ title: "Error", description: "Microphone permission required", variant: "destructive" });
+          return;
+        }
+
+        await audioRecorder.startRecording({ maxDurationMs: 30000 });
+        setIsRecording(true);
+        console.log("Recording started...");
+        toast({ title: "Recording", description: "Speak your order now... Tap again to stop." });
+      }
+      
+    } catch (error) {
+      console.error('Recording error:', error);
+      setIsRecording(false);
+      toast({ title: "Recording Failed", description: "Could not record audio", variant: "destructive" });
+    }
+  }, [audioRecorder, isRecording, toast, handleOrderSubmitted]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      audioRecorder.cleanup();
+    };
+  }, [audioRecorder]);
 
   // Resident selection handler
   const handleResidentSelected = useCallback((residentId: string) => {
@@ -254,17 +376,12 @@ export default function ServerPage() {
   // Proceed to voice order handler
   const handleProceedToVoiceOrder = () => {
     if (selectedSuggestion) {
-      // If a suggestion is selected, submit it with the items joined as text
-      handleOrderSubmitted(selectedSuggestion.items.join(", "));
+      // If a suggestion is selected, submit it with the items array directly
+      handleOrderSubmitted(selectedSuggestion.items);
     } else {
       // If no suggestion selected, show voice order panel
       setShowVoiceOrderPanel(true);
     }
-  };
-
-  // Go back from voice order panel
-  const handleBackFromVoiceOrderPanel = () => {
-    setShowVoiceOrderPanel(false);
   };
 
   // Animation variants
@@ -381,14 +498,14 @@ export default function ServerPage() {
                             <p className="text-gray-400 text-sm mt-1">Choose a resident to place an order</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrder} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
+                        <Button variant="ghost" size="sm" onClick={handleBackFromResidentSelect} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
                           <ChevronLeft className="h-4 w-4" /> Back
                         </Button>
                       </div>
                       <div className="p-6 space-y-6">
                         <div className="space-y-4">
                           <label className="text-sm font-medium text-gray-200">Select Resident <span className="text-red-400">*</span></label>
-                          <Select onValueChange={handleResidentSelected}>
+                          <Select value={selectedResident || ""} onValueChange={handleResidentSelected}>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Choose a resident" />
                             </SelectTrigger>
@@ -490,7 +607,7 @@ export default function ServerPage() {
                             <p className="text-gray-400 text-sm mt-1">Speak your order clearly</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrderPanel} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
+                        <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrder} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
                           <ChevronLeft className="h-4 w-4" /> Back
                         </Button>
                       </div>
@@ -501,6 +618,8 @@ export default function ServerPage() {
                           seatNumber={selectedSeat}
                           orderType={orderType}
                           onOrderSubmitted={handleOrderSubmitted}
+                          onStartRecording={handleVoiceRecording}
+                          isRecording={isRecording}
                         />
                       </div>
                     </CardContent>

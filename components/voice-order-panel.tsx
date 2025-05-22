@@ -20,15 +20,16 @@ type VoiceOrderPanelProps = {
   seatNumber: number;
   orderType: "food" | "drink";
   onOrderSubmitted?: (orderText: string) => void;
+  onStartRecording?: () => Promise<void>;
+  isRecording?: boolean;
   testMode?: boolean; // Keep test mode for potential future use or simulation
 };
 
 // Define PermissionState based on standard API values
 type PermissionState = 'granted' | 'denied' | 'prompt';
 
-export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onOrderSubmitted, testMode = false }: VoiceOrderPanelProps) {
+export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onOrderSubmitted, onStartRecording, isRecording, testMode = false }: VoiceOrderPanelProps) {
   // --- State Variables ---
-  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // Covers API call duration now
   const [transcription, setTranscription] = useState("");
   const [lastTranscription, setLastTranscription] = useState(""); // Keep for confirmation step
@@ -95,7 +96,7 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
   }, []);
 
   const resetUI = useCallback(() => {
-    setIsRecording(false); setIsProcessing(false); setTranscription('');
+    setIsProcessing(false); setTranscription('');
     setShowConfirmation(false); setDietaryAlerts([]);
     if (audioVisualizationRef.current) {
         const bars = audioVisualizationRef.current.querySelectorAll('.voice-audio-bar');
@@ -143,7 +144,7 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
     recordingTimeoutRef.current = null;
     if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
     recordingTimerRef.current = null;
-    setIsRecording(false); setIsProcessing(false); setRecordingDuration(0);
+    setIsProcessing(false); setRecordingDuration(0);
     audioChunksRef.current = []; // Clear chunks on reset
     resetUI();
   }, [resetUI, stopAudioStream, stopVisualization, logger]);
@@ -270,7 +271,6 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
     }
 
     stopVisualization();
-    setIsRecording(false); // Update state immediately
     setRecordingDuration(0); // Reset duration display
 
     // Vibrate feedback
@@ -289,7 +289,7 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
 
     // The actual processing happens in the mediaRecorder.onstop handler now
 
-  }, [isRecording, showInternalToast, logger, stopVisualization, resetUI, resetRecording]); // Added resetRecording dependency
+  }, [isRecording, showInternalToast, logger, stopVisualization, resetUI, resetRecording]);
 
   const startRecording = useCallback(async () => {
     if (micPermission !== 'granted') {
@@ -403,7 +403,7 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
         };
 
         mediaRecorderRef.current.start(1000); // Collect chunks every second (adjust if needed)
-        setIsRecording(true); recordingStartTimeRef.current = Date.now();
+        recordingStartTimeRef.current = Date.now();
         startVisualization();
 
         setRecordingDuration(0);
@@ -511,15 +511,13 @@ export function VoiceOrderPanel({ tableId, tableName, seatNumber, orderType, onO
 
   // Combined handler for button click/tap
   const handleRecordButtonPress = useCallback(() => {
-    if (isRecording) {
-      stopRecording();
-    } else if (micPermission === 'granted' && !isProcessing) {
-      startRecording();
+    if (onStartRecording) {
+      onStartRecording();
     } else if (micPermission !== 'granted') {
       requestMicPermission(); // Prompt for permission if not granted
     }
     // If isProcessing, button should be disabled, do nothing.
-  }, [isRecording, isProcessing, micPermission, startRecording, stopRecording, requestMicPermission]);
+  }, [onStartRecording, micPermission, requestMicPermission]);
 
 
   // --- Rendering Logic ---
