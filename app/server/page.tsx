@@ -44,6 +44,7 @@ export default function ServerPage() {
   const [selectedResident, setSelectedResident] = useState<string | null>(null)
   const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
   const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
+  const [showVoiceOrderPanel, setShowVoiceOrderPanel] = useState(false);
 
   // Fetch user data
   useEffect(() => {
@@ -256,9 +257,14 @@ export default function ServerPage() {
       // If a suggestion is selected, submit it with the items joined as text
       handleOrderSubmitted(selectedSuggestion.items.join(", "));
     } else {
-      // If no suggestion selected, set view to voiceOrder
-      currentView = 'voiceOrder';
+      // If no suggestion selected, show voice order panel
+      setShowVoiceOrderPanel(true);
     }
+  };
+
+  // Go back from voice order panel
+  const handleBackFromVoiceOrderPanel = () => {
+    setShowVoiceOrderPanel(false);
   };
 
   // Animation variants
@@ -269,12 +275,10 @@ export default function ServerPage() {
   let currentView = 'floorPlan';
   if (selectedSeat && !orderType) {
     currentView = 'orderType';
-  } else if (selectedSeat && orderType && !selectedResident) {
+  } else if (selectedSeat && orderType && !showVoiceOrderPanel) {
     currentView = 'residentSelect';
-  } else if (selectedSeat && orderType && selectedResident && !selectedSuggestion) {
-    currentView = 'residentSelect';
-  } else if (selectedSeat && orderType && selectedResident && selectedSuggestion) {
-    currentView = 'residentSelect';
+  } else if (selectedSeat && orderType && showVoiceOrderPanel) {
+    currentView = 'voiceOrder';
   }
 
   return (
@@ -374,7 +378,7 @@ export default function ServerPage() {
                               Select Resident
                               <Badge variant="outline" className="ml-2 text-xs font-normal"> Table {selectedTable.label}, Seat {selectedSeat} </Badge>
                             </h2>
-                            <p className="text-gray-400 text-sm mt-1">Choose a resident and view their order suggestions</p>
+                            <p className="text-gray-400 text-sm mt-1">Choose a resident to place an order</p>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrder} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
@@ -383,7 +387,7 @@ export default function ServerPage() {
                       </div>
                       <div className="p-6 space-y-6">
                         <div className="space-y-4">
-                          <label className="text-sm font-medium text-gray-200">Select Resident</label>
+                          <label className="text-sm font-medium text-gray-200">Select Resident <span className="text-red-400">*</span></label>
                           <Select onValueChange={handleResidentSelected}>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Choose a resident" />
@@ -442,14 +446,21 @@ export default function ServerPage() {
                                 <p>No previous orders found</p>
                               </div>
                             )}
-
+                            
                             <Button
-                              className="w-full mt-4"
+                              className="w-full mt-6"
                               size="lg"
                               onClick={handleProceedToVoiceOrder}
                             >
                               {selectedSuggestion ? 'Place Selected Order' : 'Place New Voice Order'}
                             </Button>
+                          </div>
+                        )}
+                        
+                        {!selectedResident && (
+                          <div className="text-center py-8 text-gray-400">
+                            <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>Please select a resident to place an order</p>
                           </div>
                         )}
                       </div>
@@ -470,13 +481,16 @@ export default function ServerPage() {
                           </div>
                           <div>
                             <h2 className="text-xl font-medium text-white flex items-center gap-2">
-                              {orderType === "food" ? "Food Order" : "Drink Order"}
-                              <Badge variant="outline" className="ml-2 text-xs font-normal"> Table {selectedTable.label}, Seat {selectedSeat} </Badge>
+                              Voice Order
+                              <Badge variant="outline" className="ml-2 text-xs font-normal"> 
+                                Table {selectedTable.label}, Seat {selectedSeat} 
+                                {selectedResident && ` • Resident Selected`}
+                              </Badge>
                             </h2>
-                            <p className="text-gray-400 text-sm mt-1">Record your order using voice</p>
+                            <p className="text-gray-400 text-sm mt-1">Speak your order clearly</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrder} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
+                        <Button variant="ghost" size="sm" onClick={handleBackFromVoiceOrderPanel} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
                           <ChevronLeft className="h-4 w-4" /> Back
                         </Button>
                       </div>
