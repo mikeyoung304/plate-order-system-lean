@@ -21,7 +21,6 @@ import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
 import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AudioRecorder } from "@/lib/modassembly/audio-recording/record"
 
 // Add type definition for OrderSuggestion
 type OrderSuggestion = {
@@ -46,8 +45,6 @@ export default function ServerPage() {
   const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
   const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
   const [showVoiceOrderPanel, setShowVoiceOrderPanel] = useState(false);
-  const [audioRecorder] = useState(() => new AudioRecorder())
-  const [isRecording, setIsRecording] = useState(false)
 
   // Fetch user data
   useEffect(() => {
@@ -268,93 +265,6 @@ export default function ServerPage() {
       });
     }
   }, [selectedTable, selectedSeat, userData, selectedResident, selectedSuggestion, orderType, toast, handleBackToFloorPlan]);
-
-  // Updated voice recording handler with manual control and transcription
-  const handleVoiceRecording = useCallback(async () => {
-    try {
-      if (isRecording) {
-        // Stop recording manually
-        toast({ title: "Processing", description: "Stopping recording and transcribing..." });
-        
-        const result = await audioRecorder.stopRecording();
-        setIsRecording(false);
-        
-        console.log(`Recording completed: ${Math.round(result.durationMs / 1000)}s, ${result.audioBlob.size} bytes`);
-        
-        try {
-          // Send to API route for transcription
-          const formData = new FormData();
-          const audioFile = new File([result.audioBlob], 'recording.webm', { type: result.audioBlob.type });
-          formData.append('audio', audioFile);
-          
-          const response = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          const transcriptionItems = data.items; // Array of items
-          const transcriptionText = data.transcription; // Full transcription text
-          
-          // Print transcription data to console
-          console.log("Transcription result (items):", transcriptionItems);
-          console.log("Transcription result (text):", transcriptionText);
-          console.log("Individual items:");
-          transcriptionItems.forEach((item: string, index: number) => {
-            console.log(`  ${index + 1}. ${item}`);
-          });
-          
-          // Create a readable text version for the toast
-          const displayText = transcriptionText || transcriptionItems.join(", ");
-          
-          toast({ 
-            title: "Transcription Complete", 
-            description: `Items: ${displayText.substring(0, 50)}${displayText.length > 50 ? '...' : ''}`
-          });
-          
-          // Submit the transcribed order with both items and transcription
-          await handleOrderSubmitted({ items: transcriptionItems, transcription: transcriptionText });
-          
-        } catch (transcriptionError) {
-          console.error("Transcription failed:", transcriptionError);
-          toast({ 
-            title: "Transcription Failed", 
-            description: "Could not transcribe audio. Please try again.", 
-            variant: "destructive" 
-          });
-        }
-        
-      } else {
-        // Start recording
-        const hasPermission = await audioRecorder.requestPermission();
-        if (!hasPermission) {
-          toast({ title: "Error", description: "Microphone permission required", variant: "destructive" });
-          return;
-        }
-
-        await audioRecorder.startRecording({ maxDurationMs: 30000 });
-        setIsRecording(true);
-        console.log("Recording started...");
-        toast({ title: "Recording", description: "Speak your order now... Tap again to stop." });
-      }
-      
-    } catch (error) {
-      console.error('Recording error:', error);
-      setIsRecording(false);
-      toast({ title: "Recording Failed", description: "Could not record audio", variant: "destructive" });
-    }
-  }, [audioRecorder, isRecording, toast, handleOrderSubmitted]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      audioRecorder.cleanup();
-    };
-  }, [audioRecorder]);
 
   // Resident selection handler
   const handleResidentSelected = useCallback((residentId: string) => {
@@ -618,8 +528,7 @@ export default function ServerPage() {
                           seatNumber={selectedSeat}
                           orderType={orderType}
                           onOrderSubmitted={handleOrderSubmitted}
-                          onStartRecording={handleVoiceRecording}
-                          isRecording={isRecording}
+                          onCancel={handleBackFromVoiceOrder}
                         />
                       </div>
                     </CardContent>
