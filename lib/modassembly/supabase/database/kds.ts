@@ -433,3 +433,41 @@ export async function calculateAveragePrepTimes(stationId: string, days: number 
   const total = data.reduce((sum, metric) => sum + (metric.value_seconds || 0), 0)
   return Math.round(total / data.length)
 }
+
+/**
+ * Bulk bump all orders for a table
+ */
+export async function bulkBumpTableOrders(tableId: string, userId: string): Promise<number> {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .rpc('bulk_bump_table_orders', {
+      p_table_id: tableId,
+      p_user_id: userId
+    })
+  
+  if (error) {
+    console.error('Error bulk bumping table orders:', error)
+    throw error
+  }
+  
+  return data || 0
+}
+
+/**
+ * Fetch table summary for KDS display
+ */
+export async function fetchKDSTableSummary(): Promise<any[]> {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('kds_table_summary')
+    .select('*')
+  
+  if (error) {
+    console.error('Error fetching KDS table summary:', error)
+    throw error
+  }
+  
+  return data || []
+}

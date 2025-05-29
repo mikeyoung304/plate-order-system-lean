@@ -35,10 +35,10 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         
         console.log(`Sending to OpenAI: ${audioFileName}, type: ${mimeType}, size: ${audioFile.size}`);
 
+        // First, transcribe the audio
         const transcription = await openai.audio.transcriptions.create({
             file: audioFile,
-            model: "whisper-1", // Changed from gpt-4o-transcribe to whisper-1
-            prompt: "Transcribe this restaurant order. Return only the food and drink items ordered.",
+            model: "whisper-1",
             response_format: "text"
         });
 
@@ -55,8 +55,48 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         
         console.log("Transcription text:", transcriptionText);
         
-        // Try to extract items from the transcription
-        // Look for common food/drink items separated by commas, "and", or new lines
+        // Use GPT to extract just the menu items
+        const extraction = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a restaurant order parser. Extract menu items with their modifications from the customer's speech. 
+                    Remove filler words like "I'd like", "please", "can I have", but KEEP all modifications, special requests, and specifications.
+                    Return ONLY a JSON array of food/drink items with their modifications. 
+                    
+                    Examples:
+                    "I'd like a cheeseburger with no onions" → ["Cheeseburger - no onions"]
+                    "Can I get a salad with ranch dressing on the side" → ["Salad - ranch dressing on the side"]
+                    "I want the grilled chicken, extra crispy, with no salt" → ["Grilled Chicken - extra crispy, no salt"]
+                    "Two coffees, one black and one with cream" → ["Coffee - black", "Coffee - with cream"]
+                    "Hamburger with swiss cheese, lettuce, tomato, no pickles" → ["Hamburger - swiss cheese, lettuce, tomato, no pickles"]
+                    "Diet coke with no ice" → ["Diet Coke - no ice"]`
+                },
+                {
+                    role: "user",
+                    content: transcriptionText
+                }
+            ],
+            temperature: 0.3,
+            max_tokens: 200
+        });
+        
+        console.log("GPT extraction response:", extraction.choices[0].message.content);
+        
+        try {
+            const parsedItems = JSON.parse(extraction.choices[0].message.content || '[]');
+            if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+                return {
+                    items: parsedItems,
+                    transcription: transcriptionText
+                };
+            }
+        } catch (parseError) {
+            console.error("Failed to parse GPT response as JSON:", parseError);
+        }
+        
+        // Fallback to simple parsing if GPT fails
         const cleanText = transcriptionText.toLowerCase();
         const items = cleanText
             .split(/[,\n]|and/)
@@ -67,16 +107,8 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
                 return item.replace(/\b\w/g, char => char.toUpperCase());
             });
         
-        if (items.length === 0) {
-            // If no items found, return the whole transcription as a single item
-            return {
-                items: [transcriptionText.trim()],
-                transcription: transcriptionText
-            };
-        }
-        
         return {
-            items: items,
+            items: items.length > 0 ? items : [transcriptionText.trim()],
             transcription: transcriptionText
         };
     } catch (error) {

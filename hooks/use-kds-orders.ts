@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
 import { 
   fetchStationOrders, 
   fetchAllActiveOrders,
   type KDSOrderRouting 
 } from '@/lib/modassembly/supabase/database/kds'
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
 interface UseKDSOrdersOptions {
   stationId?: string // If provided, filter to specific station
@@ -24,6 +25,11 @@ interface UseKDSOrdersReturn {
   revertOptimisticUpdate: (routingId: string) => void
 }
 
+// Connection retry configuration
+const MAX_RETRY_ATTEMPTS = 5
+const INITIAL_RETRY_DELAY = 1000
+const MAX_RETRY_DELAY = 30000
+
 export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersReturn {
   const { 
     stationId, 
@@ -36,28 +42,45 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('disconnected')
   
-  const supabaseRef = useRef<any>(null)
-  const channelRef = useRef<any>(null)
+  const supabaseRef = useRef<SupabaseClient | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(new Map())
+  const retryAttemptsRef = useRef(0)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
 
   // Initialize Supabase client
   useEffect(() => {
     const initSupabase = async () => {
-      supabaseRef.current = await createClient()
+      try {
+        const client = await createClient()
+        if (isMountedRef.current) {
+          supabaseRef.current = client
+        }
+      } catch (error) {
+        console.error('Error initializing Supabase client:', error)
+        if (isMountedRef.current) {
+          setError('Failed to initialize connection')
+          setConnectionStatus('disconnected')
+        }
+      }
     }
     initSupabase()
   }, [])
 
-  // Fetch orders function
+  // Fetch orders function with error handling
   const fetchOrders = useCallback(async () => {
-    if (!supabaseRef.current) return
+    if (!supabaseRef.current || !isMountedRef.current) return
 
     try {
       setError(null)
+      
       const data = stationId 
         ? await fetchStationOrders(stationId)
         : await fetchAllActiveOrders()
+      
+      if (!isMountedRef.current) return
       
       // Apply optimistic updates
       const updatedData = data.map(order => {
@@ -67,17 +90,30 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
       
       setOrders(updatedData)
       setConnectionStatus('connected')
+      retryAttemptsRef.current = 0 // Reset retry counter on success
     } catch (err) {
       console.error('Error fetching KDS orders:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch orders')
+      
+      if (!isMountedRef.current) return
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch orders'
+      setError(errorMessage)
       setConnectionStatus('disconnected')
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
   }, [stationId])
 
   // Optimistic update function
   const optimisticUpdate = useCallback((routingId: string, updates: Partial<KDSOrderRouting>) => {
+    // Validate routing ID
+    if (!routingId || typeof routingId !== 'string') {
+      console.error('Invalid routing ID for optimistic update')
+      return
+    }
+    
     // Store the optimistic update
     optimisticUpdatesRef.current.set(routingId, updates)
     
@@ -94,98 +130,145 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     fetchOrders()
   }, [fetchOrders])
 
-  // Real-time subscription setup
-  useEffect(() => {
-    if (!supabaseRef.current || !autoRefresh) return
+  // Real-time subscription setup with retry logic
+  const setupRealtimeSubscription = useCallback(async () => {
+    if (!supabaseRef.current || !autoRefresh || !isMountedRef.current) return
 
-    const setupRealtimeSubscription = async () => {
-      try {
-        setConnectionStatus('reconnecting')
+    try {
+      setConnectionStatus('reconnecting')
 
-        // Create channel for real-time updates
-        const channel = supabaseRef.current
-          .channel('kds-orders-updates')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'kds_order_routing',
-              ...(stationId ? { filter: `station_id=eq.${stationId}` } : {})
-            },
-            (payload: any) => {
-              console.log('KDS order routing update:', payload)
-              
-              // Clear optimistic update if it exists
-              if (payload.new?.id) {
-                optimisticUpdatesRef.current.delete(payload.new.id)
-              }
-              
-              // Refetch orders to get updated data with joins
+      // Clean up existing subscription
+      if (channelRef.current) {
+        await supabaseRef.current.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+
+      // Create channel for real-time updates
+      const channel = supabaseRef.current
+        .channel(`kds-orders-updates-${stationId || 'all'}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'kds_order_routing',
+            ...(stationId ? { filter: `station_id=eq.${stationId}` } : {})
+          },
+          (payload: any) => {
+            console.log('KDS order routing update:', payload)
+            
+            // Clear optimistic update if it exists
+            if (payload.new?.id) {
+              optimisticUpdatesRef.current.delete(payload.new.id)
+            }
+            
+            // Refetch orders to get updated data with joins
+            if (isMountedRef.current) {
               fetchOrders()
             }
-          )
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'orders'
-            },
-            (payload: any) => {
-              console.log('Order update:', payload)
-              
-              // If order status changed, refetch
-              if (payload.new?.status !== payload.old?.status) {
-                fetchOrders()
-              }
-            }
-          )
-          .subscribe((status: string) => {
-            console.log('KDS subscription status:', status)
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          (payload: any) => {
+            console.log('Order update:', payload)
             
-            if (status === 'SUBSCRIBED') {
-              setConnectionStatus('connected')
-            } else if (status === 'CHANNEL_ERROR') {
-              setConnectionStatus('disconnected')
-              // Retry connection after delay
-              setTimeout(setupRealtimeSubscription, 5000)
+            // If order status changed, refetch
+            if (payload.new?.status !== payload.old?.status && isMountedRef.current) {
+              fetchOrders()
             }
-          })
+          }
+        )
+        .subscribe((status: string) => {
+          console.log('KDS subscription status:', status)
+          
+          if (!isMountedRef.current) return
+          
+          if (status === 'SUBSCRIBED') {
+            setConnectionStatus('connected')
+            retryAttemptsRef.current = 0
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setConnectionStatus('disconnected')
+            handleRetry()
+          }
+        })
 
-        channelRef.current = channel
-        setConnectionStatus('connected')
-      } catch (err) {
-        console.error('Error setting up real-time subscription:', err)
-        setConnectionStatus('disconnected')
-        
-        // Retry after delay
-        setTimeout(setupRealtimeSubscription, 5000)
-      }
+      channelRef.current = channel
+    } catch (err) {
+      console.error('Error setting up real-time subscription:', err)
+      
+      if (!isMountedRef.current) return
+      
+      setConnectionStatus('disconnected')
+      handleRetry()
+    }
+  }, [stationId, autoRefresh, fetchOrders])
+
+  // Retry logic with exponential backoff
+  const handleRetry = useCallback(() => {
+    if (!isMountedRef.current) return
+    
+    if (retryAttemptsRef.current >= MAX_RETRY_ATTEMPTS) {
+      console.error('Max retry attempts reached, stopping reconnection')
+      setError('Connection lost. Please refresh the page.')
+      return
     }
 
+    const delay = Math.min(
+      INITIAL_RETRY_DELAY * Math.pow(2, retryAttemptsRef.current),
+      MAX_RETRY_DELAY
+    )
+
+    console.log(`Retrying connection in ${delay}ms (attempt ${retryAttemptsRef.current + 1}/${MAX_RETRY_ATTEMPTS})`)
+
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+    }
+
+    retryTimeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        retryAttemptsRef.current++
+        setupRealtimeSubscription()
+      }
+    }, delay)
+  }, [setupRealtimeSubscription])
+
+  // Set up real-time subscription
+  useEffect(() => {
     setupRealtimeSubscription()
 
     return () => {
       if (channelRef.current && supabaseRef.current) {
         supabaseRef.current.removeChannel(channelRef.current)
       }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
     }
-  }, [stationId, autoRefresh, fetchOrders])
+  }, [setupRealtimeSubscription])
 
   // Auto-refresh fallback (in case real-time fails)
   useEffect(() => {
-    if (!autoRefresh || connectionStatus === 'connected') return
+    if (!autoRefresh || connectionStatus === 'connected' || !isMountedRef.current) return
 
     const startAutoRefresh = () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
       }
       
-      refreshTimeoutRef.current = setTimeout(() => {
-        fetchOrders()
-        startAutoRefresh() // Schedule next refresh
-      }, refreshInterval)
+      if (isMountedRef.current) {
+        refreshTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            fetchOrders()
+            startAutoRefresh() // Schedule next refresh
+          }
+        }, refreshInterval)
+      }
     }
 
     startAutoRefresh()
@@ -204,12 +287,19 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
 
   // Cleanup on unmount
   useEffect(() => {
+    isMountedRef.current = true
+    
     return () => {
+      isMountedRef.current = false
+      
       if (channelRef.current && supabaseRef.current) {
         supabaseRef.current.removeChannel(channelRef.current)
       }
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
       }
     }
   }, [])
@@ -229,12 +319,15 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
 export function useOrderTiming(order: KDSOrderRouting) {
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [colorStatus, setColorStatus] = useState<'green' | 'yellow' | 'red'>('green')
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const updateTiming = () => {
-      const now = new Date()
-      const startTime = order.started_at ? new Date(order.started_at) : new Date(order.routed_at)
-      const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000)
+      const now = Date.now()
+      const startTime = order.started_at 
+        ? new Date(order.started_at).getTime() 
+        : new Date(order.routed_at).getTime()
+      const elapsed = Math.floor((now - startTime) / 1000)
       
       setTimeElapsed(elapsed)
       
@@ -252,9 +345,13 @@ export function useOrderTiming(order: KDSOrderRouting) {
     updateTiming()
 
     // Update every second
-    const interval = setInterval(updateTiming, 1000)
+    intervalRef.current = setInterval(updateTiming, 1000)
 
-    return () => clearInterval(interval)
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
   }, [order.routed_at, order.started_at])
 
   const formatTime = useCallback((seconds: number): string => {
@@ -263,42 +360,68 @@ export function useOrderTiming(order: KDSOrderRouting) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }, [])
 
-  return {
+  return useMemo(() => ({
     timeElapsed,
     colorStatus,
     formattedTime: formatTime(timeElapsed),
     isOverdue: timeElapsed > 600 // Over 10 minutes
-  }
+  }), [timeElapsed, colorStatus, formatTime])
 }
 
 // Hook for KDS station configuration
+interface KDSStation {
+  id: string
+  name: string
+  color?: string
+  position: number
+  is_active: boolean
+  [key: string]: any
+}
+
 export function useKDSStations() {
-  const [stations, setStations] = useState<any[]>([])
+  const [stations, setStations] = useState<KDSStation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const isMountedRef = useRef(true)
 
   const fetchStations = useCallback(async () => {
     try {
       const supabase = await createClient()
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('kds_stations')
         .select('*')
         .eq('is_active', true)
         .order('position', { ascending: true })
 
-      if (error) throw error
-      setStations(data || [])
+      if (fetchError) throw fetchError
+      
+      if (isMountedRef.current) {
+        setStations(data || [])
+        setError(null)
+      }
     } catch (err) {
       console.error('Error fetching KDS stations:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch stations')
+      
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch stations')
+      }
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     fetchStations()
   }, [fetchStations])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   return {
     stations,
