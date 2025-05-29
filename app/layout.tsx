@@ -2,6 +2,7 @@ import type React from "react"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from "@/lib/modassembly/supabase/auth"
 import { createClient } from "@/lib/modassembly/supabase/server"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
@@ -13,6 +14,13 @@ export const metadata = {
   title: "Plate | Voice Ordering System",
   description: "Modern restaurant order management system with voice recognition",
   generator: 'v0.dev'
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default async function RootLayout({
@@ -33,8 +41,10 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider defaultTheme="dark">
-          {children}
-          <Toaster />
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

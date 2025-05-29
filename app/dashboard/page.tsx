@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Shell } from "@/components/shell"
+import { useRole, useHasRole } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { Utensils, ChefHat, Shield, Settings, Clock } from "lucide-react"
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
+  const userRole = useRole()
+  const isServer = useHasRole('server')
+  const isCook = useHasRole('cook')
+  const isAdmin = useHasRole('admin')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -69,8 +74,9 @@ export default function Dashboard() {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Link href="/server" className="block h-full">
+          {isServer && (
+            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+              <Link href="/server" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
                   <div className="p-6 flex flex-col h-full relative">
@@ -92,9 +98,11 @@ export default function Dashboard() {
               </Card>
             </Link>
           </motion.div>
+          )}
 
-          <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Link href="/kitchen" className="block h-full">
+          {isCook && (
+            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+              <Link href="/kitchen" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
                   <div className="p-6 flex flex-col h-full relative">
@@ -116,9 +124,11 @@ export default function Dashboard() {
               </Card>
             </Link>
           </motion.div>
+          )}
 
-          <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Link href="/expo" className="block h-full">
+          {(isServer || isCook) && (
+            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+              <Link href="/expo" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
                   <div className="p-6 flex flex-col h-full relative">
@@ -140,9 +150,11 @@ export default function Dashboard() {
               </Card>
             </Link>
           </motion.div>
+          )}
 
-          <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Link href="/admin" className="block h-full">
+          {isAdmin && (
+            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+              <Link href="/admin" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
                   <div className="p-6 flex flex-col h-full relative">
@@ -164,6 +176,7 @@ export default function Dashboard() {
               </Card>
             </Link>
           </motion.div>
+          )}
         </motion.div>
       </div>
     </Shell>

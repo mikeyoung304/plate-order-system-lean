@@ -104,3 +104,59 @@ export async function updateOrderStatus(orderId: string, status: OrderRow['statu
     throw error;
   }
 }
+
+/**
+ * Update order items and transcript
+ * @param orderId Order ID to update
+ * @param items New order items
+ * @param transcript New transcript (optional)
+ * @returns Updated order
+ */
+export async function updateOrderItems(orderId: string, items: string[], transcript?: string): Promise<Order> {
+  const supabase = createClient();
+  
+  const updateData: { items: string[], transcript?: string } = { items };
+  if (transcript) {
+    updateData.transcript = transcript;
+  }
+  
+  const { data, error } = await supabase
+    .from('orders')
+    .update(updateData)
+    .eq('id', orderId)
+    .select(`
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `)
+    .single();
+
+  if (error) {
+    console.error('Error updating order items:', error);
+    throw error;
+  }
+
+  return {
+    ...data,
+    table: `Table ${data.tables.label}`,
+    seat: data.seats.label,
+    items: data.items || []
+  } as Order;
+}
+
+/**
+ * Delete/cancel an order
+ * @param orderId Order ID to delete
+ */
+export async function deleteOrder(orderId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error deleting order:', error);
+    throw error;
+  }
+}

@@ -35,6 +35,8 @@ export function VoiceOrderPanel({
   const [transcriptionItems, setTranscriptionItems] = useState<string[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [dietaryAlerts, setDietaryAlerts] = useState<string[]>([]);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [audioRecorder] = useState(() => new AudioRecorder());
 
   // --- Hooks ---
@@ -49,6 +51,33 @@ export function VoiceOrderPanel({
         duration: duration,
     });
   }, [toast]);
+
+  // Reset error state when starting new recording
+  const resetErrorState = useCallback(() => {
+    setLastError(null);
+    setRetryCount(0);
+  }, []);
+
+  // Handle transcription errors with retry logic
+  const handleTranscriptionError = useCallback((error: string) => {
+    const newRetryCount = retryCount + 1;
+    setRetryCount(newRetryCount);
+    setLastError(error);
+    
+    if (newRetryCount < 3) {
+      showInternalToast(
+        `Recording failed (${newRetryCount}/3). Please try again.`, 
+        "error", 
+        4000
+      );
+    } else {
+      showInternalToast(
+        "Unable to process audio after multiple attempts. Please try speaking more clearly or check your microphone.", 
+        "error", 
+        6000
+      );
+    }
+  }, [retryCount, showInternalToast]);
 
   // Keep dietary alerts logic
   const checkDietaryAlerts = useCallback((text: string) => {
@@ -92,19 +121,44 @@ export function VoiceOrderPanel({
         
         console.log(`Recording completed: ${Math.round(result.durationMs / 1000)}s, ${result.audioBlob.size} bytes`);
         
+        // Check for minimum audio duration
+        if (result.durationMs < 500) {
+          setIsProcessing(false);
+          handleTranscriptionError("Recording too short. Please speak for at least half a second.");
+          return;
+        }
+
+        // Check for maximum audio size (10MB limit)
+        if (result.audioBlob.size > 10 * 1024 * 1024) {
+          setIsProcessing(false);
+          handleTranscriptionError("Recording too large. Please keep recordings under 10MB.");
+          return;
+        }
+        
         try {
           // Send to API route for transcription
           const formData = new FormData();
           const audioFile = new File([result.audioBlob], 'recording.webm', { type: result.audioBlob.type });
           formData.append('audio', audioFile);
           
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
           const response = await fetch('/api/transcribe', {
             method: 'POST',
             body: formData,
+            signal: controller.signal
           });
           
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let errorMessage = `Server error (${response.status})`;
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } catch {}
+            throw new Error(errorMessage);
           }
           
           const data = await response.json();
@@ -127,18 +181,28 @@ export function VoiceOrderPanel({
           
           showInternalToast("Transcription complete", "default", 2000);
           
-        } catch (transcriptionError) {
+        } catch (transcriptionError: any) {
           console.error("Transcription failed:", transcriptionError);
-          showInternalToast("Transcription failed. Please try again.", "error");
+          let errorMessage = "Transcription failed. Please try again.";
+          
+          if (transcriptionError.name === 'AbortError') {
+            errorMessage = "Request timed out. Please try recording again.";
+          } else if (transcriptionError.message) {
+            errorMessage = transcriptionError.message;
+          }
+          
+          handleTranscriptionError(errorMessage);
         } finally {
           setIsProcessing(false);
         }
         
       } else {
         // Start recording
+        resetErrorState(); // Clear any previous errors
+        
         const hasPermission = await audioRecorder.requestPermission();
         if (!hasPermission) {
-          showInternalToast("Microphone permission required", "error");
+          showInternalToast("Microphone permission required. Please enable microphone access in your browser settings.", "error", 5000);
           return;
         }
 
@@ -148,13 +212,23 @@ export function VoiceOrderPanel({
         showInternalToast("Recording started. Speak your order clearly...", "default", 2000);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Recording error:', error);
       setIsRecording(false);
       setIsProcessing(false);
-      showInternalToast("Recording failed. Please try again.", "error");
+      
+      let errorMessage = "Recording failed. Please try again.";
+      if (error.message?.includes('permission')) {
+        errorMessage = "Microphone access denied. Please check your browser settings.";
+      } else if (error.message?.includes('NotFoundError')) {
+        errorMessage = "No microphone found. Please connect a microphone and try again.";
+      } else if (error.message?.includes('NotAllowedError')) {
+        errorMessage = "Microphone permission denied. Please allow microphone access.";
+      }
+      
+      handleTranscriptionError(errorMessage);
     }
-  }, [audioRecorder, isRecording, showInternalToast, checkDietaryAlerts]);
+  }, [audioRecorder, isRecording, showInternalToast, checkDietaryAlerts, handleTranscriptionError, resetErrorState]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -206,8 +280,11 @@ export function VoiceOrderPanel({
       return transcriptionItems.join(" • ");
     }
     if (showConfirmation && transcriptionItems.length === 0) return "No items detected.";
+    if (lastError && retryCount > 0) {
+      return `${lastError} ${retryCount < 3 ? `(Retry ${retryCount}/3)` : ''}`;
+    }
     return `Tap microphone to start recording your ${orderType} order`;
-  }, [isRecording, isProcessing, isSubmitting, showConfirmation, transcriptionItems, orderType]);
+  }, [isRecording, isProcessing, isSubmitting, showConfirmation, transcriptionItems, orderType, lastError, retryCount]);
 
   const getButtonIcon = () => {
     if (isProcessing || isSubmitting) return <Loader2 className="h-6 w-6 animate-spin" />;
@@ -265,7 +342,7 @@ export function VoiceOrderPanel({
             <motion.div className="relative" whileTap={{ scale: isButtonDisabled ? 1 : 0.95 }} whileHover={{ scale: isButtonDisabled ? 1 : 1.05 }}>
               <Button
                 size="lg"
-                className={`w-20 h-20 rounded-full shadow-lg ${isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : 'bg-primary hover:bg-primary/90'} text-primary-foreground`}
+                className={`w-20 h-20 rounded-full shadow-lg ${isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
                 onClick={handleVoiceRecording}
                 disabled={isButtonDisabled}
                 aria-label={isRecording ? "Stop Recording" : "Start Recording"}
@@ -296,6 +373,7 @@ export function VoiceOrderPanel({
               size="lg" 
               onClick={cancelTranscription}
               disabled={isSubmitting}
+              className="touch-manipulation"
             >
               <XCircle className="mr-2 h-5 w-5" /> Try Again
             </Button>
@@ -303,6 +381,7 @@ export function VoiceOrderPanel({
               size="lg" 
               onClick={confirmTranscription}
               disabled={isSubmitting}
+              className="touch-manipulation"
             >
               {isSubmitting ? (
                 <>

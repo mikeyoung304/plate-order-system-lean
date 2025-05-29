@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/sidebar"
+import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FloorPlanEditor } from "@/components/floor-plan-editor"
 import { TableList } from "@/components/table-list"
@@ -41,9 +42,10 @@ export default function AdminPage() {
   }, [])
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
+    <ProtectedRoute roles="admin">
+      <div className="flex h-screen">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">
         <div className="p-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
@@ -292,5 +294,6 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

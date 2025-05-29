@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { loadFloorPlanTables } from "@/lib/modassembly/supabase/database/floor-plan"
 
 type TableType = {
   id: string
@@ -21,19 +22,28 @@ type TableListProps = {
 export function TableList({ floorPlanId }: TableListProps) {
   const [tables, setTables] = useState<TableType[]>([])
 
-  // Load tables from localStorage
+  // Load tables from database
   useEffect(() => {
-    try {
-      const savedTables = localStorage.getItem("tables")
-      if (savedTables) {
-        const allTables = JSON.parse(savedTables)
-        if (allTables[floorPlanId]) {
-          setTables(allTables[floorPlanId])
-        }
+    const loadTables = async () => {
+      try {
+        const floorPlanTables = await loadFloorPlanTables()
+        const convertedTables: TableType[] = floorPlanTables.map((table, index) => ({
+          id: table.id,
+          type: table.type,
+          x: 100 + (index % 3) * 150,
+          y: 100 + Math.floor(index / 3) * 150,
+          width: table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 120),
+          height: table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 80),
+          seats: table.seats,
+          label: table.label
+        }))
+        setTables(convertedTables)
+      } catch (error) {
+        console.error("Error loading tables:", error)
       }
-    } catch (error) {
-      console.error("Error loading tables:", error)
     }
+    
+    loadTables()
   }, [floorPlanId])
 
   return (

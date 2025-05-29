@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Shell } from "@/components/shell"
+import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,13 +11,13 @@ import { FloorPlanView } from "@/components/floor-plan-view"
 import { VoiceOrderPanel } from "@/components/voice-order-panel"
 import { SeatPickerOverlay } from "@/components/seat-picker-overlay"
 import { useToast } from "@/hooks/use-toast"
-import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User } from "lucide-react"
+import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User, Edit3, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
 import { Table } from "@/lib/floor-plan-utils"
 import { fetchTables } from "@/lib/modassembly/supabase/database/tables"
 import { getUser } from "@/lib/modassembly/supabase/database/users"
-import { fetchRecentOrders, createOrder, type Order } from "@/lib/modassembly/supabase/database/orders"
+import { fetchRecentOrders, createOrder, updateOrderItems, deleteOrder, type Order } from "@/lib/modassembly/supabase/database/orders"
 import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
 import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
@@ -294,6 +295,39 @@ export default function ServerPage() {
     }
   };
 
+  // Order modification functions
+  const handleEditOrder = (order: Order) => {
+    // TODO: Implement edit order dialog/modal
+    toast({
+      title: "Edit Order",
+      description: "Order editing feature coming soon",
+      duration: 2000,
+    });
+  };
+
+  const handleCancelOrder = async (order: Order) => {
+    try {
+      await deleteOrder(order.id);
+      
+      // Refresh orders list
+      const updatedOrders = await fetchRecentOrders(5);
+      setRecentOrders(updatedOrders);
+      
+      toast({
+        title: "Order Cancelled",
+        description: `Order for ${order.table} has been cancelled`,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Animation variants
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: "beforeChildren", staggerChildren: 0.1 } }, exit: { opacity: 0, transition: { when: "afterChildren" } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 500 } }, exit: { y: 20, opacity: 0 } };
@@ -309,8 +343,9 @@ export default function ServerPage() {
   }
 
   return (
-    <Shell className="bg-gradient-to-br from-gray-900/95 via-gray-900/98 to-gray-900/95">
-      <div className="container py-6">
+    <ProtectedRoute roles="server">
+      <Shell className="bg-gradient-to-br from-gray-900/95 via-gray-900/98 to-gray-900/95">
+        <div className="container py-6">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="flex items-center justify-between mb-6">
           <div>
@@ -573,9 +608,34 @@ export default function ServerPage() {
                                   <div key={i} className="text-sm text-gray-300">• {item}</div>
                                 ))}
                               </div>
-                              <div className="text-xs text-gray-500 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {order.id}
+                              <div className="flex items-center justify-between mt-3">
+                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                {/* Only show edit/cancel for pending orders */}
+                                {(order.status === 'in_progress' || order.status === 'new') && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditOrder(order)}
+                                      className="h-7 px-2 text-xs"
+                                    >
+                                      <Edit3 className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleCancelOrder(order)}
+                                      className="h-7 px-2 text-xs"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </motion.div>
@@ -600,7 +660,8 @@ export default function ServerPage() {
           )}
         </AnimatePresence>
 
-      </div>
-    </Shell>
+        </div>
+      </Shell>
+    </ProtectedRoute>
   )
 }

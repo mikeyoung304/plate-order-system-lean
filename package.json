@@ -7,7 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest"
+    "test": "jest",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:watch": "jest --watch",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:migrate": "supabase db push",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
@@ -66,12 +77,21 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.5",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.4.0-canary.51",
+    "husky": "^9.1.7",
+    "jest": "^30.0.0-beta.3",
     "postcss": "^8",
+    "pre-commit": "^1.2.2",
+    "prettier": "^3.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5",
+    "typescript": "^5.8.3",
     "vitest": "^3.1.2"
   }
 }

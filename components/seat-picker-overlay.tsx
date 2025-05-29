@@ -29,8 +29,8 @@ const Seat = ({ seatNumber, onClick }: { seatNumber: number; onClick: () => void
       borderColor: "rgba(13, 148, 136, 1)",
       transition: { type: "spring", stiffness: 500, damping: 15 }
     }}
-    // Initial state and base styling
-    className="w-14 h-14 rounded-full border-2 flex items-center justify-center cursor-pointer bg-gray-700/60 border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-gray-800"
+    // Initial state and base styling - optimized for mobile touch targets (48px minimum)
+    className="w-16 h-16 rounded-full border-2 flex items-center justify-center cursor-pointer bg-gray-700/60 border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-gray-800 touch-manipulation"
     style={{
         // Ensure background color transitions smoothly if needed, though framer-motion handles it well
         transition: "background-color 0.2s ease-out, border-color 0.2s ease-out",

@@ -104,4 +104,80 @@ export async function fetchTables(): Promise<Table[]> {
       ...defaults
     };
   });
+}
+
+/**
+ * Create a new table in the database
+ * @param tableData Table data to create
+ * @returns The created table
+ */
+export async function createTable(tableData: {
+  label: number;
+  type: string;
+  status?: string;
+}): Promise<SupabaseTable> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('tables')
+    .insert([{
+      label: tableData.label,
+      type: tableData.type,
+      status: tableData.status || 'available'
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating table:', error);
+    throw new Error(`Failed to create table: ${error.message}`);
+  }
+
+  return data as SupabaseTable;
+}
+
+/**
+ * Update an existing table
+ * @param tableId Table ID to update
+ * @param updates Table data to update
+ * @returns The updated table
+ */
+export async function updateTable(tableId: string, updates: {
+  label?: number;
+  type?: string;
+  status?: string;
+}): Promise<SupabaseTable> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('tables')
+    .update(updates)
+    .eq('id', tableId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating table:', error);
+    throw new Error(`Failed to update table: ${error.message}`);
+  }
+
+  return data as SupabaseTable;
+}
+
+/**
+ * Delete a table from the database
+ * @param tableId Table ID to delete
+ */
+export async function deleteTable(tableId: string): Promise<void> {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('tables')
+    .delete()
+    .eq('id', tableId);
+
+  if (error) {
+    console.error('Error deleting table:', error);
+    throw new Error(`Failed to delete table: ${error.message}`);
+  }
 } 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Shell } from "@/components/shell"
+import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { PageHeaderWithTime } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { motion, AnimatePresence } from "framer-motion"
 import { fetchRecentOrders, type Order, updateOrderStatus } from "@/lib/modassembly/supabase/database/orders"
+import { createClient } from "@/lib/modassembly/supabase/client"
 
 export default function ExpoPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -38,6 +40,24 @@ export default function ExpoPage() {
     }
 
     loadOrders()
+
+    // Set up real-time subscription for order updates
+    const supabase = createClient();
+    const channel = supabase
+      .channel('expo-orders')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('Expo received order update:', payload);
+          // Reload orders when any order changes
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [toast])
 
   // Mark order as delivered
@@ -73,8 +93,9 @@ export default function ExpoPage() {
   const inProgressOrders = orders.filter((order) => order.status === "in_progress")
 
   return (
-    <Shell>
-      <div className="container py-6">
+    <ProtectedRoute roles={["server", "cook"]}>
+      <Shell>
+        <div className="container py-6">
         <PageHeaderWithTime title="Expo View" description="Manage order delivery to tables" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -254,7 +275,8 @@ export default function ExpoPage() {
             )}
           </div>
         </div>
-      </div>
-    </Shell>
+        </div>
+      </Shell>
+    </ProtectedRoute>
   )
 }

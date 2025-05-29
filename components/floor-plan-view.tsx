@@ -245,14 +245,27 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           onClick={handleCanvasClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredTable(null)}
-          className="absolute inset-0 transition-opacity duration-300"
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            const rect = e.currentTarget.getBoundingClientRect();
+            const mockEvent = {
+              nativeEvent: {
+                offsetX: touch.clientX - rect.left,
+                offsetY: touch.clientY - rect.top,
+              },
+              preventDefault: () => e.preventDefault(),
+            } as React.MouseEvent<HTMLCanvasElement>;
+            handleCanvasClick(mockEvent);
+          }}
+          onTouchEnd={(e) => e.preventDefault()}
+          className="absolute inset-0 transition-opacity duration-300 touch-manipulation"
           aria-label="Floor plan"
         />
 
         {/* Instructions Overlay */}
         {tables.length > 0 && (
            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/60 px-2 py-1 rounded pointer-events-none">
-               Click on a table to select it
+               Tap a table to select it
            </div>
         )}
       </div>
