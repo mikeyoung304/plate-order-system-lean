@@ -22,6 +22,8 @@ import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
 import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SeatNavigation } from "@/components/server/seat-navigation"
+import { useSeatNavigation } from "@/hooks/use-seat-navigation"
 
 // Add type definition for OrderSuggestion
 type OrderSuggestion = {
@@ -46,6 +48,25 @@ export default function ServerPage() {
   const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
   const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
   const [showVoiceOrderPanel, setShowVoiceOrderPanel] = useState(false);
+  const [currentView, setCurrentView] = useState<'floorPlan' | 'seatPicker' | 'orderType' | 'residentSelect' | 'voiceOrder'>('floorPlan');
+
+  // Seat navigation state
+  const seatNav = useSeatNavigation({
+    tableId: selectedTable?.label || "1",
+    maxSeats: 8,
+    onSeatComplete: (seatNumber) => {
+      console.log(`Seat ${seatNumber} order completed`)
+    },
+    onTableComplete: () => {
+      toast({
+        title: "Table Complete! 🎉",
+        description: "All seats have placed their orders",
+        duration: 3000
+      })
+      setSelectedTable(null)
+      setSelectedSeat(null)
+    }
+  })
 
   // Fetch user data
   useEffect(() => {
@@ -151,9 +172,9 @@ export default function ServerPage() {
 
   const handleSelectTable = (table: Table) => {
     setSelectedTable(table);
-    setShowSeatPicker(true); // Show the overlay
+    setCurrentView('seatPicker'); // Navigate to seat navigation
     if (navigator.vibrate) navigator.vibrate(50);
-    toast({ title: `Table ${table.label} selected`, description: "Choose a seat", duration: 1500 });
+    toast({ title: `Table ${table.label} selected`, description: "Navigate between seats", duration: 1500 });
   };
 
   const handleSeatSelected = (seatNumber: number) => {
@@ -172,17 +193,20 @@ export default function ServerPage() {
     setSelectedSeat(null);
     setOrderType(null);
     setShowSeatPicker(false);
-    setShowVoiceOrderPanel(false); // Reset voice order panel state
+    setShowVoiceOrderPanel(false);
     setSelectedResident(null);
     setOrderSuggestions([]);
     setSelectedSuggestion(null);
+    setCurrentView('floorPlan');
+    seatNav.resetTable();
   };
 
-  // Go back from Order Type selection to Floor Plan
+  // Go back from Order Type selection to Seat Picker
   const handleBackFromOrderType = () => {
-    setSelectedSeat(null); // Go back to floor plan view
+    setSelectedSeat(null);
     setOrderType(null);
-    setShowVoiceOrderPanel(false); // Reset voice order panel state
+    setShowVoiceOrderPanel(false);
+    setCurrentView('seatPicker');
   };
 
   // Go back from Resident Selection to Order Type selection
@@ -190,14 +214,14 @@ export default function ServerPage() {
     setSelectedResident(null);
     setOrderSuggestions([]);
     setSelectedSuggestion(null);
-    setOrderType(null);
-    setShowVoiceOrderPanel(false); // Reset voice order panel state
+    setCurrentView('orderType');
+    setShowVoiceOrderPanel(false);
   };
 
   // Go back from Voice Order to Resident Selection
   const handleBackFromVoiceOrder = () => {
     setShowVoiceOrderPanel(false);
-    // Don't reset other states - just go back to resident selection
+    setCurrentView("residentSelect");
   };
 
   // Called by VoiceOrderPanel upon successful transcription
@@ -250,13 +274,37 @@ export default function ServerPage() {
 
       const order = await createOrder(orderPayload);
       
+      // Mark seat as complete in navigation
+      if (selectedSeat) {
+        seatNav.markSeatComplete(selectedSeat);
+      }
+      
       toast({ 
         title: 'Order Submitted', 
         description: 'Your order has been sent to the kitchen.',
         variant: 'default'
       });
       
-      handleBackToFloorPlan();
+      // Check if we should continue to next seat or finish table
+      if (seatNav.nextAvailableSeat) {
+        // Auto-advance to next seat
+        setTimeout(() => {
+          if (seatNav.nextAvailableSeat) {
+            seatNav.setCurrentSeat(seatNav.nextAvailableSeat);
+          }
+          setCurrentView('seatPicker');
+          setSelectedSeat(null);
+          setOrderType(null);
+          setSelectedResident(null);
+          setSelectedSuggestion(null);
+          setShowVoiceOrderPanel(false);
+        }, 1000);
+      } else {
+        // All seats complete, go back to floor plan
+        setTimeout(() => {
+          handleBackToFloorPlan();
+        }, 1500);
+      }
     } catch (err) {
       console.error('Order submission error:', err);
       toast({ 
@@ -292,6 +340,7 @@ export default function ServerPage() {
     } else {
       // If no suggestion selected, show voice order panel
       setShowVoiceOrderPanel(true);
+      setCurrentView("voiceOrder");
     }
   };
 
@@ -332,15 +381,19 @@ export default function ServerPage() {
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: "beforeChildren", staggerChildren: 0.1 } }, exit: { opacity: 0, transition: { when: "afterChildren" } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 500 } }, exit: { y: 20, opacity: 0 } };
 
-  // Determine current main view based on state (excluding the overlay)
-  let currentView = 'floorPlan';
-  if (selectedSeat && !orderType) {
-    currentView = 'orderType';
-  } else if (selectedSeat && orderType && !showVoiceOrderPanel) {
-    currentView = 'residentSelect';
-  } else if (selectedSeat && orderType && showVoiceOrderPanel) {
-    currentView = 'voiceOrder';
-  }
+  // Determine current main view based on state
+  const determineCurrentView = () => {
+    if (selectedSeat && !orderType) {
+      return 'orderType';
+    } else if (selectedSeat && orderType && !showVoiceOrderPanel) {
+      return 'residentSelect';
+    } else if (selectedSeat && orderType && showVoiceOrderPanel) {
+      return 'voiceOrder';
+    }
+    return currentView; // Use the state variable
+  };
+
+  const resolvedView = determineCurrentView();
 
   return (
     <ProtectedRoute roles="server">
@@ -364,7 +417,7 @@ export default function ServerPage() {
             {/* Use AnimatePresence to transition between views */}
             <AnimatePresence mode="wait">
               {/* Floor Plan View */}
-              {currentView === 'floorPlan' && (
+              {resolvedView === 'floorPlan' && (
                 <motion.div key="floor-plan" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
@@ -390,8 +443,56 @@ export default function ServerPage() {
                 </motion.div>
               )}
 
+              {/* Seat Navigation View */}
+              {resolvedView === 'seatPicker' && selectedTable && (
+                <motion.div key="seat-nav" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                  <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="p-6 border-b border-gray-700/30 flex items-center justify-between">
+                        <div>
+                          <h2 className="text-xl font-medium text-white">Table {selectedTable.label}</h2>
+                          <p className="text-gray-400 text-sm mt-1">Navigate between seats to take orders</p>
+                        </div>
+                        <Button variant="ghost" onClick={() => setCurrentView('floorPlan')} className="text-gray-400 hover:text-white">
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Back to Tables
+                        </Button>
+                      </div>
+                      <div className="p-6">
+                        <SeatNavigation
+                          tableId={selectedTable.label}
+                          currentSeat={seatNav.currentSeat}
+                          maxSeats={seatNav.maxSeats}
+                          onSeatChange={(seatNumber) => {
+                            seatNav.setCurrentSeat(seatNumber)
+                            setSelectedSeat(seatNumber)
+                          }}
+                          seats={seatNav.seatOrders.map(seat => ({
+                            id: seat.seatNumber,
+                            hasOrder: seat.hasOrder,
+                            orderCount: seat.orderCount
+                          }))}
+                        />
+                        
+                        <div className="mt-6 flex gap-3">
+                          <Button 
+                            onClick={() => {
+                              setSelectedSeat(seatNav.currentSeat)
+                              setCurrentView('orderType')
+                            }}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700"
+                          >
+                            Take Order for Seat {seatNav.currentSeat}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
               {/* Order Type Selection View */}
-              {currentView === 'orderType' && selectedTable && selectedSeat && (
+              {resolvedView === 'orderType' && selectedTable && selectedSeat && (
                 <motion.div key="order-type" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
@@ -407,13 +508,25 @@ export default function ServerPage() {
                       <div className="p-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-                            <Button className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-teal-600/90 to-teal-700/90 hover:from-teal-500/90 hover:to-teal-600/90 border-0 rounded-xl shadow-lg" onClick={() => setOrderType("food")}>
+                            <Button 
+                              className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-teal-600/90 to-teal-700/90 hover:from-teal-500/90 hover:to-teal-600/90 border-0 rounded-xl shadow-lg" 
+                              onClick={() => {
+                                setOrderType("food")
+                                setCurrentView("residentSelect")
+                              }}
+                            >
                               <div className="w-20 h-20 rounded-full bg-teal-500/20 flex items-center justify-center"> <Utensils className="h-10 w-10 text-teal-300" /> </div>
                               <span className="text-2xl font-medium">Food Order</span>
                             </Button>
                           </motion.div>
                           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-                            <Button className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-amber-600/90 to-amber-700/90 hover:from-amber-500/90 hover:to-amber-600/90 border-0 rounded-xl shadow-lg" onClick={() => setOrderType("drink")}>
+                            <Button 
+                              className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-amber-600/90 to-amber-700/90 hover:from-amber-500/90 hover:to-amber-600/90 border-0 rounded-xl shadow-lg" 
+                              onClick={() => {
+                                setOrderType("drink")
+                                setCurrentView("residentSelect")
+                              }}
+                            >
                               <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center"> <Coffee className="h-10 w-10 text-amber-300" /> </div>
                               <span className="text-2xl font-medium">Drink Order</span>
                             </Button>
@@ -426,7 +539,7 @@ export default function ServerPage() {
               )}
 
               {/* Resident Selection View */}
-              {currentView === 'residentSelect' && selectedTable && selectedSeat && orderType && (
+              {resolvedView === 'residentSelect' && selectedTable && selectedSeat && orderType && (
                 <motion.div key="resident-select" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
@@ -532,7 +645,7 @@ export default function ServerPage() {
               )}
 
               {/* Voice Order Panel View */}
-              {currentView === 'voiceOrder' && selectedTable && selectedSeat && orderType && (
+              {resolvedView === 'voiceOrder' && selectedTable && selectedSeat && orderType && (
                 <motion.div key="voice-order" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
@@ -650,15 +763,7 @@ export default function ServerPage() {
         </div>
 
         {/* Seat Picker Overlay - Rendered conditionally outside the main grid */}
-        <AnimatePresence>
-          {showSeatPicker && selectedTable && (
-             <SeatPickerOverlay
-               table={selectedTable}
-               onClose={handleCloseSeatPicker}
-               onSelectSeat={handleSeatSelected}
-             />
-          )}
-        </AnimatePresence>
+        {/* Seat picker overlay removed - now using integrated seat navigation */}
 
         </div>
       </Shell>
