@@ -12,31 +12,73 @@ const openai = new OpenAI({
 
 export async function transcribeAudioFile(audioBlob: Blob, filename: string = "audio.webm"): Promise<{ items: string[], transcription: string }> {
     try {
+        // Determine the correct file extension and type for OpenAI
+        let fileExtension = 'webm';
+        let mimeType = audioBlob.type || 'audio/webm';
+        
+        // OpenAI supports: mp3, mp4, mpeg, mpga, m4a, wav, webm
+        // Update filename to match the actual format
+        if (mimeType.includes('mp4')) {
+            fileExtension = 'mp4';
+        } else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) {
+            fileExtension = 'mp3';
+        } else if (mimeType.includes('wav')) {
+            fileExtension = 'wav';
+        } else if (mimeType.includes('m4a')) {
+            fileExtension = 'm4a';
+        }
+        
+        const audioFileName = `recording.${fileExtension}`;
+        
         // Convert Blob to File object for OpenAI API
-        const audioFile = new File([audioBlob], filename, { type: audioBlob.type });
+        const audioFile = new File([audioBlob], audioFileName, { type: mimeType });
+        
+        console.log(`Sending to OpenAI: ${audioFileName}, type: ${mimeType}, size: ${audioFile.size}`);
 
         const transcription = await openai.audio.transcriptions.create({
             file: audioFile,
-            model: "gpt-4o-transcribe",
-            prompt: "Transcribe this order and return a JSON array of menu items. Each item should be a string representing a food or drink item. For example: [\"Caesar Salad\", \"Grilled Chicken\", \"Coca Cola\"]. Only return the JSON array, no other text.",
+            model: "whisper-1", // Changed from gpt-4o-transcribe to whisper-1
+            prompt: "Transcribe this restaurant order. Return only the food and drink items ordered.",
+            response_format: "text"
         });
 
-        // Parse the JSON response to extract the array of items
-        try {
-            const items = JSON.parse(transcription.text);
-            if (Array.isArray(items) && items.every(item => typeof item === 'string')) {
-                return {
-                    items: items,
-                    transcription: transcription.text
-                };
-            } else {
-                console.error("Transcription did not return proper JSON array", transcription.text);
-                throw new Error(`Invalid transcription format: ${transcription.text}`);
-            }
-        } catch (parseError) {
-            console.error("Failed to parse transcription as JSON", transcription.text);
-            throw new Error(`Failed to parse transcription: ${transcription.text}`);
+        // Parse the transcription to extract items
+        console.log("Raw transcription response:", transcription);
+        
+        // The response is the text directly when using response_format: "text"
+        const transcriptionText = typeof transcription === 'string' ? transcription : transcription.text;
+        
+        if (!transcriptionText) {
+            console.error("No transcription text received");
+            throw new Error("No transcription text received from API");
         }
+        
+        console.log("Transcription text:", transcriptionText);
+        
+        // Try to extract items from the transcription
+        // Look for common food/drink items separated by commas, "and", or new lines
+        const cleanText = transcriptionText.toLowerCase();
+        const items = cleanText
+            .split(/[,\n]|and/)
+            .map(item => item.trim())
+            .filter(item => item.length > 0)
+            .map(item => {
+                // Capitalize first letter of each word
+                return item.replace(/\b\w/g, char => char.toUpperCase());
+            });
+        
+        if (items.length === 0) {
+            // If no items found, return the whole transcription as a single item
+            return {
+                items: [transcriptionText.trim()],
+                transcription: transcriptionText
+            };
+        }
+        
+        return {
+            items: items,
+            transcription: transcriptionText
+        };
     } catch (error) {
         console.error("Error transcribing audio:", error);
         throw new Error("Failed to transcribe audio");

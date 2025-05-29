@@ -26,6 +26,7 @@ interface CanvasProps extends CanvasInteractions {
   tables: Table[]
   canvasSize: { width: number; height: number }
   isLoading: boolean
+  canvasRef: React.RefObject<HTMLCanvasElement>
   
   // Drawing options
   isGridVisible: boolean
@@ -93,9 +94,9 @@ export function Canvas({
   
   // Event handlers
   onTableUpdate,
-  onAddToUndoStack
+  onAddToUndoStack,
+  canvasRef
 }: CanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Drawing hook
   const { calculateSeatPositions } = useCanvasDrawing(
@@ -149,12 +150,17 @@ export function Canvas({
     return `${baseCursor}-resize`
   }, [])
 
-  // Throttled mouse move handler
-  const handleMouseMoveThrottled = useMemo(
-    () => throttle((e: React.MouseEvent<HTMLCanvasElement>) => {
-      const { x, y } = screenToCanvas(e.clientX, e.clientY)
-      const canvas = canvasRef.current
-      if (!canvas) return
+  // Use ref for throttling to prevent infinite updates  
+  const lastMoveTime = useRef(0)
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const now = performance.now()
+    if (now - lastMoveTime.current < 16) return // Max 60fps
+    lastMoveTime.current = now
+    
+    const { x, y } = screenToCanvas(e.clientX, e.clientY)
+    const canvas = canvasRef.current
+    if (!canvas) return
 
       if (isPanning) {
         const deltaX = e.clientX - panStart.x
@@ -232,7 +238,11 @@ export function Canvas({
           newY = snapToGridValue(newY)
         }
 
-        onTableUpdate(selectedTable.id, { x: newX, y: newY })
+        // Only update if position actually changed significantly
+        const threshold = 2
+        if (Math.abs(newX - selectedTable.x) > threshold || Math.abs(newY - selectedTable.y) > threshold) {
+          onTableUpdate(selectedTable.id, { x: newX, y: newY })
+        }
         return
       }
 
@@ -266,16 +276,14 @@ export function Canvas({
       }
       
       canvas.style.cursor = cursorStyle
-    }, 16), // Throttle ~60fps
-    [
-      isPanning, panStart, panOffset, setPanOffset, setPanStart,
-      isRotating, selectedTable, rotateStart, initialRotation, onTableUpdate,
-      isResizing, resizeDirection, resizeStart, snapToGrid, snapToGridValue,
-      isDragging, dragOffset, screenToCanvas, findTableAtPosition,
-      findResizeHandleAtPosition, findRotationHandleAtPosition,
-      getDiagonalResizeCursor, getStraightResizeCursor, tables, setHoveredTable
-    ]
-  )
+  }, [
+    isPanning, panStart, panOffset, setPanOffset, setPanStart,
+    isRotating, selectedTable, rotateStart, initialRotation, onTableUpdate,
+    isResizing, resizeDirection, resizeStart, snapToGrid, snapToGridValue,
+    isDragging, dragOffset, screenToCanvas, findTableAtPosition,
+    findResizeHandleAtPosition, findRotationHandleAtPosition,
+    getDiagonalResizeCursor, getStraightResizeCursor, tables, setHoveredTable
+  ])
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isDragging || isResizing || isRotating || isPanning) return
@@ -363,19 +371,20 @@ export function Canvas({
     }
   }, [setIsDragging, setIsResizing, setIsRotating, setIsPanning])
 
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault()
-    
-    const delta = -e.deltaY
-    const zoomFactor = delta > 0 ? 1.1 : 0.9
-    const newZoomLevel = Math.max(0.1, Math.min(5, zoomLevel * zoomFactor))
-    
-    const canvas = canvasRef.current
-    if (!canvas) return
-    
-    const rect = canvas.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left
-    const mouseY = e.clientY - rect.top
+  const handleWheel = useMemo(
+    () => throttle((e: React.WheelEvent<HTMLCanvasElement>) => {
+      e.preventDefault()
+      
+      const delta = -e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const newZoomLevel = Math.max(0.1, Math.min(5, zoomLevel * zoomFactor))
+      
+      const canvas = canvasRef.current
+      if (!canvas) return
+      
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
     
     const pointXBeforeZoom = (mouseX - panOffset.x) / zoomLevel
     const pointYBeforeZoom = (mouseY - panOffset.y) / zoomLevel
@@ -383,9 +392,9 @@ export function Canvas({
     const newPanOffsetX = mouseX - pointXBeforeZoom * newZoomLevel
     const newPanOffsetY = mouseY - pointYBeforeZoom * newZoomLevel
     
-    setZoomLevel(newZoomLevel)
-    setPanOffset({ x: newPanOffsetX, y: newPanOffsetY })
-  }, [zoomLevel, panOffset, setZoomLevel, setPanOffset])
+      setZoomLevel(newZoomLevel)
+      setPanOffset({ x: newPanOffsetX, y: newPanOffsetY })
+    }, 50), [zoomLevel, panOffset, setZoomLevel, setPanOffset])
 
   return (
     <div className="flex-1 relative border border-gray-800 rounded-xl overflow-hidden bg-gray-900/50 shadow-lg">
@@ -399,7 +408,7 @@ export function Canvas({
         ref={canvasRef}
         onClick={handleCanvasClick}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMoveThrottled}
+        onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onContextMenu={handleContextMenu}

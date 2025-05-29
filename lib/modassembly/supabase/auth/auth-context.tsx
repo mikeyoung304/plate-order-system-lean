@@ -31,13 +31,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
 
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
-      .select('user_id, role, name')
+      .select('id, user_id, role, name')
       .eq('user_id', userId)
       .single()
 
-    return profile || null
+    if (error) {
+      console.error('Error fetching profile:', error)
+      // Try with id instead of user_id
+      const { data: profileById } = await supabase
+        .from('profiles')
+        .select('id, user_id, role, name')
+        .eq('id', userId)
+        .single()
+      
+      if (profileById) {
+        return {
+          user_id: profileById.user_id || userId,
+          role: profileById.role,
+          name: profileById.name
+        }
+      }
+    }
+
+    return profile ? {
+      user_id: profile.user_id || userId,
+      role: profile.role,
+      name: profile.name
+    } : null
   }
 
   const refreshAuth = async () => {
@@ -141,8 +163,14 @@ export function useIsRole(role: AppRole): boolean {
 
 export function useHasRole(roles: AppRole | AppRole[]): boolean {
   const userRole = useRole()
+  
+  // BETA TESTER OVERRIDE: All users have all permissions during beta
+  if (process.env.NEXT_PUBLIC_BETA_MODE === 'true') {
+    return true
+  }
+  
   if (!userRole) return false
   
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
-  return allowedRoles.includes(userRole)
+  return allowedRoles.includes(userRole as AppRole)
 }

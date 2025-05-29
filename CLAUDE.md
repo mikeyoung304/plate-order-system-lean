@@ -332,21 +332,58 @@ const {
 
 ## MCP Servers Configuration
 
-### Recommended MCP Servers
-```json
-{
-  "mcpServers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    },
-    "supabase": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-supabase", "--supabase-url", "${SUPABASE_URL}", "--service-role-key", "${SUPABASE_SERVICE_ROLE_KEY}"]
-    }
-  }
-}
+### Active MCP Servers
+Our development environment includes these MCP servers for enhanced capabilities:
+
+1. **sequential-thinking** - Complex problem solving and multi-step planning
+2. **supabase** - Direct database operations with our Supabase backend
+3. **filesystem** - Advanced file system operations
+4. **desktop-commander** - Terminal control, process management, and code searching
+5. **postgres** - Direct PostgreSQL access for complex queries and migrations
+
+### Starting Claude with MCP Servers
+Always use the provided startup script:
+```bash
+./start-claude.sh
 ```
+
+This script automatically loads all environment variables and starts Claude with all configured MCP servers.
+
+### Required Environment Variables
+Add these to your `.env` file:
+```env
+# Existing variables
+NEXT_PUBLIC_SUPABASE_URL=https://eiipozoogrrfudhjoqms.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+OPENAI_API_KEY=your_openai_key
+
+# Additional for PostgreSQL MCP
+SUPABASE_DB_PASSWORD=your_db_password  # Get from Supabase dashboard
+```
+
+### MCP Server Usage Guidelines
+
+#### Desktop Commander
+- Use for running builds, tests, and deployments
+- Search across entire codebase with fuzzy matching
+- Manage multiple terminal sessions
+- Monitor running processes
+
+#### PostgreSQL Direct Access
+- Complex analytical queries
+- Database migrations
+- Performance optimization
+- Direct SQL for reports
+
+#### Supabase MCP
+- Standard CRUD operations
+- Real-time subscriptions
+- RLS policy management
+- User authentication
+
+### MCP Configuration File
+The `.mcp.json` file contains all server configurations. Do not edit manually unless adding new servers.
 
 ## Debugging & Troubleshooting
 

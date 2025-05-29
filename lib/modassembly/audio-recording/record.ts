@@ -44,18 +44,38 @@ export class AudioRecorder {
 
         // Determine best supported MIME type
         let selectedMimeType = mimeType;
+        const supportedTypes = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/mp4',
+            'audio/mpeg',
+            'audio/wav'
+        ];
+        
         if (!selectedMimeType) {
-            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-                selectedMimeType = 'audio/webm;codecs=opus';
-            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-                selectedMimeType = 'audio/webm';
-            } else {
-                selectedMimeType = 'audio/wav';
+            // Find first supported type
+            selectedMimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type));
+            
+            // If none supported, let browser choose default
+            if (!selectedMimeType) {
+                console.warn('No specific MIME type supported, using browser default');
+                selectedMimeType = undefined;
             }
         }
 
         // Create MediaRecorder
-        this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: selectedMimeType });
+        const recorderOptions: MediaRecorderOptions = {};
+        if (selectedMimeType) {
+            recorderOptions.mimeType = selectedMimeType;
+        }
+        
+        try {
+            this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions);
+        } catch (error) {
+            // If specific mimeType fails, try without any options
+            console.warn('Failed with mimeType, trying default:', error);
+            this.mediaRecorder = new MediaRecorder(this.stream);
+        }
         this.audioChunks = [];
         this.startTime = Date.now();
 

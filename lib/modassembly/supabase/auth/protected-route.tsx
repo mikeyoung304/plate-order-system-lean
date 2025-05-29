@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { redirect } from 'next/navigation'
-import { getClientUserWithProfile } from './session'
-import { hasClientRole } from './client-roles'
+import { useAuth, useHasRole } from './auth-context'
 import type { AppRole } from './roles'
 
 interface ProtectedRouteProps {
@@ -19,40 +18,24 @@ export function ProtectedRoute({
   redirectTo = '/dashboard',
   fallback 
 }: ProtectedRouteProps) {
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, isLoading } = useAuth()
+  // Always call hook to avoid conditional hook usage
+  const hasRoleCheck = useHasRole(roles || 'admin' as AppRole)
+  const hasRequiredRole = roles ? hasRoleCheck : true
 
+  // Redirect if not authenticated
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const userWithProfile = await getClientUserWithProfile()
-        
-        if (!userWithProfile) {
-          setIsAuthorized(false)
-          setIsLoading(false)
-          return
-        }
-
-        // If no specific roles required, just check if authenticated
-        if (!roles) {
-          setIsAuthorized(true)
-          setIsLoading(false)
-          return
-        }
-
-        // Check if user has required role
-        const hasRequiredRole = await hasClientRole(roles)
-        setIsAuthorized(hasRequiredRole)
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        setIsAuthorized(false)
-      } finally {
-        setIsLoading(false)
-      }
+    if (!isLoading && !user) {
+      redirect(redirectTo)
     }
+  }, [isLoading, user, redirectTo])
 
-    checkAuth()
-  }, [roles])
+  // Redirect if authenticated but doesn't have required role
+  useEffect(() => {
+    if (!isLoading && user && roles && !hasRequiredRole) {
+      redirect('/dashboard')
+    }
+  }, [isLoading, user, roles, hasRequiredRole])
 
   // Show loading state
   if (isLoading) {
@@ -63,9 +46,13 @@ export function ProtectedRoute({
     )
   }
 
-  // Redirect if not authorized
-  if (!isAuthorized) {
-    redirect(redirectTo)
+  // Don't render if not authenticated
+  if (!user) {
+    return null
+  }
+
+  // Don't render if doesn't have required role
+  if (roles && !hasRequiredRole) {
     return null
   }
 

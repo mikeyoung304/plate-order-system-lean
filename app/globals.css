@@ -418,6 +418,20 @@
     pointer-events: none;
   }
 
+  /* SF Pro fonts */
+  .sf-pro-display {
+    font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .sf-pro-text {
+    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Radial gradient background */
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+  }
+
   /* Enhanced shadows for depth */
   .shadow-2xl {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);

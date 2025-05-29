@@ -15,11 +15,22 @@ export async function getClientUserRole(): Promise<AppRole | null> {
     return null
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('role')
     .eq('user_id', session.user.id)
     .single()
+
+  if (error) {
+    // Try with id instead of user_id
+    const { data: profileById } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single()
+    
+    return profileById?.role || null
+  }
 
   return profile?.role || null
 }
@@ -30,9 +41,14 @@ export async function getClientUserRole(): Promise<AppRole | null> {
  * @returns True if user has any of the specified roles
  */
 export async function hasClientRole(roles: AppRole | AppRole[]): Promise<boolean> {
+  // BETA TESTER OVERRIDE: All users have all permissions during beta
+  if (process.env.NEXT_PUBLIC_BETA_MODE === 'true') {
+    return true
+  }
+  
   const userRole = await getClientUserRole()
   if (!userRole) return false
 
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
-  return allowedRoles.includes(userRole)
+  return allowedRoles.includes(userRole as AppRole)
 }

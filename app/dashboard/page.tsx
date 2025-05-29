@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Shell } from "@/components/shell"
-import { useRole, useHasRole } from "@/lib/modassembly/supabase/auth"
+import { useRole, useHasRole, ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { Utensils, ChefHat, Shield, Settings, Clock } from "lucide-react"
 
-export default function Dashboard() {
+function DashboardContent() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const userRole = useRole()
   const isServer = useHasRole('server')
@@ -180,5 +180,13 @@ export default function Dashboard() {
         </motion.div>
       </div>
     </Shell>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   )
 }
