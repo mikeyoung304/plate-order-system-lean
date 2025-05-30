@@ -21,23 +21,18 @@ export interface TableGroup {
   totalRecallCount: number
 }
 
-// Performance optimized table grouping hook
 export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
   return useMemo(() => {
-    // Early return for empty orders
     if (!orders || orders.length === 0) {
       return []
     }
 
-    // Group orders by table with null safety
     const tableGroups = new Map<string, KDSOrderRouting[]>()
     
     for (const order of orders) {
-      // Skip orders without table assignment
       const tableId = order.order?.table_id
       if (!tableId) continue
       
-      // Get or create array for this table
       let tableOrders = tableGroups.get(tableId)
       if (!tableOrders) {
         tableOrders = []
@@ -46,31 +41,25 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
       tableOrders.push(order)
     }
     
-    // Convert to TableGroup objects with optimized calculations
     const groups: TableGroup[] = []
     
     for (const [tableId, tableOrders] of tableGroups.entries()) {
-      // Skip empty groups
       if (tableOrders.length === 0) continue
       
-      // Sort orders by time within table
       const sortedOrders = [...tableOrders].sort((a, b) => {
         const timeA = new Date(a.routed_at).getTime()
         const timeB = new Date(b.routed_at).getTime()
         return timeA - timeB
       })
       
-      // Calculate group properties with null safety
       const earliestOrderTime = new Date(sortedOrders[0].routed_at)
       const latestOrderTime = new Date(sortedOrders[sortedOrders.length - 1].routed_at)
       
-      // Count total items across all orders with null safety
       let totalItems = 0
       for (const order of sortedOrders) {
         totalItems += order.order?.items?.length ?? 0
       }
       
-      // Get unique seat count with null safety
       const uniqueSeats = new Set<string>()
       for (const order of sortedOrders) {
         const seatId = order.order?.seat_id
@@ -80,7 +69,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
       }
       const seatCount = uniqueSeats.size
       
-      // Determine overall status efficiently
       let newCount = 0
       let preparingCount = 0
       let readyCount = 0
@@ -106,7 +94,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
         overallStatus = 'mixed'
       }
       
-      // Calculate max elapsed time with current time snapshot
       const now = Date.now()
       let maxElapsedTime = 0
       
@@ -120,10 +107,8 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
         }
       }
       
-      // Check if any order is overdue (>10 minutes)
       const isOverdue = maxElapsedTime > 600
       
-      // Get max priority with null safety
       let maxPriority = 0
       for (const order of sortedOrders) {
         const priority = order.priority ?? 0
@@ -132,7 +117,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
         }
       }
       
-      // Check recalls with null safety
       let hasRecalls = false
       let totalRecallCount = 0
       
@@ -144,7 +128,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
         }
       }
       
-      // Get table label with fallback
       const tableLabel = sortedOrders[0].order?.table?.label || `Table ${tableId.slice(-6)}`
       
       groups.push({
@@ -164,7 +147,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
       })
     }
     
-    // Sort groups by earliest order time
     groups.sort((a, b) => 
       a.earliestOrderTime.getTime() - b.earliestOrderTime.getTime()
     )
@@ -173,7 +155,6 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
   }, [orders])
 }
 
-// Hook to get color scheme for table group based on timing
 export function useTableGroupTiming(group: TableGroup) {
   const colorStatus = useMemo(() => {
     if (group.maxElapsedTime <= 300) return 'green'

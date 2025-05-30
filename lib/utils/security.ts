@@ -1,62 +1,48 @@
-import { Security } from '@/lib/security'
+// Simple security utilities for restaurant app
+// Most security is handled by Supabase (RLS, auth, injection prevention)
 
-export const LIMITS = {
-  ORDER_ITEM_LENGTH: 200,
-  TABLE_NAME_LENGTH: 50,
-  TRANSCRIPT_LENGTH: 1000,
-  API_CALLS_PER_MINUTE: 10
-} as const
+import DOMPurify from 'isomorphic-dompurify'
 
-// Backward compatible functions using enhanced security
-export function sanitizeOrderItem(input: unknown): string {
-  return Security.sanitize.sanitizeOrderItem(input)
+export function sanitizeText(text: unknown): string {
+  if (typeof text !== 'string') return ''
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [] }).trim()
 }
 
-export function sanitizeTableName(input: unknown): string {
-  return Security.sanitize.sanitizeIdentifier(input)
-}
-
-export function sanitizeTranscript(input: unknown): string {
-  return Security.sanitize.sanitizeHTML(input as string).slice(0, LIMITS.TRANSCRIPT_LENGTH)
-}
-
-// Enhanced rate limiter with backward compatibility
-export function checkRateLimit(userId: string, action: string = 'api'): void {
-  const isAllowed = Security.rateLimit.isAllowed(
-    userId, 
-    action, 
-    LIMITS.API_CALLS_PER_MINUTE, 
-    LIMITS.API_CALLS_PER_MINUTE / 60 // Convert to per-second rate
-  )
+export function sanitizeOrderItems(items: unknown[]): string[] {
+  if (!Array.isArray(items)) return []
   
-  if (!isAllowed) {
-    throw new Error('Please wait a moment before trying again')
+  return items
+    .map(item => sanitizeText(item))
+    .filter(item => item.length > 0 && item.length <= 200)
+    .slice(0, 20) // Max 20 items per order
+}
+
+// Rate limiting for auth attempts (5 attempts per 15 minutes)
+const authAttempts = new Map<string, { count: number, resetAt: number }>()
+
+export function checkAuthRateLimit(identifier: string): boolean {
+  const now = Date.now()
+  const record = authAttempts.get(identifier)
+  
+  // Reset if window expired
+  if (!record || now > record.resetAt) {
+    authAttempts.set(identifier, { count: 1, resetAt: now + 15 * 60 * 1000 })
+    return true
   }
+  
+  // Block if too many attempts
+  if (record.count >= 5) return false
+  
+  record.count++
+  return true
 }
 
-// Input validation helpers
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email) && email.length <= 254
-}
-
-export function validateTableId(tableId: string): boolean {
-  // UUID format or simple alphanumeric
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const simpleIdRegex = /^[a-zA-Z0-9-_]{1,50}$/
-  return uuidRegex.test(tableId) || simpleIdRegex.test(tableId)
-}
-
-export function validateSeatNumber(seat: number): boolean {
-  return Number.isInteger(seat) && seat >= 1 && seat <= 20 // Max 20 seats per table
-}
-
-// SQL injection prevention for dynamic queries
-export function escapeSearchTerm(term: string): string {
-  if (typeof term !== 'string') return ''
-  return term
-    .replace(/[%_\\]/g, '\\$&') // Escape SQL LIKE wildcards
-    .replace(/['"]/g, '') // Remove quotes
-    .trim()
-    .slice(0, 100) // Limit length
+// Clean up old rate limit records (call periodically)
+export function cleanupRateLimit() {
+  const now = Date.now()
+  for (const [key, record] of authAttempts.entries()) {
+    if (now > record.resetAt) {
+      authAttempts.delete(key)
+    }
+  }
 }

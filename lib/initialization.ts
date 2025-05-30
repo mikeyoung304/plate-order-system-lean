@@ -1,137 +1,26 @@
-import { Security } from '@/lib/security'
+import { cleanupRateLimit } from '@/lib/utils/security'
 
-/**
- * Initialize all security and performance systems
- * Call this early in the application lifecycle
- */
 export function initializeSecurityAndPerformance(): void {
-  try {
-    // Start security cleanup processes
-    Security.startCleanup()
-    
-    // Log successful initialization (no sensitive data)
-    console.log('🔒 Fort Knox security systems activated')
-    
-    // Security: Clean up any potential XSS in console (dev mode only)
-    if (process.env.NODE_ENV === 'development') {
-      // Override console methods to sanitize output in development
-      const originalLog = console.log
-      const originalError = console.error
-      const originalWarn = console.warn
-      
-      console.log = (...args: any[]) => {
-        const sanitizedArgs = args.map(arg => 
-          typeof arg === 'string' ? Security.sanitize.sanitizeHTML(arg) : arg
-        )
-        originalLog(...sanitizedArgs)
-      }
-      
-      console.error = (...args: any[]) => {
-        const sanitizedArgs = args.map(arg => 
-          typeof arg === 'string' ? Security.sanitize.sanitizeHTML(arg) : arg
-        )
-        originalError(...sanitizedArgs)
-      }
-      
-      console.warn = (...args: any[]) => {
-        const sanitizedArgs = args.map(arg => 
-          typeof arg === 'string' ? Security.sanitize.sanitizeHTML(arg) : arg
-        )
-        originalWarn(...sanitizedArgs)
-      }
-    }
-    
-  } catch (error) {
-    console.error('Failed to initialize security and performance systems:', error)
-    // Don't throw - allow app to continue but log the failure
-  }
-}
-
-/**
- * React Hook for component-level initialization
- * Import React in the component that uses this hook
- */
-export function useSecurityAndPerformanceInit(React: any) {
-  return () => {
-    React.useEffect(() => {
-      initializeSecurityAndPerformance()
-    }, [])
-  }
-}
-
-/**
- * Memory leak prevention utilities
- */
-export const MemoryLeakPrevention = {
-  // Clean up event listeners, timers, and subscriptions
-  createCleanupTracker(): {
-    addCleanup: (fn: () => void) => void
-    cleanup: () => void
-  } {
-    const cleanupFunctions: (() => void)[] = []
-    
-    return {
-      addCleanup: (fn: () => void) => {
-        cleanupFunctions.push(fn)
-      },
-      cleanup: () => {
-        cleanupFunctions.forEach(fn => {
-          try {
-            fn()
-          } catch (error) {
-            console.error('Cleanup function failed:', error)
-          }
-        })
-        cleanupFunctions.length = 0
-      }
-    }
-  },
+  // Start periodic cleanup of rate limiting records
+  const interval = setInterval(cleanupRateLimit, 60 * 60 * 1000) // Every hour
   
-  // Debounce utility to prevent excessive function calls
-  debounce<T extends (...args: any[]) => any>(
-    func: T,
-    delay: number
-  ): (...args: Parameters<T>) => void {
-    let timeoutId: NodeJS.Timeout | undefined
-    
-    return (...args: Parameters<T>) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
-      
-      timeoutId = setTimeout(() => {
-        func(...args)
-        timeoutId = undefined
-      }, delay)
-    }
-  },
-  
-  // Throttle utility to limit function execution rate
-  throttle<T extends (...args: any[]) => any>(
-    func: T,
-    limit: number
-  ): (...args: Parameters<T>) => void {
-    let inThrottle = false
-    
-    return (...args: Parameters<T>) => {
-      if (!inThrottle) {
-        func(...args)
-        inThrottle = true
-        setTimeout(() => {
-          inThrottle = false
-        }, limit)
-      }
-    }
+  // Clean up on page unload
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+      clearInterval(interval)
+    })
   }
 }
 
-// Auto-initialize if in browser environment
-if (typeof window !== 'undefined') {
-  // Run initialization when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSecurityAndPerformance)
-  } else {
-    // DOM is already ready
-    initializeSecurityAndPerformance()
+// Simple utilities (only include what's actually used)
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: NodeJS.Timeout | undefined
+  
+  return (...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), delay)
   }
 }

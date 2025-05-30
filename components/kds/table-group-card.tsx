@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, memo, useMemo } from 'react'
+import { useState, memo, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { useTableGroupTiming, type TableGroup } from '@/hooks/use-table-grouped-orders'
+import { useAsyncAction, useAsyncSetAction } from '@/hooks/use-async-action'
 import type { KDSOrderRouting } from '@/lib/modassembly/supabase/database/kds'
 
 interface TableGroupCardProps {
@@ -51,20 +52,18 @@ const SeatOrder = memo(({
   orderIdx,
   showActions,
   onStartPrep,
-  onBumpOrder,
-  bumpingOrders,
-  startingOrders
+  bumpOrder,
+  startPrep
 }: {
   order: KDSOrderRouting
   orderIdx: number
   showActions: boolean
   onStartPrep?: (routingId: string) => Promise<void>
-  onBumpOrder: (routingId: string) => Promise<void>
-  bumpingOrders: Set<string>
-  startingOrders: Set<string>
+  bumpOrder: { execute: (id: string) => Promise<void>; isLoading: (id: string) => boolean }
+  startPrep: { execute: (id: string) => Promise<void>; isLoading: (id: string) => boolean }
 }) => {
-  const isBumping = bumpingOrders.has(order.id)
-  const isStarting = startingOrders.has(order.id)
+  const isBumping = bumpOrder.isLoading(order.id)
+  const isStarting = startPrep.isLoading(order.id)
   
   return (
     <div 
@@ -99,7 +98,7 @@ const SeatOrder = memo(({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onStartPrep(order.id)}
+                onClick={() => startPrep.execute(order.id)}
                 disabled={isStarting}
                 className="h-6 px-2 text-xs"
               >
@@ -112,7 +111,7 @@ const SeatOrder = memo(({
             )}
             <Button
               size="sm"
-              onClick={() => onBumpOrder(order.id)}
+              onClick={() => bumpOrder.execute(order.id)}
               disabled={isBumping}
               className="h-6 px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
             >
@@ -158,10 +157,24 @@ export const TableGroupCard = memo(function TableGroupCard({
   className
 }: TableGroupCardProps) {
   const [isExpanded, setIsExpanded] = useState(!isCompact)
-  const [bumpingTable, setBumpingTable] = useState(false)
-  const [bumpingOrders, setBumpingOrders] = useState<Set<string>>(new Set())
-  const [startingOrders, setStartingOrders] = useState<Set<string>>(new Set())
-  const [recallingOrders, setRecallingOrders] = useState(false)
+
+  // Async action hooks replace the bloated error handling patterns
+  const bumpTable = useAsyncAction(async () => {
+    const activeOrderIds = group.orders
+      .filter(o => !o.completed_at)
+      .map(o => o.id)
+    if (activeOrderIds.length > 0) {
+      await onBumpTable(group.tableId, activeOrderIds)
+    }
+  })
+
+  const bumpOrder = useAsyncSetAction(onBumpOrder)
+  const startPrep = useAsyncSetAction(onStartPrep)
+
+  const recallReady = useAsyncAction(async () => {
+    const readyOrders = group.orders.filter(o => o.completed_at)
+    await Promise.all(readyOrders.map(o => onRecallOrder(o.id)))
+  })
   
   const { colors } = useTableGroupTiming(group)
 
@@ -172,72 +185,6 @@ export const TableGroupCard = memo(function TableGroupCard({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }, [])
 
-  // Handle individual order bump with error handling
-  const handleBumpOrder = useCallback(async (routingId: string) => {
-    setBumpingOrders(prev => new Set(prev).add(routingId))
-    try {
-      await onBumpOrder(routingId)
-    } catch (error) {
-      console.error('Error bumping order:', error)
-      // TODO: Show toast notification
-    } finally {
-      setBumpingOrders(prev => {
-        const next = new Set(prev)
-        next.delete(routingId)
-        return next
-      })
-    }
-  }, [onBumpOrder])
-
-  // Handle order start with error handling
-  const handleStartPrep = useCallback(async (routingId: string) => {
-    setStartingOrders(prev => new Set(prev).add(routingId))
-    try {
-      await onStartPrep(routingId)
-    } catch (error) {
-      console.error('Error starting prep:', error)
-      // TODO: Show toast notification
-    } finally {
-      setStartingOrders(prev => {
-        const next = new Set(prev)
-        next.delete(routingId)
-        return next
-      })
-    }
-  }, [onStartPrep])
-
-  // Handle bump entire table
-  const handleBumpTable = useCallback(async () => {
-    setBumpingTable(true)
-    try {
-      const activeOrderIds = group.orders
-        .filter(o => !o.completed_at)
-        .map(o => o.id)
-      
-      if (activeOrderIds.length > 0) {
-        await onBumpTable(group.tableId, activeOrderIds)
-      }
-    } catch (error) {
-      console.error('Error bumping table:', error)
-      // TODO: Show toast notification
-    } finally {
-      setBumpingTable(false)
-    }
-  }, [group, onBumpTable])
-
-  // Handle recall all ready orders
-  const handleRecallReady = useCallback(async () => {
-    setRecallingOrders(true)
-    try {
-      const readyOrders = group.orders.filter(o => o.completed_at)
-      await Promise.all(readyOrders.map(o => onRecallOrder(o.id)))
-    } catch (error) {
-      console.error('Error recalling orders:', error)
-      // TODO: Show toast notification
-    } finally {
-      setRecallingOrders(false)
-    }
-  }, [group.orders, onRecallOrder])
 
   // Memoized calculations
   const { activeOrders, someOrdersReady, ordersBySeat } = useMemo(() => {
@@ -386,12 +333,12 @@ export const TableGroupCard = memo(function TableGroupCard({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleBumpTable()
+                  bumpTable.execute()
                 }}
-                disabled={bumpingTable}
+                disabled={bumpTable.loading}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                {bumpingTable ? (
+                {bumpTable.loading ? (
                   <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                 ) : (
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -452,9 +399,8 @@ export const TableGroupCard = memo(function TableGroupCard({
                         orderIdx={orderIdx}
                         showActions={showActions}
                         onStartPrep={onStartPrep}
-                        onBumpOrder={handleBumpOrder}
-                        bumpingOrders={bumpingOrders}
-                        startingOrders={startingOrders}
+                        bumpOrder={bumpOrder}
+                        startPrep={startPrep}
                       />
                     ))}
                   </div>
@@ -467,11 +413,11 @@ export const TableGroupCard = memo(function TableGroupCard({
               <div className="flex gap-2 pt-2 border-t flex-wrap">
                 {activeOrders.length > 0 && (
                   <Button
-                    onClick={handleBumpTable}
-                    disabled={bumpingTable}
+                    onClick={() => bumpTable.execute()}
+                    disabled={bumpTable.loading}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                   >
-                    {bumpingTable ? (
+                    {bumpTable.loading ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
                       <CheckCircle className="h-4 w-4 mr-1" />
@@ -483,10 +429,10 @@ export const TableGroupCard = memo(function TableGroupCard({
                 {someOrdersReady && (
                   <Button
                     variant="outline"
-                    onClick={handleRecallReady}
-                    disabled={recallingOrders}
+                    onClick={() => recallReady.execute()}
+                    disabled={recallReady.loading}
                   >
-                    {recallingOrders ? (
+                    {recallReady.loading ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
                       <RefreshCw className="h-4 w-4 mr-1" />

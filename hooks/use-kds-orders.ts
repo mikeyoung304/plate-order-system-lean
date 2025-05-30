@@ -25,7 +25,6 @@ interface UseKDSOrdersReturn {
   revertOptimisticUpdate: (routingId: string) => void
 }
 
-// Connection retry configuration
 const MAX_RETRY_ATTEMPTS = 5
 const INITIAL_RETRY_DELAY = 1000
 const MAX_RETRY_DELAY = 30000
@@ -50,7 +49,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isMountedRef = useRef(true)
 
-  // Initialize Supabase client
   useEffect(() => {
     const initSupabase = async () => {
       try {
@@ -69,7 +67,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     initSupabase()
   }, [])
 
-  // Fetch orders function with error handling
   const fetchOrders = useCallback(async () => {
     if (!supabaseRef.current || !isMountedRef.current) return
 
@@ -82,7 +79,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
       
       if (!isMountedRef.current) return
       
-      // Apply optimistic updates
       const updatedData = data.map(order => {
         const optimisticUpdate = optimisticUpdatesRef.current.get(order.id)
         return optimisticUpdate ? { ...order, ...optimisticUpdate } : order
@@ -90,7 +86,7 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
       
       setOrders(updatedData)
       setConnectionStatus('connected')
-      retryAttemptsRef.current = 0 // Reset retry counter on success
+      retryAttemptsRef.current = 0
     } catch (err) {
       console.error('Error fetching KDS orders:', err)
       
@@ -106,44 +102,34 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }
   }, [stationId])
 
-  // Optimistic update function
   const optimisticUpdate = useCallback((routingId: string, updates: Partial<KDSOrderRouting>) => {
-    // Validate routing ID
     if (!routingId || typeof routingId !== 'string') {
       console.error('Invalid routing ID for optimistic update')
       return
     }
     
-    // Store the optimistic update
     optimisticUpdatesRef.current.set(routingId, updates)
-    
-    // Apply immediately to UI
     setOrders(prev => prev.map(order => 
       order.id === routingId ? { ...order, ...updates } : order
     ))
   }, [])
 
-  // Revert optimistic update function
   const revertOptimisticUpdate = useCallback((routingId: string) => {
     optimisticUpdatesRef.current.delete(routingId)
-    // Refetch to get real data
     fetchOrders()
   }, [fetchOrders])
 
-  // Real-time subscription setup with retry logic
   const setupRealtimeSubscription = useCallback(async () => {
     if (!supabaseRef.current || !autoRefresh || !isMountedRef.current) return
 
     try {
       setConnectionStatus('reconnecting')
 
-      // Clean up existing subscription
       if (channelRef.current) {
         await supabaseRef.current.removeChannel(channelRef.current)
         channelRef.current = null
       }
 
-      // Create channel for real-time updates
       const channel = supabaseRef.current
         .channel(`kds-orders-updates-${stationId || 'all'}`)
         .on(
@@ -157,12 +143,9 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
           (payload: any) => {
             console.log('KDS order routing update:', payload)
             
-            // Clear optimistic update if it exists
             if (payload.new?.id) {
               optimisticUpdatesRef.current.delete(payload.new.id)
             }
-            
-            // Refetch orders to get updated data with joins
             if (isMountedRef.current) {
               fetchOrders()
             }
@@ -178,7 +161,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
           (payload: any) => {
             console.log('Order update:', payload)
             
-            // If order status changed, refetch
             if (payload.new?.status !== payload.old?.status && isMountedRef.current) {
               fetchOrders()
             }
@@ -209,7 +191,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }
   }, [stationId, autoRefresh, fetchOrders])
 
-  // Retry logic with exponential backoff
   const handleRetry = useCallback(() => {
     if (!isMountedRef.current) return
     
@@ -238,7 +219,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }, delay)
   }, [setupRealtimeSubscription])
 
-  // Set up real-time subscription
   useEffect(() => {
     setupRealtimeSubscription()
 
@@ -252,7 +232,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }
   }, [setupRealtimeSubscription])
 
-  // Auto-refresh fallback (in case real-time fails)
   useEffect(() => {
     if (!autoRefresh || connectionStatus === 'connected' || !isMountedRef.current) return
 
@@ -265,7 +244,7 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
         refreshTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) {
             fetchOrders()
-            startAutoRefresh() // Schedule next refresh
+            startAutoRefresh()
           }
         }, refreshInterval)
       }
@@ -280,12 +259,10 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }
   }, [autoRefresh, connectionStatus, refreshInterval, fetchOrders])
 
-  // Initial fetch
   useEffect(() => {
     fetchOrders()
   }, [fetchOrders])
 
-  // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true
     
@@ -315,7 +292,6 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
   }
 }
 
-// Hook for managing order timing calculations
 export function useOrderTiming(order: KDSOrderRouting) {
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [colorStatus, setColorStatus] = useState<'green' | 'yellow' | 'red'>('green')
@@ -331,20 +307,16 @@ export function useOrderTiming(order: KDSOrderRouting) {
       
       setTimeElapsed(elapsed)
       
-      // Determine color status based on elapsed time
-      if (elapsed <= 300) { // 0-5 minutes
+      if (elapsed <= 300) {
         setColorStatus('green')
-      } else if (elapsed <= 600) { // 5-10 minutes
+      } else if (elapsed <= 600) {
         setColorStatus('yellow')
-      } else { // 10+ minutes
+      } else {
         setColorStatus('red')
       }
     }
 
-    // Update immediately
     updateTiming()
-
-    // Update every second
     intervalRef.current = setInterval(updateTiming, 1000)
 
     return () => {
@@ -364,11 +336,10 @@ export function useOrderTiming(order: KDSOrderRouting) {
     timeElapsed,
     colorStatus,
     formattedTime: formatTime(timeElapsed),
-    isOverdue: timeElapsed > 600 // Over 10 minutes
+    isOverdue: timeElapsed > 600
   }), [timeElapsed, colorStatus, formatTime])
 }
 
-// Hook for KDS station configuration
 interface KDSStation {
   id: string
   name: string

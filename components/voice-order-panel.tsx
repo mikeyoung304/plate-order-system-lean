@@ -4,11 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Mic, Square, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { VoiceProcessingLoader } from "@/components/loading-states";
-import { Security } from "@/lib/security";
+import { sanitizeText } from "@/lib/utils/security";
 import { useVoiceRecordingState } from "@/lib/hooks/use-voice-recording-state";
-
-// Constants
-const AUDIO_VISUALIZER_BARS = 40;
 
 type VoiceOrderPanelProps = {
   tableId: string;
@@ -30,18 +27,16 @@ export function VoiceOrderPanel({
   testMode = false 
 }: VoiceOrderPanelProps) {
 
-  // Security: Validate and sanitize props on mount
   const sanitizedProps = useMemo(() => {
-    // Validate required props
     if (!tableId || !tableName || typeof seatNumber !== 'number') {
       console.error('VoiceOrderPanel: Invalid props provided');
       return null;
     }
 
     return {
-      tableId: Security.sanitize.sanitizeIdentifier(tableId),
-      tableName: Security.sanitize.sanitizeUserName(tableName),
-      seatNumber: Math.max(1, Math.min(20, Math.floor(seatNumber))), // Clamp to valid range
+      tableId: sanitizeText(tableId),
+      tableName: sanitizeText(tableName),
+      seatNumber: Math.max(1, Math.min(20, Math.floor(seatNumber))),
       orderType: ['food', 'drink'].includes(orderType) ? orderType : 'food'
     };
   }, [tableId, tableName, seatNumber, orderType]);
@@ -180,7 +175,7 @@ export function VoiceOrderPanel({
 
       {/* Audio Visualization & Recording Indicator */}
       <div className="w-full h-[60px] flex items-center justify-center space-x-1 overflow-hidden">
-        {voiceState.isRecording && Array.from({ length: AUDIO_VISUALIZER_BARS }).map((_, i) => (
+        {voiceState.isRecording && Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
             className="voice-audio-bar w-1 bg-primary rounded-full"
