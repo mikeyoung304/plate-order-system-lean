@@ -18,6 +18,8 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
+    "seed-demo": "tsx scripts/seed-demo-data.ts",
+    "setup-guest": "tsx scripts/setup-guest-account.ts",
     "supabase:migrate": "supabase db push",
     "prepare": "husky install"
   },

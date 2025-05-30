@@ -233,10 +233,11 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
       const floorPlanTables = await loadFloorPlanTables()
       
       const frontendTables: Table[] = floorPlanTables.map((table, index) => {
+        // AI: Use persisted positions if available, fallback to calculated positions
         const row = Math.floor(index / 3)
         const col = index % 3
-        const x = 100 + (col * 150)
-        const y = 100 + (row * 150)
+        const fallbackX = 100 + (col * 150)
+        const fallbackY = 100 + (row * 150)
         
         return {
           id: table.id,
@@ -244,12 +245,12 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
           type: table.type,
           seats: table.seats,
           status: table.status,
-          x: x,
-          y: y,
-          width: table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 120),
-          height: table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 80),
-          rotation: 0,
-          zIndex: 1,
+          x: (table as any).position_x ?? (table as any).x ?? fallbackX,
+          y: (table as any).position_y ?? (table as any).y ?? fallbackY,
+          width: (table as any).width ?? (table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 120)),
+          height: (table as any).height ?? (table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 80)),
+          rotation: (table as any).rotation ?? 0,
+          zIndex: (table as any).zIndex ?? 1,
           floor_plan_id: floorPlanId
         }
       })
@@ -284,7 +285,14 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
         label: table.label,
         type: table.type,
         seats: table.seats,
-        status: table.status || "available"
+        status: table.status || "available",
+        // AI: Include position and dimension data for persistence
+        position_x: table.x,
+        position_y: table.y,
+        width: table.width,
+        height: table.height,
+        rotation: table.rotation,
+        zIndex: table.zIndex
       }))
       
       await saveFloorPlanTables(floorPlanTables)

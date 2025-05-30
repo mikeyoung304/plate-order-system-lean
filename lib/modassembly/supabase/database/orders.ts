@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/modassembly/supabase/client';
+import { sanitizeOrderItem, sanitizeTranscript, validateTableId, validateSeatNumber } from '@/lib/utils/security';
 
 interface OrderRow {
   id: string;
@@ -63,12 +64,30 @@ export async function createOrder(orderData: {
   transcript: string;
   type: 'food' | 'drink';
 }): Promise<Order> {
+  // AI: Security validation and sanitization
+  if (!validateTableId(orderData.table_id)) {
+    throw new Error('Invalid table ID')
+  }
+  
+  const sanitizedItems = orderData.items
+    .map(item => sanitizeOrderItem(item))
+    .filter(item => item.length > 0) // Remove empty items
+    .slice(0, 20) // Limit to 20 items
+  
+  if (sanitizedItems.length === 0) {
+    throw new Error('Order must contain at least one valid item')
+  }
+  
+  const sanitizedTranscript = sanitizeTranscript(orderData.transcript)
+  
   const supabase = createClient();
   const { data, error } = await supabase
     .from('orders')
     .insert([
       {
         ...orderData,
+        items: sanitizedItems,
+        transcript: sanitizedTranscript,
         status: 'in_progress'
       }
     ])

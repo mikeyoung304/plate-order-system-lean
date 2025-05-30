@@ -11,6 +11,13 @@ interface SupabaseTable {
   label: number;
   type: string;
   status: string;
+  // AI: Added position fields for floor plan persistence
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  z_index?: number;
 }
 
 interface SupabaseSeat {
@@ -115,6 +122,13 @@ export async function createTable(tableData: {
   label: number;
   type: string;
   status?: string;
+  // AI: Added position fields for floor plan persistence
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  z_index?: number;
 }): Promise<SupabaseTable> {
   const supabase = createClient();
   
@@ -123,7 +137,14 @@ export async function createTable(tableData: {
     .insert([{
       label: tableData.label,
       type: tableData.type,
-      status: tableData.status || 'available'
+      status: tableData.status || 'available',
+      // AI: Include position data when creating tables
+      position_x: tableData.position_x,
+      position_y: tableData.position_y,
+      width: tableData.width,
+      height: tableData.height,
+      rotation: tableData.rotation,
+      z_index: tableData.z_index
     }])
     .select()
     .single();
@@ -146,6 +167,13 @@ export async function updateTable(tableId: string, updates: {
   label?: number;
   type?: string;
   status?: string;
+  // AI: Added position fields for floor plan persistence
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  z_index?: number;
 }): Promise<SupabaseTable> {
   const supabase = createClient();
   

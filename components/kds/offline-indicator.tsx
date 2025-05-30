@@ -16,18 +16,26 @@ export function OfflineIndicator({ onRetry, className }: OfflineIndicatorProps) 
   const [showReconnecting, setShowReconnecting] = useState(false)
 
   useEffect(() => {
+    let hideReconnectingTimeout: NodeJS.Timeout | null = null
+
     const handleOnline = () => {
       setIsOnline(true)
       setShowReconnecting(false)
+      // AI: Clear timeout when coming back online
+      if (hideReconnectingTimeout) {
+        clearTimeout(hideReconnectingTimeout)
+        hideReconnectingTimeout = null
+      }
     }
 
     const handleOffline = () => {
       setIsOnline(false)
       setShowReconnecting(true)
       
-      // Hide reconnecting message after 5 seconds
-      setTimeout(() => {
+      // AI: Store timeout reference for cleanup
+      hideReconnectingTimeout = setTimeout(() => {
         setShowReconnecting(false)
+        hideReconnectingTimeout = null
       }, 5000)
     }
 
@@ -41,6 +49,10 @@ export function OfflineIndicator({ onRetry, className }: OfflineIndicatorProps) 
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
+      // AI: Clear timeout on cleanup
+      if (hideReconnectingTimeout) {
+        clearTimeout(hideReconnectingTimeout)
+      }
     }
   }, [])
 

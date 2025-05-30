@@ -13,8 +13,13 @@ export interface FloorPlanTable {
   type: 'circle' | 'rectangle' | 'square';
   seats: number;
   status: 'available' | 'occupied' | 'reserved';
-  // Note: x, y, width, height, rotation will be handled in frontend only
-  // Database only stores core table data
+  // AI: Position and layout data now persisted in database
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  zIndex?: number;
 }
 
 /**
@@ -50,21 +55,33 @@ export async function saveFloorPlanTables(tables: FloorPlanTable[]): Promise<voi
       const labelNumber = parseInt(table.label.replace(/\D/g, ''), 10) || 1;
       
       if (currentTableIds.has(table.id)) {
-        // Update existing table
+        // Update existing table with position data
         await updateTable(table.id, {
           label: labelNumber,
           type: table.type,
-          status: table.status
+          status: table.status,
+          position_x: table.position_x,
+          position_y: table.position_y,
+          width: table.width,
+          height: table.height,
+          rotation: table.rotation,
+          z_index: table.zIndex
         });
         
         // Update seats count
         await updateSeatsForTable(table.id, table.seats);
       } else {
-        // Create new table
+        // Create new table with position data
         const newTable = await createTable({
           label: labelNumber,
           type: table.type,
-          status: table.status
+          status: table.status,
+          position_x: table.position_x,
+          position_y: table.position_y,
+          width: table.width,
+          height: table.height,
+          rotation: table.rotation,
+          z_index: table.zIndex
         });
         
         // Create seats for new table
@@ -84,11 +101,11 @@ export async function saveFloorPlanTables(tables: FloorPlanTable[]): Promise<voi
 export async function loadFloorPlanTables(): Promise<FloorPlanTable[]> {
   const supabase = createClient();
   
-  // Fetch tables and their seats
+  // Fetch tables and their seats with position data
   const [tablesResponse, seatsResponse] = await Promise.all([
     supabase
       .from('tables')
-      .select('*')
+      .select('id, label, type, status, position_x, position_y, width, height, rotation, z_index')
       .order('label'),
     supabase
       .from('seats')
@@ -112,12 +129,18 @@ export async function loadFloorPlanTables(): Promise<FloorPlanTable[]> {
     return acc;
   }, {} as Record<string, number>);
 
-  // Transform to FloorPlanTable format
+  // Transform to FloorPlanTable format with position data
   return tables.map(table => ({
     id: table.id,
     label: table.label.toString(),
     type: table.type as 'circle' | 'rectangle' | 'square',
     seats: seatCountMap[table.id] || 0,
-    status: table.status as 'available' | 'occupied' | 'reserved'
+    status: table.status as 'available' | 'occupied' | 'reserved',
+    position_x: table.position_x,
+    position_y: table.position_y,
+    width: table.width,
+    height: table.height,
+    rotation: table.rotation,
+    zIndex: table.z_index
   }));
 }

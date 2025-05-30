@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/modassembly/supabase/auth"
 import { createClient } from "@/lib/modassembly/supabase/server"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { WelcomeModal } from "@/components/welcome-modal"
+import { FooterAttribution } from "@/components/footer-attribution"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -42,7 +44,13 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ThemeProvider defaultTheme="dark">
           <AuthProvider>
-            {children}
+            <div className="min-h-screen flex flex-col">
+              <main className="flex-grow pb-10">
+                {children}
+              </main>
+              <FooterAttribution />
+            </div>
+            <WelcomeModal />
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

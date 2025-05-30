@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +35,8 @@ interface OrderCardProps {
   className?: string
 }
 
-export function OrderCard({
+// AI: Memoized for performance optimization in KDS lists
+export const OrderCard = memo(function OrderCard({
   order,
   onBump,
   onRecall,
@@ -402,4 +403,14 @@ export function OrderCard({
       </CardContent>
     </Card>
   )
-}
+}, (prevProps, nextProps) => {
+  // AI: Custom comparison for optimized re-rendering
+  return (
+    prevProps.order.id === nextProps.order.id &&
+    prevProps.order.started_at === nextProps.order.started_at &&
+    prevProps.order.completed_at === nextProps.order.completed_at &&
+    prevProps.order.priority === nextProps.order.priority &&
+    prevProps.isCompact === nextProps.isCompact &&
+    prevProps.showActions === nextProps.showActions
+  )
+})

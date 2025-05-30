@@ -9,6 +9,23 @@ type ActionResult = {
   success?: boolean;
 }
 
+async function cleanGuestData(userId: string) {
+  const supabase = await createClient()
+  
+  try {
+    // Clean orders older than 2 hours for guest account
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    
+    await supabase
+      .from('orders')
+      .delete()
+      .eq('server_id', userId)
+      .lt('created_at', twoHoursAgo)
+  } catch (error) {
+    console.log('Guest cleanup failed:', error)
+  }
+}
+
 export async function signIn(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
 
@@ -17,14 +34,19 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const { error, data: authData } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
     return { error: error.message }
   }
 
+  // Clean guest data if this is a guest login
+  if (data.email === 'guest@demo.plate' && authData.user) {
+    await cleanGuestData(authData.user.id)
+  }
+
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/server') // Redirect to server page for better demo experience
 }
 
 export async function signUp(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
