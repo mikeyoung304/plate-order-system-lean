@@ -2,6 +2,8 @@
 // Reason: Monitor and optimize everything for Google-scale performance
 // Impact: Zero performance issues, delightful user experience
 
+"use client"
+
 import { useEffect, useRef, useCallback } from 'react'
 
 /**

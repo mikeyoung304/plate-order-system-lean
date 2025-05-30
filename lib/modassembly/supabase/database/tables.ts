@@ -9,8 +9,8 @@
 
 import { createClient } from '@/lib/modassembly/supabase/client';
 import { Table } from '../../../floor-plan-utils';
-import { Security } from '../../security';
-import { measureApiCall } from '../../performance/monitoring';
+import { Security } from '@/lib/security';
+import { measureApiCall } from '@/lib/performance/monitoring';
 
 interface SupabaseTable {
   id: string;

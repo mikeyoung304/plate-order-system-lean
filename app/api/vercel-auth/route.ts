@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Rate Limiting (prevent abuse of debug endpoint)
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const isAllowed = Security.rateLimit.isAllowed(
       clientIP,
       'debug_auth',

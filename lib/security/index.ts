@@ -289,5 +289,4 @@ export const Security = {
   }
 }
 
-// Export individual components for direct use
-export { InputSanitizer, RateLimiter, RequestValidator, CSRFProtection, SecurityHeaders }
+// Individual components are already exported above

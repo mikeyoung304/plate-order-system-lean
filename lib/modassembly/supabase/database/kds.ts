@@ -3,8 +3,8 @@
 // Impact: Secure, fast, and reliable kitchen display system with comprehensive monitoring
 
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { Security } from '../security'
-import { measureApiCall } from '../performance/monitoring'
+import { Security } from '@/lib/security'
+import { measureApiCall } from '@/lib/performance/monitoring'
 
 // Types for KDS system
 export interface KDSStation {

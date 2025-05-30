@@ -11,7 +11,7 @@
 // Risk: Minimal - same loading animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
 import { optimizedVariants } from '@/lib/performance/motion-optimization'
-import { Loader2, Mic, Clock, Chef, Coffee, Users, CheckCircle, AlertCircle, Utensils } from 'lucide-react'
+import { Loader2, Mic, Clock, ChefHat, Coffee, Users, CheckCircle, AlertCircle, Utensils } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -219,7 +219,7 @@ export function KitchenProcessingLoader({
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           className="mx-auto w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center"
         >
-          <Chef className="h-8 w-8 text-orange-500" />
+          <ChefHat className="h-8 w-8 text-orange-500" />
         </motion.div>
         
         <div className="space-y-2">
