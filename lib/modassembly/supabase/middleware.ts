@@ -56,10 +56,24 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user && request.nextUrl.pathname !== '/') {
-        // no user, redirect to the root page which has the auth form
+    // Define protected routes
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/admin') ||
+                           request.nextUrl.pathname.startsWith('/server') ||
+                           request.nextUrl.pathname.startsWith('/kitchen') ||
+                           request.nextUrl.pathname.startsWith('/expo') ||
+                           request.nextUrl.pathname.startsWith('/dashboard')
+
+    // Redirect unauthenticated users trying to access protected routes
+    if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
+        return NextResponse.redirect(url)
+    }
+
+    // Redirect authenticated users from login page to server page
+    if (user && request.nextUrl.pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/server'
         return NextResponse.redirect(url)
     }
 
