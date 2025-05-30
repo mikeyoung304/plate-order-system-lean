@@ -13,8 +13,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - api/test-env (test endpoint)
-     * Feel free to modify this pattern to include more paths.
+     * - api/vercel-auth (debug endpoint)
+     * - api/auth-check (auth check endpoint)
+     * - public files with extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/test-env|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/test-env|api/vercel-auth|api/auth-check|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

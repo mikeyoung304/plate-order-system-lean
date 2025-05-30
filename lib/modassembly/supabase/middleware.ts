@@ -25,6 +25,23 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    // Vercel production fix - ensure cookies work
+    if (process.env.NODE_ENV === 'production') {
+        // Force cookie options for Vercel
+        const originalSetAll = supabaseResponse.cookies.set
+        supabaseResponse.cookies.set = function(name: string, value: string, options?: any) {
+            return originalSetAll.call(this, name, value, {
+                ...options,
+                sameSite: 'lax',
+                secure: true,
+                httpOnly: true,
+                path: '/',
+                // Critical: no domain for Vercel
+                domain: undefined
+            })
+        }
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

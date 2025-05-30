@@ -45,7 +45,18 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
     await cleanGuestData(authData.user.id)
   }
 
+  // Vercel production fix - ensure session is ready before redirect
+  if (process.env.NODE_ENV === 'production') {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    // Double-check session exists
+    const { data: { session: finalSession } } = await supabase.auth.getSession()
+    if (!finalSession) {
+      return { error: 'Session not ready. Please try again.' }
+    }
+  }
+  
   revalidatePath('/', 'layout')
+  revalidatePath('/server')
   redirect('/server') // Redirect to server page for better demo experience
 }
 
