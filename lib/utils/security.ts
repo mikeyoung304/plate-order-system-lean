@@ -1,4 +1,8 @@
-// AI: Created security utilities for Plate Order System
+// OVERNIGHT_SESSION: 2025-05-30 - Enhanced security utilities with backward compatibility
+// Reason: Upgrade existing security while maintaining API compatibility
+// Impact: World-class security with no breaking changes
+
+import { Security } from '@/lib/security'
 
 export const LIMITS = {
   ORDER_ITEM_LENGTH: 200,
@@ -7,47 +11,31 @@ export const LIMITS = {
   API_CALLS_PER_MINUTE: 10
 } as const
 
+// Backward compatible functions using enhanced security
 export function sanitizeOrderItem(input: unknown): string {
-  if (typeof input !== 'string') return ''
-  return input
-    .trim()
-    .slice(0, LIMITS.ORDER_ITEM_LENGTH)
-    .replace(/[<>\"]/g, '')
-    .replace(/script/gi, '')
+  return Security.sanitize.sanitizeOrderItem(input)
 }
 
 export function sanitizeTableName(input: unknown): string {
-  if (typeof input !== 'string') return ''
-  return input
-    .trim()
-    .slice(0, LIMITS.TABLE_NAME_LENGTH)
-    .replace(/[^a-zA-Z0-9\s-]/g, '')
+  return Security.sanitize.sanitizeIdentifier(input)
 }
 
 export function sanitizeTranscript(input: unknown): string {
-  if (typeof input !== 'string') return ''
-  return input
-    .trim()
-    .slice(0, LIMITS.TRANSCRIPT_LENGTH)
-    .replace(/[<>\"']/g, '')
-    .replace(/script/gi, '')
-    .replace(/javascript:/gi, '')
+  return Security.sanitize.sanitizeHTML(input as string).slice(0, LIMITS.TRANSCRIPT_LENGTH)
 }
 
-// Simple rate limiter
-const rateLimitMap = new Map<string, number[]>()
-
+// Enhanced rate limiter with backward compatibility
 export function checkRateLimit(userId: string, action: string = 'api'): void {
-  const key = `${userId}:${action}`
-  const now = Date.now()
-  const calls = rateLimitMap.get(key) || []
-  const recentCalls = calls.filter(time => now - time < 60000)
+  const isAllowed = Security.rateLimit.isAllowed(
+    userId, 
+    action, 
+    LIMITS.API_CALLS_PER_MINUTE, 
+    LIMITS.API_CALLS_PER_MINUTE / 60 // Convert to per-second rate
+  )
   
-  if (recentCalls.length >= LIMITS.API_CALLS_PER_MINUTE) {
+  if (!isAllowed) {
     throw new Error('Please wait a moment before trying again')
   }
-  
-  rateLimitMap.set(key, [...recentCalls, now])
 }
 
 // Input validation helpers

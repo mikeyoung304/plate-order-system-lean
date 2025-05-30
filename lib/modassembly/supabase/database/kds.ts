@@ -1,4 +1,10 @@
+// OVERNIGHT_SESSION: 2025-05-30 - Enhanced KDS backend with Fort Knox security and performance monitoring
+// Reason: KDS is mission-critical for kitchen operations, needs bulletproof reliability
+// Impact: Secure, fast, and reliable kitchen display system with comprehensive monitoring
+
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { Security } from '../security'
+import { measureApiCall } from '../performance/monitoring'
 
 // Types for KDS system
 export interface KDSStation {
@@ -83,53 +89,90 @@ export interface KDSConfiguration {
 }
 
 /**
- * Fetch all active KDS stations
+ * Fetch all active KDS stations (secure)
  */
 export async function fetchKDSStations(): Promise<KDSStation[]> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('kds_stations')
-    .select('*')
-    .eq('is_active', true)
-    .order('position', { ascending: true })
-  
-  if (error) {
-    console.error('Error fetching KDS stations:', error)
-    throw error
-  }
-  
-  return data || []
+  return measureApiCall('fetch_kds_stations', async () => {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('kds_stations')
+      .select('*')
+      .eq('is_active', true)
+      .order('position', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching KDS stations:', error)
+      throw error
+    }
+    
+    // Security: Sanitize station data
+    return (data || []).map(station => ({
+      ...station,
+      name: Security.sanitize.sanitizeUserName(station.name),
+      type: ['grill', 'fryer', 'salad', 'expo', 'bar', 'prep', 'dessert'].includes(station.type) 
+        ? station.type 
+        : 'prep',
+      position: Math.max(0, Math.min(100, station.position || 0)),
+      settings: typeof station.settings === 'object' ? station.settings : {}
+    }))
+  })
 }
 
 /**
- * Fetch orders for a specific station with real-time updates
+ * Fetch orders for a specific station with real-time updates (secure)
  */
 export async function fetchStationOrders(stationId: string): Promise<KDSOrderRouting[]> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('kds_order_routing')
-    .select(`
-      *,
-      order:orders!inner (
+  return measureApiCall('fetch_station_orders', async () => {
+    // Security: Validate station ID
+    const sanitizedStationId = Security.sanitize.sanitizeIdentifier(stationId)
+    if (!sanitizedStationId) {
+      throw new Error('Invalid station ID')
+    }
+    
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('kds_order_routing')
+      .select(`
         *,
-        resident:profiles!resident_id (name),
-        server:profiles!server_id (name),
-        table:tables!table_id (label)
-      ),
-      station:kds_stations!station_id (*)
-    `)
-    .eq('station_id', stationId)
-    .is('completed_at', null) // Only show uncompleted orders
-    .order('routed_at', { ascending: true })
-  
-  if (error) {
-    console.error('Error fetching station orders:', error)
-    throw error
-  }
-  
-  return data || []
+        order:orders!inner (
+          *,
+          resident:profiles!resident_id (name),
+          server:profiles!server_id (name),
+          table:tables!table_id (label)
+        ),
+        station:kds_stations!station_id (*)
+      `)
+      .eq('station_id', sanitizedStationId)
+      .is('completed_at', null) // Only show uncompleted orders
+      .order('routed_at', { ascending: true })
+      .limit(50) // Security: Limit results to prevent excessive data
+    
+    if (error) {
+      console.error('Error fetching station orders:', error)
+      throw error
+    }
+    
+    // Security: Sanitize order data
+    return (data || []).map(order => ({
+      ...order,
+      notes: order.notes ? Security.sanitize.sanitizeHTML(order.notes) : null,
+      priority: Math.max(0, Math.min(10, order.priority || 0)),
+      order: order.order ? {
+        ...order.order,
+        items: Array.isArray(order.order.items) 
+          ? order.order.items
+              .map(item => Security.sanitize.sanitizeOrderItem(item))
+              .filter(item => item.length > 0)
+              .slice(0, 20) // Limit items
+          : [],
+        transcript: order.order.transcript 
+          ? Security.sanitize.sanitizeHTML(order.order.transcript)
+          : null
+      } : null
+    }))
+  })
 }
 
 /**
@@ -162,24 +205,57 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
 }
 
 /**
- * Mark an order as ready/completed at a station (bump functionality)
+ * Mark an order as ready/completed at a station (bump functionality) - secure
  */
 export async function bumpOrder(routingId: string, userId: string): Promise<void> {
-  const supabase = await createClient()
-  
-  const { error } = await supabase
-    .from('kds_order_routing')
-    .update({
-      completed_at: new Date().toISOString(),
-      bumped_by: userId,
-      bumped_at: new Date().toISOString()
-    })
-    .eq('id', routingId)
-  
-  if (error) {
-    console.error('Error bumping order:', error)
-    throw error
-  }
+  return measureApiCall('bump_order', async () => {
+    // Security: Validate IDs
+    const sanitizedRoutingId = Security.sanitize.sanitizeIdentifier(routingId)
+    const sanitizedUserId = Security.sanitize.sanitizeIdentifier(userId)
+    
+    if (!sanitizedRoutingId || !sanitizedUserId) {
+      throw new Error('Invalid routing ID or user ID')
+    }
+    
+    // UUID validation for extra security
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(sanitizedRoutingId) || !uuidRegex.test(sanitizedUserId)) {
+      throw new Error('Invalid ID format')
+    }
+
+    const supabase = await createClient()
+    
+    const { error } = await supabase
+      .from('kds_order_routing')
+      .update({
+        completed_at: new Date().toISOString(),
+        bumped_by: sanitizedUserId,
+        bumped_at: new Date().toISOString()
+      })
+      .eq('id', sanitizedRoutingId)
+    
+    if (error) {
+      console.error('Error bumping order:', error)
+      throw error
+    }
+    
+    // OVERNIGHT_SESSION: Auto-check if order is fully complete after bump
+    try {
+      // Get the order ID from this routing entry
+      const { data: routingData, error: routingError } = await supabase
+        .from('kds_order_routing')
+        .select('order_id')
+        .eq('id', sanitizedRoutingId)
+        .single()
+      
+      if (!routingError && routingData) {
+        await checkAndCompleteOrder(routingData.order_id)
+      }
+    } catch (completionError) {
+      console.error('Error checking order completion after bump:', completionError)
+      // Don't fail the bump if completion check fails
+    }
+  })
 }
 
 /**
@@ -254,20 +330,42 @@ export async function updateOrderPriority(routingId: string, priority: number): 
 }
 
 /**
- * Add notes to an order at a station
+ * Add notes to an order at a station (secure)
  */
 export async function addOrderNotes(routingId: string, notes: string): Promise<void> {
-  const supabase = await createClient()
-  
-  const { error } = await supabase
-    .from('kds_order_routing')
-    .update({ notes })
-    .eq('id', routingId)
-  
-  if (error) {
-    console.error('Error adding order notes:', error)
-    throw error
-  }
+  return measureApiCall('add_order_notes', async () => {
+    // Security: Validate routing ID
+    const sanitizedRoutingId = Security.sanitize.sanitizeIdentifier(routingId)
+    if (!sanitizedRoutingId) {
+      throw new Error('Invalid routing ID')
+    }
+    
+    // UUID validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(sanitizedRoutingId)) {
+      throw new Error('Invalid routing ID format')
+    }
+    
+    // Security: Sanitize notes content thoroughly
+    const sanitizedNotes = Security.sanitize.sanitizeHTML(notes || '')
+      .slice(0, 500) // Limit note length for security
+    
+    if (!sanitizedNotes || sanitizedNotes.trim().length === 0) {
+      throw new Error('Notes cannot be empty')
+    }
+
+    const supabase = await createClient()
+    
+    const { error } = await supabase
+      .from('kds_order_routing')
+      .update({ notes: sanitizedNotes })
+      .eq('id', sanitizedRoutingId)
+    
+    if (error) {
+      console.error('Error adding order notes:', error)
+      throw error
+    }
+  })
 }
 
 /**
@@ -381,7 +479,7 @@ export async function updateKDSStation(stationId: string, updates: Partial<KDSSt
 }
 
 /**
- * Route an order to a specific station manually
+ * Route an order to a specific station manually (secure)
  */
 export async function routeOrderToStation(
   orderId: string, 
@@ -389,21 +487,43 @@ export async function routeOrderToStation(
   sequence: number = 1,
   priority: number = 0
 ): Promise<void> {
-  const supabase = await createClient()
-  
-  const { error } = await supabase
-    .from('kds_order_routing')
-    .insert({
-      order_id: orderId,
-      station_id: stationId,
-      sequence,
-      priority
-    })
-  
-  if (error) {
-    console.error('Error routing order to station:', error)
-    throw error
-  }
+  return measureApiCall('route_order_to_station', async () => {
+    // Security: Validate all IDs
+    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
+    const sanitizedStationId = Security.sanitize.sanitizeIdentifier(stationId)
+    
+    if (!sanitizedOrderId || !sanitizedStationId) {
+      throw new Error('Invalid order ID or station ID')
+    }
+    
+    // UUID validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(sanitizedOrderId) || !uuidRegex.test(sanitizedStationId)) {
+      throw new Error('Invalid ID format')
+    }
+    
+    // Security: Validate and clamp numerical values
+    const sanitizedSequence = Math.max(1, Math.min(10, Math.floor(sequence)))
+    const sanitizedPriority = Math.max(0, Math.min(10, Math.floor(priority)))
+
+    const supabase = await createClient()
+    
+    const { error } = await supabase
+      .from('kds_order_routing')
+      .insert({
+        order_id: sanitizedOrderId,
+        station_id: sanitizedStationId,
+        sequence: sanitizedSequence,
+        priority: sanitizedPriority,
+        routed_at: new Date().toISOString(),
+        recall_count: 0
+      })
+    
+    if (error) {
+      console.error('Error routing order to station:', error)
+      throw error
+    }
+  })
 }
 
 /**
@@ -455,19 +575,170 @@ export async function bulkBumpTableOrders(tableId: string, userId: string): Prom
 }
 
 /**
- * Fetch table summary for KDS display
+ * Fetch table summary for KDS display (secure)
  */
 export async function fetchKDSTableSummary(): Promise<any[]> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('kds_table_summary')
-    .select('*')
-  
-  if (error) {
-    console.error('Error fetching KDS table summary:', error)
-    throw error
-  }
-  
-  return data || []
+  return measureApiCall('fetch_kds_table_summary', async () => {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('kds_table_summary')
+      .select('*')
+      .limit(100) // Security: Limit results
+    
+    if (error) {
+      console.error('Error fetching KDS table summary:', error)
+      throw error
+    }
+    
+    return data || []
+  })
+}
+
+/**
+ * OVERNIGHT_SESSION: 2025-05-30 - Intelligent order routing algorithm
+ * Automatically routes orders to appropriate stations based on order type and items
+ */
+export async function intelligentOrderRouting(orderId: string): Promise<void> {
+  return measureApiCall('intelligent_order_routing', async () => {
+    // Security: Validate order ID
+    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
+    if (!sanitizedOrderId) {
+      throw new Error('Invalid order ID')
+    }
+    
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(sanitizedOrderId)) {
+      throw new Error('Invalid order ID format')
+    }
+
+    const supabase = await createClient()
+    
+    // Fetch the order details
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, type, items')
+      .eq('id', sanitizedOrderId)
+      .single()
+    
+    if (orderError) {
+      console.error('Error fetching order for routing:', orderError)
+      throw orderError
+    }
+    
+    if (!order) {
+      throw new Error('Order not found')
+    }
+    
+    // Fetch active stations
+    const stations = await fetchKDSStations()
+    
+    if (stations.length === 0) {
+      throw new Error('No active stations available for routing')
+    }
+    
+    // Intelligent routing logic
+    let targetStations: { station: KDSStation; priority: number; sequence: number }[] = []
+    
+    if (order.type === 'beverage' || order.type === 'drink') {
+      // Route beverages to bar station
+      const barStation = stations.find(s => s.type === 'bar')
+      if (barStation) {
+        targetStations.push({ station: barStation, priority: 1, sequence: 1 })
+      }
+    } else {
+      // Analyze food items to determine routing
+      const items = Array.isArray(order.items) ? order.items : []
+      
+      // Keywords for different stations
+      const routingRules = {
+        grill: ['steak', 'burger', 'chicken', 'beef', 'pork', 'grilled', 'barbecue', 'bbq'],
+        fryer: ['fries', 'fried', 'tempura', 'wings', 'nuggets', 'crispy'],
+        salad: ['salad', 'greens', 'vegetables', 'fresh', 'raw', 'lettuce'],
+        prep: ['soup', 'sauce', 'dressing', 'marinade', 'prep'],
+        dessert: ['dessert', 'cake', 'ice cream', 'sweet', 'chocolate', 'fruit']
+      }
+      
+      // Analyze items and route to appropriate stations
+      const itemText = items.join(' ').toLowerCase()
+      let sequence = 1
+      
+      for (const [stationType, keywords] of Object.entries(routingRules)) {
+        if (keywords.some(keyword => itemText.includes(keyword))) {
+          const station = stations.find(s => s.type === stationType)
+          if (station) {
+            const priority = stationType === 'grill' ? 2 : 1 // Grill gets higher priority
+            targetStations.push({ station, priority, sequence: sequence++ })
+          }
+        }
+      }
+      
+      // If no specific routing, route to expo station or first available station
+      if (targetStations.length === 0) {
+        const expoStation = stations.find(s => s.type === 'expo') || stations[0]
+        if (expoStation) {
+          targetStations.push({ station: expoStation, priority: 1, sequence: 1 })
+        }
+      }
+    }
+    
+    // Route to all determined stations
+    for (const { station, priority, sequence } of targetStations) {
+      await routeOrderToStation(sanitizedOrderId, station.id, sequence, priority)
+    }
+    
+    console.log(`Intelligently routed order ${sanitizedOrderId} to ${targetStations.length} stations`)
+  })
+}
+
+/**
+ * OVERNIGHT_SESSION: 2025-05-30 - Auto-complete order when all stations are done
+ * Updates main order status when all KDS stations have completed their part
+ */
+export async function checkAndCompleteOrder(orderId: string): Promise<boolean> {
+  return measureApiCall('check_and_complete_order', async () => {
+    // Security: Validate order ID
+    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
+    if (!sanitizedOrderId) {
+      throw new Error('Invalid order ID')
+    }
+
+    const supabase = await createClient()
+    
+    // Check if all routing entries for this order are completed
+    const { data: routings, error } = await supabase
+      .from('kds_order_routing')
+      .select('id, completed_at')
+      .eq('order_id', sanitizedOrderId)
+    
+    if (error) {
+      console.error('Error checking order completion:', error)
+      throw error
+    }
+    
+    if (!routings || routings.length === 0) {
+      return false // No routing entries, nothing to complete
+    }
+    
+    // Check if all routings are completed
+    const allCompleted = routings.every(routing => routing.completed_at !== null)
+    
+    if (allCompleted) {
+      // Update main order status to ready
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'ready' })
+        .eq('id', sanitizedOrderId)
+      
+      if (updateError) {
+        console.error('Error updating order to ready:', updateError)
+        throw updateError
+      }
+      
+      console.log(`Order ${sanitizedOrderId} marked as ready - all stations completed`)
+      return true
+    }
+    
+    return false
+  })
 }

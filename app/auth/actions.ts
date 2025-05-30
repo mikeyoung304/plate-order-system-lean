@@ -57,7 +57,7 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
   
   revalidatePath('/', 'layout')
   revalidatePath('/server')
-  redirect('/debug-redirect') // Debug: see what's happening
+  redirect('/server') // OVERNIGHT_SESSION: Fixed to use enhanced ProtectedRoute
 }
 
 export async function signUp(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {

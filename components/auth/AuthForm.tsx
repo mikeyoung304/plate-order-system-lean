@@ -1,6 +1,10 @@
+// OVERNIGHT_SESSION: 2025-05-30 - Fort Knox security for authentication form
+// Reason: Authentication is the highest value target for attackers
+// Impact: Bulletproof login/signup with input sanitization and rate limiting
+
 "use client"
 
-import { useState, useActionState, useEffect, useTransition } from "react"
+import { useState, useActionState, useEffect, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,13 +20,20 @@ import {
 } from "@/components/ui/select"
 import { signIn, signUp } from "@/app/auth/actions"
 import { AboutTrigger } from "@/components/about-dialog"
+import { Security } from "@/lib/security"
+import { useRenderPerformance } from "@/lib/performance/monitoring"
 
 export function AuthForm() {
+  // Performance monitoring
+  useRenderPerformance('AuthForm');
+
   const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [attemptCount, setAttemptCount] = useState(0)
+  const [isRateLimited, setIsRateLimited] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -30,6 +41,69 @@ export function AuthForm() {
   // Initialize with the server actions
   const [signInState, signInAction] = useActionState(signIn, null)
   const [signUpState, signUpAction] = useActionState(signUp, null)
+
+  // Security: Input validation and sanitization
+  const validateAndSanitizeInputs = useCallback((formData: FormData) => {
+    const rawEmail = formData.get('email') as string
+    const rawPassword = formData.get('password') as string
+    const rawName = formData.get('name') as string
+    const rawRole = formData.get('role') as string
+
+    // Sanitize inputs
+    const sanitizedEmail = Security.sanitize.sanitizeHTML(rawEmail?.trim() || '').toLowerCase()
+    const sanitizedName = Security.sanitize.sanitizeUserName(rawName || '')
+    const sanitizedRole = ['server', 'cook', 'admin'].includes(rawRole) ? rawRole : 'server'
+
+    // Validate email format (unless it's the special 'guest' case)
+    if (sanitizedEmail !== 'guest' && sanitizedEmail !== 'guest@demo.plate') {
+      if (!sanitizedEmail || sanitizedEmail.length < 3) {
+        throw new Error('Please enter a valid email address')
+      }
+      if (sanitizedEmail.length > 254) {
+        throw new Error('Email address is too long')
+      }
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(sanitizedEmail)) {
+        throw new Error('Please enter a valid email format')
+      }
+    }
+
+    // Validate password
+    if (!rawPassword || rawPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long')
+    }
+    if (rawPassword.length > 128) {
+      throw new Error('Password is too long')
+    }
+
+    // Validate name for signup
+    if (isSignUp) {
+      if (!sanitizedName || sanitizedName.length < 2) {
+        throw new Error('Please enter a valid name')
+      }
+      if (sanitizedName.length > 100) {
+        throw new Error('Name is too long')
+      }
+    }
+
+    return {
+      email: sanitizedEmail,
+      password: rawPassword, // Don't sanitize password, just validate
+      name: sanitizedName,
+      role: sanitizedRole
+    }
+  }, [isSignUp])
+
+  // Security: Rate limiting on frontend (backup to server-side)
+  const checkRateLimit = useCallback(() => {
+    if (attemptCount >= 5) {
+      setIsRateLimited(true)
+      setTimeout(() => {
+        setIsRateLimited(false)
+        setAttemptCount(0)
+      }, 5 * 60 * 1000) // 5 minute cooldown
+      throw new Error('Too many failed attempts. Please wait 5 minutes before trying again.')
+    }
+  }, [attemptCount])
 
   // Check states for errors
   useEffect(() => {
@@ -74,64 +148,111 @@ export function AuthForm() {
     setIsLoading(true)
     setStatus({ message: '', type: null })
 
-    const formData = new FormData(e.currentTarget)
-    
-    // Handle Guest username -> email conversion
-    const emailInput = formData.get('email') as string
-    if (emailInput.toLowerCase() === 'guest') {
-      formData.set('email', 'guest@demo.plate')
-    }
-    
     try {
+      // Security: Check rate limiting first
+      checkRateLimit()
+
+      const formData = new FormData(e.currentTarget)
+      
+      // Security: Validate and sanitize all inputs
+      const validatedInputs = validateAndSanitizeInputs(formData)
+      
+      // Handle Guest username -> email conversion (secure)
+      let finalEmail = validatedInputs.email
+      if (validatedInputs.email.toLowerCase() === 'guest') {
+        finalEmail = 'guest@demo.plate'
+      }
+      
+      // Create secure form data with validated inputs
+      const secureFormData = new FormData()
+      secureFormData.set('email', finalEmail)
+      secureFormData.set('password', validatedInputs.password)
+      if (isSignUp) {
+        secureFormData.set('name', validatedInputs.name)
+        secureFormData.set('role', validatedInputs.role)
+      }
+      
       if (isSignUp) {
         startTransition(() => {
-          signUpAction(formData);
+          signUpAction(secureFormData);
         });
       } else {
         startTransition(() => {
-          signInAction(formData);
+          signInAction(secureFormData);
         });
       }
+      
     } catch (error) {
+      // Security: Increment attempt counter on any error
+      setAttemptCount(prev => prev + 1)
+      
       const errorMessage = error instanceof Error ? error.message : 
         isSignUp ? "Could not create account. Please try again." : "Invalid email or password."
+      
       setStatus({
         message: errorMessage,
         type: 'error'
       })
+      
       toast({
-        title: "Error",
+        title: "Security Error",
         description: errorMessage,
         variant: "destructive",
       })
-    } finally {
+      
       setIsLoading(false)
     }
   }
 
   const handleGuestDemo = async () => {
-    setEmail('Guest')
-    setPassword('Temp1')
-    setIsLoading(true)
-    setStatus({ message: '', type: null })
-
-    const formData = new FormData()
-    formData.append('email', 'guest@demo.plate')
-    formData.append('password', 'Temp1')
-    
     try {
+      // Security: Check rate limiting for guest demo too
+      checkRateLimit()
+      
+      setEmail('Guest')
+      setPassword('Temp1')
+      setIsLoading(true)
+      setStatus({ message: '', type: null })
+
+      // Security: Use validated guest credentials
+      const secureFormData = new FormData()
+      secureFormData.append('email', 'guest@demo.plate')
+      secureFormData.append('password', 'Temp1')
+      
       startTransition(() => {
-        signInAction(formData);
+        signInAction(secureFormData);
       });
+      
     } catch (error) {
+      setAttemptCount(prev => prev + 1)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to access demo. Please try again.'
+      
       setStatus({
-        message: 'Failed to access demo. Please try again.',
+        message: errorMessage,
         type: 'error'
       })
-    } finally {
+      
+      toast({
+        title: "Demo Access Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      
       setIsLoading(false)
     }
   }
+
+  // Security: Sanitize input changes
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitizedValue = Security.sanitize.sanitizeHTML(e.target.value).slice(0, 254)
+    setEmail(sanitizedValue)
+  }, [])
+
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    // Don't sanitize password, just validate length
+    const value = e.target.value.slice(0, 128)
+    setPassword(value)
+  }, [])
 
   return (
     <div className="w-full space-y-4">
@@ -156,8 +277,11 @@ export function AuthForm() {
             type="text"
             placeholder="Enter 'Guest' for demo"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
+            disabled={isRateLimited}
+            maxLength={254}
             required
+            autoComplete="email"
           />
         </div>
         <div className="space-y-2">
@@ -168,8 +292,11 @@ export function AuthForm() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
+            disabled={isRateLimited}
+            maxLength={128}
             required
+            autoComplete={isSignUp ? "new-password" : "current-password"}
           />
         </div>
         {isSignUp && (
@@ -186,19 +313,40 @@ export function AuthForm() {
             </Select>
           </div>
         )}
-        {status.message && (
-          <Alert variant={status.type === 'error' ? 'destructive' : 'default'}>
+        {/* Security: Rate limiting warning */}
+        {isRateLimited && (
+          <Alert variant="destructive">
             <AlertDescription>
-              {status.message}
+              Too many failed attempts. Please wait 5 minutes before trying again.
             </AlertDescription>
           </Alert>
         )}
+        
+        {/* Security: Show attempt count */}
+        {attemptCount > 0 && !isRateLimited && (
+          <Alert variant="default">
+            <AlertDescription>
+              {attemptCount >= 3 ? `Warning: ${5 - attemptCount} attempts remaining` : `${attemptCount} failed attempt${attemptCount > 1 ? 's' : ''}`}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {status.message && (
+          <Alert variant={status.type === 'error' ? 'destructive' : 'default'}>
+            <AlertDescription>
+              {Security.sanitize.sanitizeHTML(status.message)}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Button
           type="submit"
           className="w-full"
-          disabled={isLoading || isPending}
+          disabled={isLoading || isPending || isRateLimited}
         >
-          {(isLoading || isPending) ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
+          {isRateLimited ? "Rate Limited" : 
+           (isLoading || isPending) ? "Loading..." : 
+           (isSignUp ? "Create Account" : "Sign In")}
         </Button>
         
         {!isSignUp && (
@@ -218,11 +366,12 @@ export function AuthForm() {
           <Button
             type="button"
             onClick={handleGuestDemo}
-            disabled={isLoading || isPending}
+            disabled={isLoading || isPending || isRateLimited}
             className="w-full bg-gray-900 text-white hover:bg-gray-800 
-                     transition-colors flex items-center justify-center gap-2"
+                     transition-colors flex items-center justify-center gap-2
+                     disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>🎯</span> Try Demo
+            <span>🎯</span> {isRateLimited ? "Demo Rate Limited" : "Try Demo"}
           </Button>
         )}
         

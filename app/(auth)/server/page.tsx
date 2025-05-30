@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Shell } from "@/components/shell"
-import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
+import { EnhancedProtectedRoute as ProtectedRoute } from "@/lib/modassembly/supabase/auth/enhanced-protected-route"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,8 @@ import { FloorPlanView } from "@/components/floor-plan-view"
 import { VoiceOrderPanel } from "@/components/voice-order-panel"
 import { SeatPickerOverlay } from "@/components/seat-picker-overlay"
 import { useToast } from "@/hooks/use-toast"
+import { VoiceErrorBoundary, FloorPlanErrorBoundary } from "@/components/error-boundaries"
+import { PageLoadingState } from "@/components/loading-states"
 import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User, Edit3, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
@@ -427,15 +429,18 @@ export default function ServerPage() {
                       </div>
                       <div className="p-6">
                         {loading ? (
-                          <div className="flex items-center justify-center h-96">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
-                          </div>
-                        ) : (
-                          <FloorPlanView 
-                            floorPlanId={floorPlanId} 
-                            onSelectTable={handleSelectTable}
-                            tables={tables} // Pass the fetched tables
+                          <PageLoadingState 
+                            message="Loading floor plan..."
+                            showProgress={false}
                           />
+                        ) : (
+                          <FloorPlanErrorBoundary>
+                            <FloorPlanView 
+                              floorPlanId={floorPlanId} 
+                              onSelectTable={handleSelectTable}
+                              tables={tables} // Pass the fetched tables
+                            />
+                          </FloorPlanErrorBoundary>
                         )}
                       </div>
                     </CardContent>
@@ -670,14 +675,16 @@ export default function ServerPage() {
                         </Button>
                       </div>
                       <div className="p-6">
-                        <VoiceOrderPanel
-                          tableId={selectedTable.id}
-                          tableName={selectedTable.label}
-                          seatNumber={selectedSeat}
-                          orderType={orderType}
-                          onOrderSubmitted={handleOrderSubmitted}
-                          onCancel={handleBackFromVoiceOrder}
-                        />
+                        <VoiceErrorBoundary>
+                          <VoiceOrderPanel
+                            tableId={selectedTable.id}
+                            tableName={selectedTable.label}
+                            seatNumber={selectedSeat}
+                            orderType={orderType}
+                            onOrderSubmitted={handleOrderSubmitted}
+                            onCancel={handleBackFromVoiceOrder}
+                          />
+                        </VoiceErrorBoundary>
                       </div>
                     </CardContent>
                   </Card>

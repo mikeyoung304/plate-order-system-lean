@@ -1,9 +1,16 @@
+// OVERNIGHT_SESSION: 2025-05-30 - Fort Knox security for voice order processing
+// Reason: Voice input is high-risk attack vector requiring sanitization
+// Impact: Secure voice ordering with XSS prevention and input validation
+
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Mic, Square, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { VoiceProcessingLoader } from "@/components/loading-states";
 import { AudioRecorder } from "@/lib/modassembly/audio-recording/record";
+import { Security } from "@/lib/security";
+import { useRenderPerformance } from "@/lib/performance/monitoring";
 
 // Constants
 const AUDIO_VISUALIZER_BARS = 40;
@@ -27,6 +34,25 @@ export function VoiceOrderPanel({
   onCancel,
   testMode = false 
 }: VoiceOrderPanelProps) {
+  // Performance monitoring
+  useRenderPerformance('VoiceOrderPanel');
+
+  // Security: Validate and sanitize props on mount
+  const sanitizedProps = useMemo(() => {
+    // Validate required props
+    if (!tableId || !tableName || typeof seatNumber !== 'number') {
+      console.error('VoiceOrderPanel: Invalid props provided');
+      return null;
+    }
+
+    return {
+      tableId: Security.sanitize.sanitizeIdentifier(tableId),
+      tableName: Security.sanitize.sanitizeUserName(tableName),
+      seatNumber: Math.max(1, Math.min(20, Math.floor(seatNumber))), // Clamp to valid range
+      orderType: ['food', 'drink'].includes(orderType) ? orderType : 'food'
+    };
+  }, [tableId, tableName, seatNumber, orderType]);
+
   // --- State Variables ---
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,6 +67,16 @@ export function VoiceOrderPanel({
 
   // --- Hooks ---
   const { toast } = useToast();
+
+  // Early return if props are invalid
+  if (!sanitizedProps) {
+    return (
+      <div className="voice-order-panel p-4 border rounded-lg shadow-md bg-destructive/10 text-destructive flex items-center justify-center">
+        <AlertCircle className="mr-2 h-5 w-5" />
+        Invalid configuration. Please check table and seat information.
+      </div>
+    );
+  }
 
   // --- Helper Functions ---
   const showInternalToast = useCallback((message: string, type = 'default', duration = 3000) => {
@@ -79,9 +115,14 @@ export function VoiceOrderPanel({
     }
   }, [retryCount, showInternalToast]);
 
-  // Keep dietary alerts logic
+  // Security: Secure dietary alerts logic with sanitization
   const checkDietaryAlerts = useCallback((text: string) => {
     if (!text) return;
+    
+    // Sanitize input text first
+    const sanitizedText = Security.sanitize.sanitizeHTML(text);
+    if (!sanitizedText) return;
+    
     const alertKeywords = {
         'nut allergy': ['nut', 'peanut', 'almond', 'walnut', 'cashew', 'pistachio', 'pecan'],
         'gluten-free': ['gluten', 'gluten-free', 'wheat'],
@@ -91,12 +132,19 @@ export function VoiceOrderPanel({
         'shellfish allergy': ['shellfish', 'shrimp', 'crab', 'lobster', 'clam', 'mussel', 'scallop'],
         'spicy': ['not spicy', 'mild', 'no spice']
     };
+    
     setDietaryAlerts([]);
-    const lowerText = text.toLowerCase();
+    const lowerText = sanitizedText.toLowerCase();
     const foundAlerts = Object.entries(alertKeywords)
-        .filter(([, keywords]: [string, string[]]) => keywords.some((keyword: string) => lowerText.includes(keyword.toLowerCase())))
-        .map(([alert]) => alert);
-    if (foundAlerts.length > 0) setDietaryAlerts(foundAlerts);
+        .filter(([, keywords]: [string, string[]]) => 
+          keywords.some((keyword: string) => lowerText.includes(keyword.toLowerCase()))
+        )
+        .map(([alert]) => alert)
+        .slice(0, 5); // Limit to 5 alerts max for security
+    
+    if (foundAlerts.length > 0) {
+      setDietaryAlerts(foundAlerts);
+    }
   }, []);
 
   const resetUI = useCallback(() => {
@@ -163,22 +211,42 @@ export function VoiceOrderPanel({
           }
           
           const data = await response.json();
-          const items = data.items; // Array of items
-          const transcriptionText = data.transcription; // Full transcription text
           
-          // Print transcription data to console
-          console.log("Transcription result (items):", items);
-          console.log("Transcription result (text):", transcriptionText);
-          console.log("Individual items:");
-          items.forEach((item: string, index: number) => {
-            console.log(`  ${index + 1}. ${item}`);
+          // Security: Validate and sanitize API response
+          if (!data || typeof data !== 'object') {
+            throw new Error('Invalid response format from transcription service');
+          }
+          
+          // Sanitize transcription data (the API already sanitizes but defense in depth)
+          const rawItems = Array.isArray(data.items) ? data.items : [];
+          const rawTranscription = typeof data.transcription === 'string' ? data.transcription : '';
+          
+          // Additional client-side sanitization for defense in depth
+          const sanitizedItems = rawItems
+            .map(item => Security.sanitize.sanitizeOrderItem(item))
+            .filter(item => item.length > 0)
+            .slice(0, 20); // Limit to 20 items for security
+            
+          const sanitizedTranscription = Security.sanitize.sanitizeHTML(rawTranscription)
+            .slice(0, 1000); // Limit length for security
+          
+          // Validate we have actual content
+          if (sanitizedItems.length === 0 && !sanitizedTranscription) {
+            throw new Error('No valid content detected in transcription');
+          }
+          
+          // Debug logging (no sensitive data)
+          console.log("Secure transcription result:", {
+            itemCount: sanitizedItems.length,
+            transcriptionLength: sanitizedTranscription.length,
+            hasContent: sanitizedItems.length > 0
           });
           
-          // Set transcription data and show confirmation
-          setTranscriptionItems(items);
-          setTranscription(transcriptionText);
+          // Set sanitized transcription data and show confirmation
+          setTranscriptionItems(sanitizedItems);
+          setTranscription(sanitizedTranscription);
           setShowConfirmation(true);
-          checkDietaryAlerts(transcriptionText);
+          checkDietaryAlerts(sanitizedTranscription);
           
           showInternalToast("Transcription complete", "default", 2000);
           
@@ -284,8 +352,8 @@ export function VoiceOrderPanel({
     if (lastError && retryCount > 0) {
       return `${lastError} ${retryCount < 3 ? `(Retry ${retryCount}/3)` : ''}`;
     }
-    return `Tap microphone to start recording your ${orderType} order`;
-  }, [isRecording, isProcessing, isSubmitting, showConfirmation, transcriptionItems, orderType, lastError, retryCount]);
+    return `Tap microphone to start recording your ${sanitizedProps.orderType} order`;
+  }, [isRecording, isProcessing, isSubmitting, showConfirmation, transcriptionItems, sanitizedProps.orderType, lastError, retryCount]);
 
   const getButtonIcon = () => {
     if (isProcessing || isSubmitting) return <Loader2 className="h-6 w-6 animate-spin" />;
@@ -298,29 +366,57 @@ export function VoiceOrderPanel({
   // --- JSX ---
   return (
     <div className="voice-order-panel p-4 border rounded-lg shadow-md bg-card text-card-foreground flex flex-col items-center space-y-4 max-w-md mx-auto">
-      {/* Title/Context */}
+      {/* Title/Context - Using sanitized props */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
-          {tableName} - Seat {seatNumber} ({orderType})
+          {sanitizedProps.tableName} - Seat {sanitizedProps.seatNumber} ({sanitizedProps.orderType})
         </p>
       </div>
 
-      {/* Transcription Display Area */}
-      <div className="w-full min-h-[80px] p-4 border rounded-md bg-muted text-muted-foreground flex items-center justify-center text-center">
-        {showConfirmation && transcriptionItems.length > 0 && !isSubmitting ? (
-          <div className="w-full">
-            <p className="text-sm font-medium mb-2 text-muted-foreground">Your Order:</p>
-            <ul className="space-y-1">
+      {/* Transcription Display Area with Enhanced Loading States */}
+      <div className="w-full min-h-[80px] flex items-center justify-center">
+        {isProcessing ? (
+          <VoiceProcessingLoader 
+            stage="transcribing"
+            message="Converting speech to text..."
+          />
+        ) : isSubmitting ? (
+          <VoiceProcessingLoader 
+            stage="saving"
+            message="Submitting your order..."
+          />
+        ) : isRecording ? (
+          <VoiceProcessingLoader 
+            stage="listening"
+            message="Listening to your order..."
+          />
+        ) : showConfirmation && transcriptionItems.length > 0 ? (
+          <div className="w-full p-4 border rounded-md bg-muted text-center">
+            <p className="text-sm font-medium mb-3 text-muted-foreground">Your Order:</p>
+            <motion.ul 
+              className="space-y-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ staggerChildren: 0.1 }}
+            >
               {transcriptionItems.map((item, index) => (
-                <li key={index} className="text-base flex items-center justify-center">
-                  <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
+                <motion.li 
+                  key={index} 
+                  className="text-base flex items-center justify-center bg-white p-2 rounded shadow-sm"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
                   {item}
-                </li>
+                </motion.li>
               ))}
-            </ul>
+            </motion.ul>
           </div>
         ) : (
-          <p className="text-lg font-medium">{transcriptionDisplayText}</p>
+          <div className="w-full p-4 border rounded-md bg-muted text-muted-foreground text-center">
+            <p className="text-lg font-medium">{transcriptionDisplayText}</p>
+          </div>
         )}
       </div>
 

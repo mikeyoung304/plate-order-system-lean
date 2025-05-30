@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 import { KDSLayout } from '@/components/kds/kds-layout'
+import { KDSErrorBoundary } from '@/components/error-boundaries'
+import { PageLoadingState } from '@/components/loading-states'
 import { Button } from '@/components/ui/button'
 import { 
   Select, 
@@ -76,12 +78,10 @@ export default function KDSPage() {
   if (stationsLoading) {
     return (
       <ProtectedRoute roles="cook">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <Monitor className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-pulse" />
-            <p className="text-gray-600">Loading Kitchen Display System...</p>
-          </div>
-        </div>
+        <PageLoadingState 
+          message="Loading Kitchen Display System..."
+          showProgress={false}
+        />
       </ProtectedRoute>
     )
   }
@@ -227,67 +227,69 @@ export default function KDSPage() {
 
         {/* Main content */}
         <div className="flex-1 overflow-hidden">
-          {layoutMode === 'single' && selectedStationId && (
-            <KDSLayout
-              stationId={selectedStationId}
-              showHeader={isFullscreen}
-              isFullscreen={isFullscreen}
-              onToggleFullscreen={toggleFullscreen}
-            />
-          )}
+          <KDSErrorBoundary>
+            {layoutMode === 'single' && selectedStationId && (
+              <KDSLayout
+                stationId={selectedStationId}
+                showHeader={isFullscreen}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={toggleFullscreen}
+              />
+            )}
 
-          {layoutMode === 'multi' && (
-            <KDSLayout
-              showHeader={isFullscreen}
-              isFullscreen={isFullscreen}
-              onToggleFullscreen={toggleFullscreen}
-            />
-          )}
+            {layoutMode === 'multi' && (
+              <KDSLayout
+                showHeader={isFullscreen}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={toggleFullscreen}
+              />
+            )}
 
-          {layoutMode === 'split' && (
-            <div className="h-full p-4">
-              {splitStations.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <Grid2x2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <h3 className="text-lg font-medium mb-2">Split View</h3>
-                    <p className="text-gray-400">
-                      Select stations above to display multiple views simultaneously
-                    </p>
+            {layoutMode === 'split' && (
+              <div className="h-full p-4">
+                {splitStations.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="text-center">
+                      <Grid2x2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-medium mb-2">Split View</h3>
+                      <p className="text-gray-400">
+                        Select stations above to display multiple views simultaneously
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className={cn(
-                  'h-full grid gap-4',
-                  getSplitLayoutClasses()
-                )}>
-                  {splitStations.map(stationId => {
-                    const station = stations.find(s => s.id === stationId)
-                    return (
-                      <div key={stationId} className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-                        {/* Station header */}
-                        <div 
-                          className="p-2 text-white text-center font-medium text-sm"
-                          style={{ backgroundColor: station?.color || '#6B7280' }}
-                        >
-                          {station?.name || 'Unknown Station'}
+                ) : (
+                  <div className={cn(
+                    'h-full grid gap-4',
+                    getSplitLayoutClasses()
+                  )}>
+                    {splitStations.map(stationId => {
+                      const station = stations.find(s => s.id === stationId)
+                      return (
+                        <div key={stationId} className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                          {/* Station header */}
+                          <div 
+                            className="p-2 text-white text-center font-medium text-sm"
+                            style={{ backgroundColor: station?.color || '#6B7280' }}
+                          >
+                            {station?.name || 'Unknown Station'}
+                          </div>
+                          
+                          {/* Station content */}
+                          <div className="h-[calc(100%-2.5rem)]">
+                            <KDSLayout
+                              stationId={stationId}
+                              showHeader={false}
+                              className="h-full"
+                            />
+                          </div>
                         </div>
-                        
-                        {/* Station content */}
-                        <div className="h-[calc(100%-2.5rem)]">
-                          <KDSLayout
-                            stationId={stationId}
-                            showHeader={false}
-                            className="h-full"
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </KDSErrorBoundary>
         </div>
 
         {/* Fullscreen exit button */}

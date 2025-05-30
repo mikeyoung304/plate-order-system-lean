@@ -8,6 +8,8 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { WelcomeModal } from "@/components/welcome-modal"
 import { FooterAttribution } from "@/components/footer-attribution"
+import { AuthStatusPanel } from "@/components/debug/auth-status-panel"
+import { SecurityPerformanceInit } from "@/components/security-performance-init"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -52,6 +54,8 @@ export default async function RootLayout({
             </div>
             <WelcomeModal />
             <Toaster />
+            <AuthStatusPanel />
+            <SecurityPerformanceInit />
           </AuthProvider>
         </ThemeProvider>
       </body>
