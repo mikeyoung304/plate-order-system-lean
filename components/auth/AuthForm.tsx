@@ -17,11 +17,8 @@ import {
 import { signIn, signUp } from "@/app/auth/actions"
 import { AboutTrigger } from "@/components/about-dialog"
 import { Security } from "@/lib/security"
-import { useRenderPerformance } from "@/lib/performance-utils"
 
 export function AuthForm() {
-  // Performance monitoring
-  useRenderPerformance('AuthForm');
 
   const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)

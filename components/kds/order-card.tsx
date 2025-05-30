@@ -18,7 +18,6 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { useOrderTiming } from '@/hooks/use-kds-orders'
-import { usePrepTimePrediction } from '@/lib/kds/prep-time-prediction'
 import type { KDSOrderRouting } from '@/lib/modassembly/supabase/database/kds'
 
 interface OrderCardProps {
@@ -30,8 +29,6 @@ interface OrderCardProps {
   onAddNotes?: (routingId: string, notes: string) => Promise<void>
   isCompact?: boolean
   showActions?: boolean
-  showPrediction?: boolean
-  kitchenLoad?: number
   className?: string
 }
 
@@ -45,12 +42,9 @@ export const OrderCard = memo(function OrderCard({
   onAddNotes,
   isCompact = false,
   showActions = true,
-  showPrediction = true,
-  kitchenLoad = 0,
   className
 }: OrderCardProps) {
   const { timeElapsed, colorStatus, formattedTime, isOverdue } = useOrderTiming(order)
-  const { prediction } = usePrepTimePrediction(order, kitchenLoad)
   const [isLoading, setIsLoading] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [notes, setNotes] = useState(order.notes || '')
@@ -292,30 +286,9 @@ export const OrderCard = memo(function OrderCard({
           </div>
         )}
 
-        {/* AI Prediction */}
-        {showPrediction && prediction && (
-          <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-blue-700 dark:text-blue-300">
-                AI Estimate: {Math.round(prediction.estimatedSeconds / 60)} min
-              </span>
-              <Badge 
-                variant="secondary" 
-                className="text-xs bg-blue-100 dark:bg-blue-900"
-              >
-                {Math.round(prediction.confidence * 100)}% confidence
-              </Badge>
-            </div>
-            {prediction.reasoning.length > 0 && (
-              <div className="mt-1 text-gray-600 dark:text-gray-400">
-                {prediction.reasoning[0]}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Estimated prep time (fallback) */}
-        {!showPrediction && order.estimated_prep_time && (
+        {order.estimated_prep_time && (
           <div className="text-xs text-gray-500 mb-3">
             Est. prep time: {Math.round(order.estimated_prep_time / 60)} min
           </div>

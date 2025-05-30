@@ -23,8 +23,7 @@ interface Order {
 
 interface OrderSuggestion {
   items: string[]
-  confidence: number
-  reasoning: string
+  description: string
 }
 
 interface ServerPageData {
@@ -105,27 +104,24 @@ export function useServerPageData(floorPlanId: string = "default") {
   // Load order suggestions for specific resident/table
   const loadOrderSuggestions = useCallback(async (residentId: string, tableId?: string) => {
     try {
-      // Simple time-based suggestions (replace fake AI)
+      // Simple time-based suggestions
       const hour = new Date().getHours()
       const suggestions: OrderSuggestion[] = []
 
       if (hour < 11) {
         suggestions.push({
           items: ['Fresh Fruit Bowl', 'Greek Yogurt', 'Whole Grain Toast'],
-          confidence: 85,
-          reasoning: 'Popular breakfast items'
+          description: 'Breakfast favorites'
         })
       } else if (hour < 16) {
         suggestions.push({
           items: ['Garden Salad', 'Grilled Chicken', 'Sparkling Water'],
-          confidence: 78,
-          reasoning: 'Healthy lunch options'
+          description: 'Lunch specials'
         })
       } else {
         suggestions.push({
           items: ['Beef Stew', 'Mashed Potatoes', 'Green Beans'],
-          confidence: 82,
-          reasoning: 'Comfort dinner favorites'
+          description: 'Dinner favorites'
         })
       }
 
