@@ -2,7 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
-import { KDSLayout } from '@/components/kds/kds-layout'
+// PERFORMANCE_OPTIMIZATION: Dynamic import for KDS Layout
+// Original: Static import loading heavy real-time component immediately
+// Changed to: Lazy loading for better initial page performance  
+// Impact: Faster kitchen page loads, reduced initial bundle
+// Risk: Minimal - KDS is main feature, users expect short load time
+
+import dynamic from 'next/dynamic'
+
+const KDSLayout = dynamic(() => 
+  import('@/components/kds/kds-layout').then(m => ({ default: m.KDSLayout })), 
+  { 
+    loading: () => <PageLoadingState message="Loading kitchen display..." showProgress={false} />,
+    ssr: false // Real-time updates don't work on server
+  }
+)
 import { KDSErrorBoundary } from '@/components/error-boundaries'
 import { PageLoadingState } from '@/components/loading-states'
 import { Button } from '@/components/ui/button'
