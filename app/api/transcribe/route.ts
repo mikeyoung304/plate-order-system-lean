@@ -1,12 +1,8 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Fort Knox security for voice transcription API
-// Reason: Voice transcription is high-value target for attackers
-// Impact: Bulletproof security for OpenAI API calls and audio processing
-
 import { NextRequest, NextResponse } from 'next/server';
 import { transcribeAudioFile } from '@/lib/modassembly/openai/transcribe';
 import { Security } from '@/lib/security';
 import { createClient } from '@/lib/modassembly/supabase/server';
-import { measureApiCall, performanceMonitor } from '@/lib/performance/monitoring';
+import { measureApiCall } from '@/lib/performance-utils';
 
 export async function POST(request: NextRequest) {
     return measureApiCall('transcribe_api', async () => {

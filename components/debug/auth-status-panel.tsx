@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Production auth debugging utility
-// Reason: Need to monitor auth state in production without exposing sensitive data
-// Impact: Minimal - only shows when debug query param present
-
 'use client'
 
 import { useState, useEffect } from 'react'

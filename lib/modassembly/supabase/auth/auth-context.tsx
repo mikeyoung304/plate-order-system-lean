@@ -164,10 +164,6 @@ export function useIsRole(role: AppRole): boolean {
 export function useHasRole(roles: AppRole | AppRole[]): boolean {
   const userRole = useRole()
   
-  // OVERNIGHT_SESSION: 2025-05-30 - SECURITY FIX: Removed dangerous beta mode override
-  // Previous code bypassed ALL authentication checks when NEXT_PUBLIC_BETA_MODE='true'
-  // This was a critical security vulnerability allowing any user to access any role
-  
   if (!userRole) return false
   
   const allowedRoles = Array.isArray(roles) ? roles : [roles]

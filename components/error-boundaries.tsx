@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Comprehensive error boundary system
-// Reason: Bulletproof error handling prevents crashes and improves user experience
-// Impact: Graceful degradation, clear error messages, and intelligent recovery options
-
 "use client"
 
 import React, { Component, ReactNode } from 'react'
@@ -12,7 +8,7 @@ import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-
 // Impact: 80% reduction in motion-related bundle size for error boundaries
 // Risk: Minimal - same error animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance/motion-optimization'
+import { optimizedVariants } from '@/lib/performance-utils'
 import { AlertTriangle, RefreshCw, Home, Bug, ChevronDown, ChevronUp, Copy, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

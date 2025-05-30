@@ -7,7 +7,7 @@ import { useState, useEffect } from "react"
 // Impact: 80% reduction in motion-related bundle size for dashboard
 // Risk: Minimal - same card animations, lighter implementation
 import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance/motion-optimization"
+import { optimizedVariants } from "@/lib/performance-utils"
 import { Shell } from "@/components/shell"
 import { useRole, useHasRole, ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"

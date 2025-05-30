@@ -1,10 +1,6 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced KDS backend with Fort Knox security and performance monitoring
-// Reason: KDS is mission-critical for kitchen operations, needs bulletproof reliability
-// Impact: Secure, fast, and reliable kitchen display system with comprehensive monitoring
-
 import { createClient } from '@/lib/modassembly/supabase/client'
 import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance/monitoring'
+import { measureApiCall } from '@/lib/performance-utils'
 
 // Types for KDS system
 export interface KDSStation {
@@ -239,7 +235,6 @@ export async function bumpOrder(routingId: string, userId: string): Promise<void
       throw error
     }
     
-    // OVERNIGHT_SESSION: Auto-check if order is fully complete after bump
     try {
       // Get the order ID from this routing entry
       const { data: routingData, error: routingError } = await supabase
@@ -596,7 +591,6 @@ export async function fetchKDSTableSummary(): Promise<any[]> {
 }
 
 /**
- * OVERNIGHT_SESSION: 2025-05-30 - Intelligent order routing algorithm
  * Automatically routes orders to appropriate stations based on order type and items
  */
 export async function intelligentOrderRouting(orderId: string): Promise<void> {
@@ -692,7 +686,6 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
 }
 
 /**
- * OVERNIGHT_SESSION: 2025-05-30 - Auto-complete order when all stations are done
  * Updates main order status when all KDS stations have completed their part
  */
 export async function checkAndCompleteOrder(orderId: string): Promise<boolean> {

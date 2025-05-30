@@ -1,11 +1,7 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Secure authentication status endpoint
-// Reason: Authentication check needs security controls to prevent abuse
-// Impact: Secure session validation with rate limiting and minimal data exposure
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance/monitoring'
+import { measureApiCall } from '@/lib/performance-utils'
 
 export async function GET(request: NextRequest) {
   return measureApiCall('auth_check_api', async () => {

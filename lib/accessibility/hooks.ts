@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Accessibility hooks for enhanced UX
-// Reason: Custom hooks provide reusable accessibility patterns
-// Impact: Consistent accessibility features across all components
-
 import { useEffect, useCallback, useRef } from 'react'
 
 // Hook for screen reader announcements

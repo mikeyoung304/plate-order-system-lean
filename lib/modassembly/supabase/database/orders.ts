@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced database security for order operations
-// Reason: Orders contain user-generated content requiring Fort Knox security
-// Impact: Secure order processing with comprehensive input validation and sanitization
-
 /**
  * File enhanced by Modular Assembly with Fort Knox security
  * IMPORTANT!!! Ask the user before editing this file.
@@ -9,7 +5,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/client';
 import { Security } from '@/lib/security';
-import { measureApiCall } from '@/lib/performance/monitoring';
+import { measureApiCall } from '@/lib/performance-utils';
 
 interface OrderRow {
   id: string;
@@ -141,7 +137,6 @@ export async function createOrder(orderData: {
       throw error;
     }
 
-    // OVERNIGHT_SESSION: Automatically route new orders to KDS stations
     try {
       const { intelligentOrderRouting } = await import('./kds');
       await intelligentOrderRouting(data.id);

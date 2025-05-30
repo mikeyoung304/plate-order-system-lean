@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Delightful loading states that users actually enjoy
-// Reason: Loading states are the unsung heroes of great UX
-// Impact: Transform waiting from frustration into anticipation
-
 "use client"
 
 // PERFORMANCE_OPTIMIZATION: Already includes motion optimization comment but adding import
@@ -10,7 +6,7 @@
 // Impact: 80% reduction in motion-related bundle size for loading states
 // Risk: Minimal - same loading animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance/motion-optimization'
+import { optimizedVariants } from '@/lib/performance-utils'
 import { Loader2, Mic, Clock, ChefHat, Coffee, Users, CheckCircle, AlertCircle, Utensils } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'

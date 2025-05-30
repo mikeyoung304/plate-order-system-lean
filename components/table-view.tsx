@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 // Impact: 80% reduction in motion-related bundle size for table views
 // Risk: Minimal - same seat hover animations, lighter implementation
 import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance/motion-optimization"
+import { optimizedVariants } from "@/lib/performance-utils"
 
 type TableViewProps = {
   table: {

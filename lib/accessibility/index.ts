@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - World-class accessibility system
-// Reason: Inclusive design is essential for assisted living facility users
-// Impact: WCAG 2.1 AA compliance, screen reader support, keyboard navigation
-
 import { useEffect, useCallback, useRef } from 'react'
 
 // Accessibility utilities and hooks

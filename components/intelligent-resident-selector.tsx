@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Intelligent resident recognition component
-// Reason: Smart resident selection using seating patterns and dining habits
-// Impact: Dramatically faster order taking with accurate resident suggestions
-
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
@@ -17,14 +13,14 @@ import { User, Clock, MapPin, Star, TrendingUp } from 'lucide-react'
 // Impact: 80% reduction in motion-related bundle size for resident selection
 // Risk: Minimal - same selection animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance/motion-optimization'
+import { optimizedVariants } from '@/lib/performance-utils'
 import { useToast } from '@/hooks/use-toast'
 import { 
   getSeatResidentSuggestions, 
   getTimeBasedResidentSuggestions 
 } from '@/lib/modassembly/supabase/database/suggestions'
 import { getAllResidents, type User as Resident } from '@/lib/modassembly/supabase/database/users'
-import { useRenderPerformance } from '@/lib/performance/monitoring'
+import { useRenderPerformance } from '@/lib/performance-utils'
 
 interface IntelligentResidentSelectorProps {
   tableId: string

@@ -1,9 +1,4 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Global system initialization
-// Reason: Centralized startup for security and performance systems
-// Impact: Automated Fort Knox security and Google-scale performance from app start
-
 import { Security } from '@/lib/security'
-import { startPerformanceCleanup } from '@/lib/performance/monitoring'
 
 /**
  * Initialize all security and performance systems
@@ -14,12 +9,8 @@ export function initializeSecurityAndPerformance(): void {
     // Start security cleanup processes
     Security.startCleanup()
     
-    // Start performance monitoring and cleanup
-    startPerformanceCleanup()
-    
     // Log successful initialization (no sensitive data)
     console.log('🔒 Fort Knox security systems activated')
-    console.log('⚡ Google-scale performance monitoring enabled')
     
     // Security: Clean up any potential XSS in console (dev mode only)
     if (process.env.NODE_ENV === 'development') {

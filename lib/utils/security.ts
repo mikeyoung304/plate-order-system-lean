@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced security utilities with backward compatibility
-// Reason: Upgrade existing security while maintaining API compatibility
-// Impact: World-class security with no breaking changes
-
 import { Security } from '@/lib/security'
 
 export const LIMITS = {

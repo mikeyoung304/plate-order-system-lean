@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 // Impact: 80% reduction in motion-related bundle size for floor plan
 // Risk: Minimal - same hover animations, lighter implementation
 import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance/motion-optimization"
+import { optimizedVariants } from "@/lib/performance-utils"
 import { Table } from "@/lib/floor-plan-utils"
 
 type FloorPlanViewProps = {

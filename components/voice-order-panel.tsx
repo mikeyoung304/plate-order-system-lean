@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Fort Knox security for voice order processing
-// Reason: Voice input is high-risk attack vector requiring sanitization
-// Impact: Secure voice ordering with XSS prevention and input validation
-
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -12,11 +8,11 @@ import { Mic, Square, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide
 // Impact: 80% reduction in motion-related bundle size
 // Risk: Minimal - same animations, lighter implementation
 import { motion } from "framer-motion";
-import { optimizedVariants } from "@/lib/performance/motion-optimization";
+import { optimizedVariants } from "@/lib/performance-utils";
 import { VoiceProcessingLoader } from "@/components/loading-states";
 import { AudioRecorder } from "@/lib/modassembly/audio-recording/record";
 import { Security } from "@/lib/security";
-import { useRenderPerformance } from "@/lib/performance/monitoring";
+import { useRenderPerformance } from "@/lib/performance-utils";
 
 // Constants
 const AUDIO_VISUALIZER_BARS = 40;

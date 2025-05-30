@@ -1,12 +1,8 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Secure debugging endpoint (production-safe)
-// Reason: Debug endpoint needs security controls and reduced information exposure
-// Impact: Secure authentication debugging without exposing sensitive data
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { cookies } from 'next/headers'
 import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance/monitoring'
+import { measureApiCall } from '@/lib/performance-utils'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - World-class security utilities
-// Reason: Centralized security that would make a pentester weep
-// Impact: Fort Knox level security for all user inputs and API routes
-
 import DOMPurify from 'isomorphic-dompurify'
 
 /**
@@ -14,7 +10,6 @@ export class InputSanitizer {
     return DOMPurify.sanitize(input, {
       ALLOWED_TAGS: [], // No HTML tags allowed in user input
       ALLOWED_ATTR: [],
-      FORBID_SCRIPTS: true,
       FORBID_TAGS: ['script', 'object', 'embed', 'link', 'style', 'iframe']
     })
   }

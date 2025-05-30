@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced floor plan persistence with Fort Knox security
-// Reason: Fixed critical bug where positions weren't persisting + added security
-// Impact: Floor plan layouts now save and restore correctly with secure validation
-
 /**
  * File enhanced by Modular Assembly
  * IMPORTANT!!! Ask the user before editing this file.
@@ -10,7 +6,7 @@
 import { createClient } from '@/lib/modassembly/supabase/client';
 import { Table } from '../../../floor-plan-utils';
 import { Security } from '@/lib/security';
-import { measureApiCall } from '@/lib/performance/monitoring';
+import { measureApiCall } from '@/lib/performance-utils';
 
 interface SupabaseTable {
   id: string;

@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced resident recognition with Fort Knox security
-// Reason: Suggestion system handles personal data requiring secure processing
-// Impact: Intelligent, secure resident recognition with seating pattern analysis
-
 /**
  * File enhanced by Modular Assembly with Fort Knox security
  * IMPORTANT!!! Ask the user before editing this file.
@@ -9,7 +5,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/client'
 import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance/monitoring'
+import { measureApiCall } from '@/lib/performance-utils'
 
 // Type definitions
 type OrderSuggestion = {
@@ -107,7 +103,6 @@ export async function getOrderSuggestions(
 }
 
 /**
- * OVERNIGHT_SESSION: 2025-05-30 - Intelligent seat-based resident recognition
  * Analyzes seating patterns to suggest likely residents for a seat
  */
 export async function getSeatResidentSuggestions(
@@ -215,7 +210,6 @@ export async function getSeatResidentSuggestions(
 }
 
 /**
- * OVERNIGHT_SESSION: 2025-05-30 - Time-based dining pattern analysis
  * Suggests residents based on current time and their dining patterns
  */
 export async function getTimeBasedResidentSuggestions(

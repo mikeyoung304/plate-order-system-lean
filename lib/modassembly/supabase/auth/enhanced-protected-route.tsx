@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Enhanced ProtectedRoute for production reliability
-// Reason: Original ProtectedRoute has race condition causing blank pages on Vercel
-// Impact: Extends existing pattern with better timing and error handling
-
 'use client'
 
 import { useEffect, useState } from 'react'

@@ -1,10 +1,6 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Secure environment testing endpoint
-// Reason: Environment configuration exposure is a critical security risk
-// Impact: Safe environment debugging without exposing sensitive configuration
-
 import { NextRequest, NextResponse } from 'next/server'
 import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance/monitoring'
+import { measureApiCall } from '@/lib/performance-utils'
 
 export async function GET(request: NextRequest) {
   return measureApiCall('test_env_api', async () => {

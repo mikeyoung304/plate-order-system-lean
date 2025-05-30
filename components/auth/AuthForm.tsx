@@ -1,7 +1,3 @@
-// OVERNIGHT_SESSION: 2025-05-30 - Fort Knox security for authentication form
-// Reason: Authentication is the highest value target for attackers
-// Impact: Bulletproof login/signup with input sanitization and rate limiting
-
 "use client"
 
 import { useState, useActionState, useEffect, useTransition, useCallback } from "react"
@@ -21,7 +17,7 @@ import {
 import { signIn, signUp } from "@/app/auth/actions"
 import { AboutTrigger } from "@/components/about-dialog"
 import { Security } from "@/lib/security"
-import { useRenderPerformance } from "@/lib/performance/monitoring"
+import { useRenderPerformance } from "@/lib/performance-utils"
 
 export function AuthForm() {
   // Performance monitoring

@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 // Impact: 80% reduction in motion-related bundle size for navigation
 // Risk: Minimal - same navigation animations, lighter implementation
 import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance/motion-optimization"
+import { optimizedVariants } from "@/lib/performance-utils"
 import { useToast } from "@/components/ui/use-toast"
 import { signOut } from "@/app/auth/actions"
 import { getUser } from "@/lib/modassembly/supabase/database/users"

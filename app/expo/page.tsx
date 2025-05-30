@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator"
 // Impact: 80% reduction in motion-related bundle size for expo station
 // Risk: Minimal - same order animations, lighter implementation
 import { motion, AnimatePresence } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance/motion-optimization"
+import { optimizedVariants } from "@/lib/performance-utils"
 import { fetchRecentOrders, type Order, updateOrderStatus } from "@/lib/modassembly/supabase/database/orders"
 import { createClient } from "@/lib/modassembly/supabase/client"
 
