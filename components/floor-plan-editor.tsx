@@ -201,7 +201,7 @@ export function FloorPlanEditor({ floorPlanId }: FloorPlanEditorProps) {
             // Event handlers
             onTableUpdate={actions.updateTable}
             onAddToUndoStack={actions.addToUndoStack}
-            canvasRef={canvasRef}
+            canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>}
           />
         </div>
 

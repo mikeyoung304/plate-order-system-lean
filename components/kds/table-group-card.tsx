@@ -417,7 +417,7 @@ export const TableGroupCard = memo(function TableGroupCard({
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 flex-shrink-0" />
                         <span className="font-medium">
-                          Seat {seatOrders[0].order?.seat?.seat_id?.slice(-4) || seatId.slice(-4)}
+                          Seat {seatOrders[0].order?.seat_id?.slice(-4) || seatId.slice(-4)}
                         </span>
                         {seatOrders[0].order?.resident?.name && (
                           <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -480,7 +480,7 @@ export const TableGroupCard = memo(function TableGroupCard({
                   </Button>
                 )}
                 
-                {someOrdersReady && onRecallOrder && (
+                {someOrdersReady && (
                   <Button
                     variant="outline"
                     onClick={handleRecallReady}

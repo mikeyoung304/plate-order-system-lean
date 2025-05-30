@@ -303,8 +303,8 @@ export function KDSLayout({
   const handleRecallOrder = useCallback(async (routingId: string) => {
     // Optimistic update
     optimisticUpdate(routingId, { 
-      completed_at: null,
-      bumped_at: null,
+      completed_at: undefined,
+      bumped_at: undefined,
       recalled_at: new Date().toISOString()
     })
     

@@ -46,7 +46,7 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         console.log("Raw transcription response:", transcription);
         
         // The response is the text directly when using response_format: "text"
-        const transcriptionText = typeof transcription === 'string' ? transcription : transcription.text;
+        const transcriptionText = typeof transcription === 'string' ? transcription : (transcription as any).text;
         
         if (!transcriptionText) {
             console.error("No transcription text received");
@@ -100,9 +100,9 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         const cleanText = transcriptionText.toLowerCase();
         const items = cleanText
             .split(/[,\n]|and/)
-            .map(item => item.trim())
-            .filter(item => item.length > 0)
-            .map(item => {
+            .map((item: string) => item.trim())
+            .filter((item: string) => item.length > 0)
+            .map((item: string) => {
                 // Capitalize first letter of each word
                 return item.replace(/\b\w/g, char => char.toUpperCase());
             });
