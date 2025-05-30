@@ -122,10 +122,11 @@ export class OptimizedQueries {
 
     // Process results for each request
     return requests.map(request => {
-      const relevantOrders = data?.filter(order => 
-        order.seat?.table_id === request.tableId &&
-        order.seat?.label === request.seatNumber.toString()
-      ) || []
+      const relevantOrders = data?.filter((order: any) => {
+        const seat = Array.isArray(order.seat) ? order.seat[0] : order.seat
+        return seat?.table_id === request.tableId &&
+               seat?.label === request.seatNumber.toString()
+      }) || []
 
       // Calculate suggestions from batched data
       return this.calculateSuggestions(relevantOrders)

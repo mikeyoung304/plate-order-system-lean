@@ -209,7 +209,9 @@ class SmartMemoizer {
     // Clean old entries
     if (this.cache.size > this.maxSize) {
       const oldestKey = this.cache.keys().next().value
-      this.cache.delete(oldestKey)
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey)
+      }
     }
     
     return value

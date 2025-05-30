@@ -128,12 +128,10 @@ export async function fetchTables(): Promise<Table[]> {
       width: Math.max(50, Math.min(200, table.width || defaults.width)), // Reasonable size limits
       height: Math.max(50, Math.min(200, table.height || defaults.height)),
       rotation: Math.max(0, Math.min(360, table.rotation || defaults.rotation)),
-      zIndex: Math.max(1, Math.min(100, table.z_index || 1)),
-      floor_plan_id: defaults.floor_plan_id
+      zIndex: Math.max(1, Math.min(100, table.z_index || 1))
     };
   });
-  
-  });
+  }); // End of measureApiCall
 }
 
 /**

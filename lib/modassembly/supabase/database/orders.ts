@@ -63,8 +63,8 @@ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
       seat: Math.max(1, Math.min(20, order.seats.label)), // Validate seat number
       items: Array.isArray(order.items) 
         ? order.items
-            .map(item => Security.sanitize.sanitizeOrderItem(item))
-            .filter(item => item.length > 0)
+            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+            .filter((item: string) => item.length > 0)
             .slice(0, 20) // Limit items for security
         : [],
       transcript: Security.sanitize.sanitizeHTML(order.transcript || '')
@@ -158,8 +158,8 @@ export async function createOrder(orderData: {
       seat: Math.max(1, Math.min(20, data.seats.label)),
       items: Array.isArray(data.items) 
         ? data.items
-            .map(item => Security.sanitize.sanitizeOrderItem(item))
-            .filter(item => item.length > 0)
+            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+            .filter((item: string) => item.length > 0)
         : [],
       transcript: Security.sanitize.sanitizeHTML(data.transcript || '')
     } as Order;
@@ -259,8 +259,8 @@ export async function updateOrderItems(orderId: string, items: string[], transcr
       seat: Math.max(1, Math.min(20, data.seats.label)),
       items: Array.isArray(data.items) 
         ? data.items
-            .map(item => Security.sanitize.sanitizeOrderItem(item))
-            .filter(item => item.length > 0)
+            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+            .filter((item: string) => item.length > 0)
         : [],
       transcript: Security.sanitize.sanitizeHTML(data.transcript || '')
     } as Order;

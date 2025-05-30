@@ -229,8 +229,8 @@ export function VoiceOrderPanel({
           
           // Additional client-side sanitization for defense in depth
           const sanitizedItems = rawItems
-            .map(item => Security.sanitize.sanitizeOrderItem(item))
-            .filter(item => item.length > 0)
+            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+            .filter((item: string) => item.length > 0)
             .slice(0, 20); // Limit to 20 items for security
             
           const sanitizedTranscription = Security.sanitize.sanitizeHTML(rawTranscription)

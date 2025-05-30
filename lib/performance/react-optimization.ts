@@ -2,7 +2,7 @@
 // Reason: Eliminate unnecessary re-renders and optimize state management
 // Impact: 70% reduction in component re-renders, smoother interactions
 
-import { useCallback, useMemo, useRef, useReducer, useEffect } from 'react'
+import { useCallback, useMemo, useRef, useReducer, useEffect, useState } from 'react'
 
 // State consolidation patterns to replace multiple useState calls
 export type LoadingState = 
@@ -13,18 +13,18 @@ export type LoadingState =
 
 export function useAsyncState<T>() {
   const [state, dispatch] = useReducer(
-    (state: LoadingState, action: Partial<LoadingState>) => ({ ...state, ...action }),
-    { status: 'idle' }
+    (state: LoadingState, action: LoadingState): LoadingState => action,
+    { status: 'idle' } as LoadingState
   )
 
   const execute = useCallback(async (asyncFn: () => Promise<T>) => {
     dispatch({ status: 'loading' })
     try {
       const data = await asyncFn()
-      dispatch({ status: 'success', data })
+      dispatch({ status: 'success', data } as LoadingState)
       return data
     } catch (error) {
-      dispatch({ status: 'error', error: error instanceof Error ? error.message : 'Unknown error' })
+      dispatch({ status: 'error', error: error instanceof Error ? error.message : 'Unknown error' } as LoadingState)
       throw error
     }
   }, [])

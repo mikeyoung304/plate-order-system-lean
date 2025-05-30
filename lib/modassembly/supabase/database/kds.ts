@@ -163,8 +163,8 @@ export async function fetchStationOrders(stationId: string): Promise<KDSOrderRou
         ...order.order,
         items: Array.isArray(order.order.items) 
           ? order.order.items
-              .map(item => Security.sanitize.sanitizeOrderItem(item))
-              .filter(item => item.length > 0)
+              .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+              .filter((item: string) => item.length > 0)
               .slice(0, 20) // Limit items
           : [],
         transcript: order.order.transcript 

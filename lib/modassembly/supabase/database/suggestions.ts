@@ -164,8 +164,10 @@ export async function getSeatResidentSuggestions(
     // Calculate confidence scores based on frequency and recency
     const residentFrequency = new Map<string, { count: number; name: string; lastSeated: string }>()
     
-    orders.forEach(order => {
-      if (!order.resident_id || !order.resident?.name) return
+    orders.forEach((order: any) => {
+      if (!order.resident_id || !order.resident) return
+      const residentName = Array.isArray(order.resident) ? order.resident[0]?.name : order.resident?.name
+      if (!residentName) return
       
       const existing = residentFrequency.get(order.resident_id)
       if (existing) {
@@ -177,7 +179,7 @@ export async function getSeatResidentSuggestions(
       } else {
         residentFrequency.set(order.resident_id, {
           count: 1,
-          name: Security.sanitize.sanitizeUserName(order.resident.name),
+          name: Security.sanitize.sanitizeUserName(residentName),
           lastSeated: order.created_at
         })
       }
@@ -254,12 +256,14 @@ export async function getTimeBasedResidentSuggestions(
       totalOrders: number 
     }>()
     
-    orders.forEach(order => {
-      if (!order.resident_id || !order.resident?.name) return
+    orders.forEach((order: any) => {
+      if (!order.resident_id || !order.resident) return
+      const residentName = Array.isArray(order.resident) ? order.resident[0]?.name : order.resident?.name
+      if (!residentName) return
       
       const orderHour = new Date(order.created_at).getHours()
       const residentId = order.resident_id
-      const name = Security.sanitize.sanitizeUserName(order.resident.name)
+      const name = Security.sanitize.sanitizeUserName(residentName)
       
       const existing = residentHourPatterns.get(residentId)
       if (existing) {

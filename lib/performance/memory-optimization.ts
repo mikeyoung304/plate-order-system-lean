@@ -82,7 +82,7 @@ export function useCleanup() {
 
 // Safe timer hooks that auto-cleanup
 export function useSafeTimeout(callback: () => void, delay: number) {
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>()
   const addCleanup = useCleanup()
 
   const start = useCallback(() => {
@@ -110,7 +110,7 @@ export function useSafeTimeout(callback: () => void, delay: number) {
 }
 
 export function useSafeInterval(callback: () => void, delay: number) {
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout | undefined>()
   const addCleanup = useCleanup()
 
   const start = useCallback(() => {
