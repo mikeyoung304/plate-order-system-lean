@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transcribeAudioFile } from '@/lib/modassembly/openai/transcribe';
 import { checkRateLimit, sanitizeTranscript, sanitizeOrderItem } from '@/lib/utils/security';
-import { createClient } from '@/lib/modassembly/supabase/client';
+import { createClient } from '@/lib/modassembly/supabase/server';
 
 export async function POST(request: NextRequest) {
     try {
         // AI: Authentication and rate limiting
-        const supabase = createClient();
+        const supabase = await createClient();
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         
         if (authError || !session) {

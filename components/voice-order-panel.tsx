@@ -147,7 +147,8 @@ export function VoiceOrderPanel({
           const response = await fetch('/api/transcribe', {
             method: 'POST',
             body: formData,
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'include' // Include cookies for authentication
           });
           
           clearTimeout(timeoutId);
