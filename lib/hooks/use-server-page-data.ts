@@ -1,20 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import type { Table } from '@/lib/floor-plan-utils'
 
 const supabase = createClient()
 import type { User } from '@supabase/supabase-js'
-
-interface Table {
-  id: string
-  label: string
-  status: string
-  seats: number
-  x: number
-  y: number
-  width: number
-  height: number
-  type: string
-}
 
 interface Resident {
   id: string
@@ -79,16 +68,18 @@ export function useServerPageData(floorPlanId: string = "default") {
       if (ordersResult.error) throw ordersResult.error
 
       // Transform tables data to frontend format
-      const tables = (tablesResult.data || []).map((table: any) => ({
+      const tables = (tablesResult.data || []).map((table: any): Table => ({
         id: table.id,
         label: table.name || `Table ${table.id}`,
-        status: table.status || 'available',
+        status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
         seats: table.seat_count || 4,
         x: table.position_x || 0,
         y: table.position_y || 0,
         width: table.width || 100,
         height: table.height || 100,
-        type: table.shape || 'circle'
+        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        rotation: table.rotation || 0,
+        zIndex: 1
       }))
 
       setData({
@@ -145,33 +136,37 @@ export function useServerPageData(floorPlanId: string = "default") {
   }, [])
 
   // Refresh specific data
-  const refreshTables = useCallback(() => {
-    supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId)
-      .then(({ data, error }) => {
-        if (error) throw error
-        const tables = (data || []).map((table: any) => ({
-          id: table.id,
-          label: table.name || `Table ${table.id}`,
-          status: table.status || 'available',
-          seats: table.seat_count || 4,
-          x: table.position_x || 0,
-          y: table.position_y || 0,
-          width: table.width || 100,
-          height: table.height || 100,
-          type: table.shape || 'circle'
-        }))
-        setData(prev => ({ ...prev, tables }))
-      })
-      .catch(console.error)
+  const refreshTables = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId)
+      if (error) throw error
+      const tables = (data || []).map((table: any): Table => ({
+        id: table.id,
+        label: table.name || `Table ${table.id}`,
+        status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
+        seats: table.seat_count || 4,
+        x: table.position_x || 0,
+        y: table.position_y || 0,
+        width: table.width || 100,
+        height: table.height || 100,
+        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        rotation: table.rotation || 0,
+        zIndex: 1
+      }))
+      setData(prev => ({ ...prev, tables }))
+    } catch (error) {
+      console.error('Error refreshing tables:', error)
+    }
   }, [floorPlanId])
 
-  const refreshRecentOrders = useCallback(() => {
-    supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
-      .then(({ data, error }) => {
-        if (error) throw error
-        setData(prev => ({ ...prev, recentOrders: data || [] }))
-      })
-      .catch(console.error)
+  const refreshRecentOrders = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
+      if (error) throw error
+      setData(prev => ({ ...prev, recentOrders: data || [] }))
+    } catch (error) {
+      console.error('Error refreshing recent orders:', error)
+    }
   }, [])
 
   // Set up real-time subscriptions

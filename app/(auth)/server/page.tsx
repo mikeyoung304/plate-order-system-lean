@@ -1,25 +1,20 @@
 // File: frontend/app/server/page.tsx
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { Shell } from "@/components/shell"
 import { EnhancedProtectedRoute as ProtectedRoute } from "@/lib/modassembly/supabase/auth/enhanced-protected-route"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-// PERFORMANCE_OPTIMIZATION: Dynamic imports for heavy components
-// Original: Static imports loading ~150KB on initial page load
-// Changed to: Lazy loading, reducing initial bundle by ~60%
-// Impact: Faster page loads, especially on slower connections
-// Risk: Minimal - these components are user-triggered, not immediate
-
 import dynamic from 'next/dynamic'
 
+// Dynamic imports for heavy components
 const FloorPlanView = dynamic(() => 
   import('@/components/floor-plan-view').then(m => ({ default: m.FloorPlanView })), 
   { 
     loading: () => <PageLoadingState message="Loading floor plan..." showProgress={false} />,
-    ssr: false // Canvas operations don't work on server
+    ssr: false
   }
 )
 
@@ -27,9 +22,10 @@ const VoiceOrderPanel = dynamic(() =>
   import('@/components/voice-order-panel').then(m => ({ default: m.VoiceOrderPanel })), 
   { 
     loading: () => <PageLoadingState message="Loading voice controls..." showProgress={false} />,
-    ssr: false // Web Audio API doesn't work on server
+    ssr: false
   }
 )
+
 import { SeatPickerOverlay } from "@/components/seat-picker-overlay"
 import { useToast } from "@/hooks/use-toast"
 import { VoiceErrorBoundary, FloorPlanErrorBoundary } from "@/components/error-boundaries"
@@ -37,45 +33,41 @@ import { PageLoadingState } from "@/components/loading-states"
 import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User, Edit3, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
-import { Table } from "@/lib/floor-plan-utils"
-import { fetchTables } from "@/lib/modassembly/supabase/database/tables"
-import { getUser } from "@/lib/modassembly/supabase/database/users"
-import { fetchRecentOrders, createOrder, updateOrderItems, deleteOrder, type Order } from "@/lib/modassembly/supabase/database/orders"
+import { createOrder, updateOrderItems, deleteOrder } from "@/lib/modassembly/supabase/database/orders"
 import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
-import { getAllResidents, type User as Resident } from "@/lib/modassembly/supabase/database/users"
-import { getOrderSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SeatNavigation } from "@/components/server/seat-navigation"
 import { useSeatNavigation } from "@/hooks/use-seat-navigation"
+import { useOrderFlowState } from "@/lib/hooks/use-order-flow-state"
+import { useServerPageData } from "@/lib/hooks/use-server-page-data"
 
-// Add type definition for OrderSuggestion
+// Add type definition for OrderSuggestion and Order
 type OrderSuggestion = {
   items: string[]
   frequency: number
 }
 
+type Order = {
+  id: string
+  table: string
+  seat?: number
+  items: string[]
+  status: string
+  created_at: string
+}
+
 export default function ServerPage() {
-  const [floorPlanId, setFloorPlanId] = useState("default") // Example ID
-  const [tables, setTables] = useState<Table[]>([])
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null)
-  const [showSeatPicker, setShowSeatPicker] = useState(false);
-  const [selectedSeat, setSelectedSeat] = useState<number | null>(null)
-  const [orderType, setOrderType] = useState<"food" | "drink" | null>(null)
-  const [recentOrders, setRecentOrders] = useState<Order[]>([])
+  // Consolidated state management
+  const orderFlow = useOrderFlowState()
+  const data = useServerPageData("default")
   const { toast } = useToast()
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [loading, setLoading] = useState(true)
-  const [userData, setUserData] = useState<{ user: any, profile: any } | null>(null)
-  const [residents, setResidents] = useState<Resident[]>([])
-  const [selectedResident, setSelectedResident] = useState<string | null>(null)
-  const [orderSuggestions, setOrderSuggestions] = useState<OrderSuggestion[]>([])
-  const [selectedSuggestion, setSelectedSuggestion] = useState<OrderSuggestion | null>(null)
-  const [showVoiceOrderPanel, setShowVoiceOrderPanel] = useState(false);
-  const [currentView, setCurrentView] = useState<'floorPlan' | 'seatPicker' | 'orderType' | 'residentSelect' | 'voiceOrder'>('floorPlan');
+  
+  // Minimal remaining state
+  const [floorPlanId, setFloorPlanId] = useState("default")
 
   // Seat navigation state
   const seatNav = useSeatNavigation({
-    tableId: selectedTable?.label || "1",
+    tableId: orderFlow.selectedTable?.label || "1",
     maxSeats: 8,
     onSeatComplete: (seatNumber) => {
       console.log(`Seat ${seatNumber} order completed`)
@@ -86,176 +78,63 @@ export default function ServerPage() {
         description: "All seats have placed their orders",
         duration: 3000
       })
-      setSelectedTable(null)
-      setSelectedSeat(null)
+      orderFlow.resetFlow()
     }
   })
 
-  // Fetch user data
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const data = await getUser();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        toast({ 
-          title: 'Error', 
-          description: 'Failed to load user data', 
-          variant: 'destructive' 
-        });
-      }
-    };
-
-    loadUserData();
-  }, [toast]);
-
-  // Fetch tables from Supabase
-  useEffect(() => {
-    const loadTables = async () => {
-      try {
-        setLoading(true);
-        const fetchedTables = await fetchTables();
-        setTables(fetchedTables);
-      } catch (error) {
-        console.error('Error loading tables:', error);
-        toast({ 
-          title: 'Error', 
-          description: 'Failed to load tables. Please refresh the page.', 
-          variant: 'destructive' 
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTables();
-  }, [toast]);
-
-  // Update current time
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 10000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Load recent orders
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        const orders = await fetchRecentOrders(5);
-        setRecentOrders(orders);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-        toast({ 
-          title: 'Error', 
-          description: 'Failed to load recent orders', 
-          variant: 'destructive' 
-        });
-      }
-    };
-
-    loadOrders();
-  }, [toast]);
-
-  // Load residents
-  useEffect(() => {
-    const loadResidents = async () => {
-      try {
-        const fetchedResidents = await getAllResidents();
-        setResidents(fetchedResidents);
-      } catch (error) {
-        console.error('Error loading residents:', error);
-        toast({ 
-          title: 'Error', 
-          description: 'Failed to load residents', 
-          variant: 'destructive' 
-        });
-      }
-    };
-
-    loadResidents();
-  }, [toast]);
-
-  // Load suggestions
+  // Load suggestions when resident is selected
   const loadSuggestions = useCallback(async (residentId: string) => {
-    try {
-      const suggestions = await getOrderSuggestions(residentId, orderType || 'food');
-      setOrderSuggestions(suggestions);
-    } catch (error) {
-      console.error('Error loading suggestions:', error);
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to load suggestions', 
-        variant: 'destructive' 
-      });
+    if (residentId) {
+      data.loadOrderSuggestions(residentId, orderFlow.selectedTable?.id)
     }
-  }, [orderType, toast]);
+  }, [data, orderFlow.selectedTable]);
 
   // --- Navigation and Selection Handlers ---
 
-  const handleSelectTable = (table: Table) => {
-    setSelectedTable(table);
-    setCurrentView('seatPicker'); // Navigate to seat navigation
-    if (navigator.vibrate) navigator.vibrate(50);
-    toast({ title: `Table ${table.label} selected`, description: "Navigate between seats", duration: 1500 });
-  };
+  const handleSelectTable = (table: any) => {
+    orderFlow.selectTable(table)
+    if (navigator.vibrate) navigator.vibrate(50)
+    toast({ title: `Table ${table.label} selected`, description: "Navigate between seats", duration: 1500 })
+  }
 
   const handleSeatSelected = (seatNumber: number) => {
-    setSelectedSeat(seatNumber);
-    setShowSeatPicker(false); // Close overlay, state change triggers next view
-  };
+    orderFlow.selectSeat(seatNumber)
+  }
 
   const handleCloseSeatPicker = () => {
-    setShowSeatPicker(false);
-    setSelectedTable(null); // Deselect table if closing overlay
-  };
+    orderFlow.resetFlow()
+  }
 
-  // Reset selection fully when going back from Order Type or Voice Order
+  // Reset selection fully when going back
   const handleBackToFloorPlan = () => {
-    setSelectedTable(null);
-    setSelectedSeat(null);
-    setOrderType(null);
-    setShowSeatPicker(false);
-    setShowVoiceOrderPanel(false);
-    setSelectedResident(null);
-    setOrderSuggestions([]);
-    setSelectedSuggestion(null);
-    setCurrentView('floorPlan');
-    seatNav.resetTable();
-  };
+    orderFlow.resetFlow()
+    seatNav.resetTable()
+  }
 
   // Go back from Order Type selection to Seat Picker
   const handleBackFromOrderType = () => {
-    setSelectedSeat(null);
-    setOrderType(null);
-    setShowVoiceOrderPanel(false);
-    setCurrentView('seatPicker');
-  };
+    orderFlow.goToStep('seatPicker')
+  }
 
   // Go back from Resident Selection to Order Type selection
   const handleBackFromResidentSelect = () => {
-    setSelectedResident(null);
-    setOrderSuggestions([]);
-    setSelectedSuggestion(null);
-    setCurrentView('orderType');
-    setShowVoiceOrderPanel(false);
-  };
+    orderFlow.goToStep('orderType')
+  }
 
   // Go back from Voice Order to Resident Selection
   const handleBackFromVoiceOrder = () => {
-    setShowVoiceOrderPanel(false);
-    setCurrentView("residentSelect");
-  };
+    orderFlow.hideVoiceOrder()
+  }
 
   // Called by VoiceOrderPanel upon successful transcription
   const handleOrderSubmitted = useCallback(async (orderData: string | string[] | { items: string[], transcription: string }) => {
-    if (!selectedTable || selectedSeat == null || !userData?.user || !selectedResident) {
+    if (!orderFlow.selectedTable || orderFlow.selectedSeat == null || !data.user || !orderFlow.selectedResident) {
       toast({ title: "Error", description: "Missing required information.", variant: "destructive" });
       return;
     }
 
     // Get the seat ID using the fetchSeatId function
-    const seatId = await fetchSeatId(selectedTable.id, selectedSeat);
+    const seatId = await fetchSeatId(orderFlow.selectedTable.id, orderFlow.selectedSeat);
     
     if (!seatId) {
       toast({ title: "Error", description: "Invalid seat selection.", variant: "destructive" });
@@ -267,10 +146,10 @@ export default function ServerPage() {
       let items: string[];
       let transcript: string;
       
-      if (selectedSuggestion) {
+      if (orderFlow.selectedSuggestion) {
         // If using a suggestion, use the suggestion items
-        items = selectedSuggestion.items;
-        transcript = selectedSuggestion.items.join(", ");
+        items = orderFlow.selectedSuggestion.items;
+        transcript = orderFlow.selectedSuggestion.items.join(", ");
       } else if (typeof orderData === 'object' && 'items' in orderData) {
         // New format with items and transcription from API
         items = orderData.items;
@@ -286,20 +165,20 @@ export default function ServerPage() {
       }
 
       const orderPayload = {
-        table_id: selectedTable.id,
+        table_id: orderFlow.selectedTable.id,
         seat_id: seatId,
-        resident_id: selectedResident,
-        server_id: userData.user.id,
+        resident_id: orderFlow.selectedResident,
+        server_id: data.user.id,
         items: items,
         transcript: transcript,
-        type: orderType || 'food'
+        type: orderFlow.orderType || 'food'
       };
 
       const order = await createOrder(orderPayload);
       
       // Mark seat as complete in navigation
-      if (selectedSeat) {
-        seatNav.markSeatComplete(selectedSeat);
+      if (orderFlow.selectedSeat) {
+        seatNav.markSeatComplete(orderFlow.selectedSeat);
       }
       
       toast({ 
@@ -315,12 +194,7 @@ export default function ServerPage() {
           if (seatNav.nextAvailableSeat) {
             seatNav.setCurrentSeat(seatNav.nextAvailableSeat);
           }
-          setCurrentView('seatPicker');
-          setSelectedSeat(null);
-          setOrderType(null);
-          setSelectedResident(null);
-          setSelectedSuggestion(null);
-          setShowVoiceOrderPanel(false);
+          orderFlow.goToStep('seatPicker');
         }, 1000);
       } else {
         // All seats complete, go back to floor plan
@@ -336,34 +210,33 @@ export default function ServerPage() {
         variant: 'destructive' 
       });
     }
-  }, [selectedTable, selectedSeat, userData, selectedResident, selectedSuggestion, orderType, toast, handleBackToFloorPlan]);
+  }, [orderFlow, data, toast, handleBackToFloorPlan, seatNav]);
 
   // Resident selection handler
   const handleResidentSelected = useCallback((residentId: string) => {
-    setSelectedResident(residentId);
+    orderFlow.selectResident(residentId);
     loadSuggestions(residentId);
-  }, [loadSuggestions]);
+  }, [orderFlow, loadSuggestions]);
 
   // Suggestion selection handler
-  const handleSuggestionSelected = (suggestion: OrderSuggestion) => {
-    if (selectedSuggestion === suggestion) {
+  const handleSuggestionSelected = (suggestion: any) => {
+    if (orderFlow.selectedSuggestion === suggestion) {
       // If clicking the same suggestion, unselect it
-      setSelectedSuggestion(null);
+      orderFlow.selectSuggestion(null);
     } else {
       // Otherwise select the new suggestion
-      setSelectedSuggestion(suggestion);
+      orderFlow.selectSuggestion(suggestion);
     }
   };
 
   // Proceed to voice order handler
   const handleProceedToVoiceOrder = () => {
-    if (selectedSuggestion) {
+    if (orderFlow.selectedSuggestion) {
       // If a suggestion is selected, submit it with the items array directly
-      handleOrderSubmitted(selectedSuggestion.items);
+      handleOrderSubmitted(orderFlow.selectedSuggestion.items);
     } else {
       // If no suggestion selected, show voice order panel
-      setShowVoiceOrderPanel(true);
-      setCurrentView("voiceOrder");
+      orderFlow.showVoiceOrder();
     }
   };
 
@@ -382,8 +255,7 @@ export default function ServerPage() {
       await deleteOrder(order.id);
       
       // Refresh orders list
-      const updatedOrders = await fetchRecentOrders(5);
-      setRecentOrders(updatedOrders);
+      await data.refreshRecentOrders();
       
       toast({
         title: "Order Cancelled",
@@ -404,19 +276,8 @@ export default function ServerPage() {
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: "beforeChildren", staggerChildren: 0.1 } }, exit: { opacity: 0, transition: { when: "afterChildren" } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 500 } }, exit: { y: 20, opacity: 0 } };
 
-  // Determine current main view based on state
-  const determineCurrentView = () => {
-    if (selectedSeat && !orderType) {
-      return 'orderType';
-    } else if (selectedSeat && orderType && !showVoiceOrderPanel) {
-      return 'residentSelect';
-    } else if (selectedSeat && orderType && showVoiceOrderPanel) {
-      return 'voiceOrder';
-    }
-    return currentView; // Use the state variable
-  };
-
-  const resolvedView = determineCurrentView();
+  // Use the order flow state machine for current view
+  const resolvedView = orderFlow.currentStep;
 
   return (
     <ProtectedRoute roles="server">
@@ -430,7 +291,7 @@ export default function ServerPage() {
           </div>
           <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700/30">
             <Clock className="h-4 w-4 text-teal-400" />
-            <span className="text-gray-300 font-medium"> {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </span>
+            <span className="text-gray-300 font-medium"> {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </span>
           </div>
         </motion.div>
 
@@ -449,7 +310,7 @@ export default function ServerPage() {
                         <p className="text-gray-400 text-sm mt-1">Choose a table to place an order</p>
                       </div>
                       <div className="p-6">
-                        {loading ? (
+                        {data.loading ? (
                           <PageLoadingState 
                             message="Loading floor plan..."
                             showProgress={false}
@@ -459,7 +320,7 @@ export default function ServerPage() {
                             <FloorPlanView 
                               floorPlanId={floorPlanId} 
                               onSelectTable={handleSelectTable}
-                              tables={tables} // Pass the fetched tables
+                              tables={data.tables} // Pass the fetched tables
                             />
                           </FloorPlanErrorBoundary>
                         )}
@@ -470,28 +331,28 @@ export default function ServerPage() {
               )}
 
               {/* Seat Navigation View */}
-              {resolvedView === 'seatPicker' && selectedTable && (
+              {resolvedView === 'seatPicker' && orderFlow.selectedTable && (
                 <motion.div key="seat-nav" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
                       <div className="p-6 border-b border-gray-700/30 flex items-center justify-between">
                         <div>
-                          <h2 className="text-xl font-medium text-white">Table {selectedTable.label}</h2>
+                          <h2 className="text-xl font-medium text-white">Table {orderFlow.selectedTable.label}</h2>
                           <p className="text-gray-400 text-sm mt-1">Navigate between seats to take orders</p>
                         </div>
-                        <Button variant="ghost" onClick={() => setCurrentView('floorPlan')} className="text-gray-400 hover:text-white">
+                        <Button variant="ghost" onClick={() => orderFlow.goToStep('floorPlan')} className="text-gray-400 hover:text-white">
                           <ChevronLeft className="h-4 w-4 mr-2" />
                           Back to Tables
                         </Button>
                       </div>
                       <div className="p-6">
                         <SeatNavigation
-                          tableId={selectedTable.label}
+                          tableId={orderFlow.selectedTable.label}
                           currentSeat={seatNav.currentSeat}
                           maxSeats={seatNav.maxSeats}
                           onSeatChange={(seatNumber) => {
                             seatNav.setCurrentSeat(seatNumber)
-                            setSelectedSeat(seatNumber)
+                            orderFlow.selectSeat(seatNumber)
                           }}
                           seats={seatNav.seatOrders.map(seat => ({
                             id: seat.seatNumber,
@@ -503,8 +364,7 @@ export default function ServerPage() {
                         <div className="mt-6 flex gap-3">
                           <Button 
                             onClick={() => {
-                              setSelectedSeat(seatNav.currentSeat)
-                              setCurrentView('orderType')
+                              orderFlow.selectSeat(seatNav.currentSeat)
                             }}
                             className="flex-1 bg-blue-600 hover:bg-blue-700"
                           >
@@ -518,13 +378,13 @@ export default function ServerPage() {
               )}
 
               {/* Order Type Selection View */}
-              {resolvedView === 'orderType' && selectedTable && selectedSeat && (
+              {resolvedView === 'orderType' && orderFlow.selectedTable && orderFlow.selectedSeat && (
                 <motion.div key="order-type" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
                       <div className="p-6 border-b border-gray-700/30 flex items-center justify-between">
                         <div>
-                          <h2 className="text-xl font-medium text-white"> Table {selectedTable.label}, Seat {selectedSeat} </h2>
+                          <h2 className="text-xl font-medium text-white"> Table {orderFlow.selectedTable.label}, Seat {orderFlow.selectedSeat} </h2>
                           <p className="text-gray-400 text-sm mt-1">Select order type</p>
                         </div>
                         <Button variant="ghost" size="sm" onClick={handleBackFromOrderType} className="h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50">
@@ -537,8 +397,7 @@ export default function ServerPage() {
                             <Button 
                               className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-teal-600/90 to-teal-700/90 hover:from-teal-500/90 hover:to-teal-600/90 border-0 rounded-xl shadow-lg" 
                               onClick={() => {
-                                setOrderType("food")
-                                setCurrentView("residentSelect")
+                                orderFlow.selectOrderType("food")
                               }}
                             >
                               <div className="w-20 h-20 rounded-full bg-teal-500/20 flex items-center justify-center"> <Utensils className="h-10 w-10 text-teal-300" /> </div>
@@ -549,8 +408,7 @@ export default function ServerPage() {
                             <Button 
                               className="w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-amber-600/90 to-amber-700/90 hover:from-amber-500/90 hover:to-amber-600/90 border-0 rounded-xl shadow-lg" 
                               onClick={() => {
-                                setOrderType("drink")
-                                setCurrentView("residentSelect")
+                                orderFlow.selectOrderType("drink")
                               }}
                             >
                               <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center"> <Coffee className="h-10 w-10 text-amber-300" /> </div>
@@ -565,7 +423,7 @@ export default function ServerPage() {
               )}
 
               {/* Resident Selection View */}
-              {resolvedView === 'residentSelect' && selectedTable && selectedSeat && orderType && (
+              {resolvedView === 'residentSelect' && orderFlow.selectedTable && orderFlow.selectedSeat && orderFlow.orderType && (
                 <motion.div key="resident-select" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
@@ -577,7 +435,7 @@ export default function ServerPage() {
                           <div>
                             <h2 className="text-xl font-medium text-white flex items-center gap-2">
                               Select Resident
-                              <Badge variant="outline" className="ml-2 text-xs font-normal"> Table {selectedTable.label}, Seat {selectedSeat} </Badge>
+                              <Badge variant="outline" className="ml-2 text-xs font-normal"> Table {orderFlow.selectedTable.label}, Seat {orderFlow.selectedSeat} </Badge>
                             </h2>
                             <p className="text-gray-400 text-sm mt-1">Choose a resident to place an order</p>
                           </div>
@@ -589,12 +447,12 @@ export default function ServerPage() {
                       <div className="p-6 space-y-6">
                         <div className="space-y-4">
                           <label className="text-sm font-medium text-gray-200">Select Resident <span className="text-red-400">*</span></label>
-                          <Select value={selectedResident || ""} onValueChange={handleResidentSelected}>
+                          <Select value={orderFlow.selectedResident || ""} onValueChange={handleResidentSelected}>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Choose a resident" />
                             </SelectTrigger>
                             <SelectContent>
-                              {residents.map((resident) => (
+                              {data.residents.map((resident: any) => (
                                 <SelectItem key={resident.id} value={resident.id}>
                                   {resident.name}
                                 </SelectItem>
@@ -603,18 +461,18 @@ export default function ServerPage() {
                           </Select>
                         </div>
 
-                        {selectedResident && (
+                        {orderFlow.selectedResident && (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
                               <label className="text-sm font-medium text-gray-200">Previous Orders</label>
-                              {orderSuggestions.length > 0 && (
+                              {data.orderSuggestions.length > 0 && (
                                 <span className="text-xs text-gray-400">Optional - Select a previous order or place a new one</span>
                               )}
                             </div>
                             
-                            {orderSuggestions.length > 0 ? (
+                            {data.orderSuggestions.length > 0 ? (
                               <div className="space-y-3">
-                                {orderSuggestions.map((suggestion, index) => (
+                                {data.orderSuggestions.map((suggestion: any, index: number) => (
                                   <motion.div
                                     key={index}
                                     initial={{ opacity: 0, y: 10 }}
@@ -624,7 +482,7 @@ export default function ServerPage() {
                                     <Button
                                       variant="outline"
                                       className={`w-full justify-start text-left p-4 h-auto ${
-                                        selectedSuggestion === suggestion ? 'border-teal-500' : 'border-gray-700'
+                                        orderFlow.selectedSuggestion === suggestion ? 'border-teal-500' : 'border-gray-700'
                                       }`}
                                       onClick={() => handleSuggestionSelected(suggestion)}
                                     >
@@ -633,7 +491,7 @@ export default function ServerPage() {
                                           <span className="font-medium">Order #{index + 1}</span>
                                           <Badge variant="secondary">Ordered {suggestion.frequency}x</Badge>
                                         </div>
-                                        {suggestion.items.map((item, i) => (
+                                        {suggestion.items.map((item: string, i: number) => (
                                           <div key={i} className="text-sm text-gray-400">• {item}</div>
                                         ))}
                                       </div>
@@ -653,12 +511,12 @@ export default function ServerPage() {
                               size="lg"
                               onClick={handleProceedToVoiceOrder}
                             >
-                              {selectedSuggestion ? 'Place Selected Order' : 'Place New Voice Order'}
+                              {orderFlow.selectedSuggestion ? 'Place Selected Order' : 'Place New Voice Order'}
                             </Button>
                           </div>
                         )}
                         
-                        {!selectedResident && (
+                        {!orderFlow.selectedResident && (
                           <div className="text-center py-8 text-gray-400">
                             <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
                             <p>Please select a resident to place an order</p>
@@ -671,21 +529,21 @@ export default function ServerPage() {
               )}
 
               {/* Voice Order Panel View */}
-              {resolvedView === 'voiceOrder' && selectedTable && selectedSeat && orderType && (
+              {resolvedView === 'voiceOrder' && orderFlow.selectedTable && orderFlow.selectedSeat && orderFlow.orderType && (
                 <motion.div key="voice-order" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
                       <div className="p-6 border-b border-gray-700/30 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${orderType === "food" ? "bg-teal-500/20 text-teal-400" : "bg-amber-500/20 text-amber-400"}`}>
-                            {orderType === "food" ? <Utensils className="h-5 w-5" /> : <Coffee className="h-5 w-5" />}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${orderFlow.orderType === "food" ? "bg-teal-500/20 text-teal-400" : "bg-amber-500/20 text-amber-400"}`}>
+                            {orderFlow.orderType === "food" ? <Utensils className="h-5 w-5" /> : <Coffee className="h-5 w-5" />}
                           </div>
                           <div>
                             <h2 className="text-xl font-medium text-white flex items-center gap-2">
                               Voice Order
                               <Badge variant="outline" className="ml-2 text-xs font-normal"> 
-                                Table {selectedTable.label}, Seat {selectedSeat} 
-                                {selectedResident && ` • Resident Selected`}
+                                Table {orderFlow.selectedTable.label}, Seat {orderFlow.selectedSeat} 
+                                {orderFlow.selectedResident && ` • Resident Selected`}
                               </Badge>
                             </h2>
                             <p className="text-gray-400 text-sm mt-1">Speak your order clearly</p>
@@ -698,10 +556,10 @@ export default function ServerPage() {
                       <div className="p-6">
                         <VoiceErrorBoundary>
                           <VoiceOrderPanel
-                            tableId={selectedTable.id}
-                            tableName={selectedTable.label}
-                            seatNumber={selectedSeat}
-                            orderType={orderType}
+                            tableId={orderFlow.selectedTable.id}
+                            tableName={orderFlow.selectedTable.label}
+                            seatNumber={orderFlow.selectedSeat}
+                            orderType={orderFlow.orderType}
                             onOrderSubmitted={handleOrderSubmitted}
                             onCancel={handleBackFromVoiceOrder}
                           />
@@ -726,7 +584,7 @@ export default function ServerPage() {
                   </div>
                 </div>
                 <ScrollArea className="flex-1 p-6">
-                  {recentOrders.length === 0 ? (
+                  {data.recentOrders.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-4">
                       <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center mb-3"> <Info className="h-6 w-6 text-gray-400" /> </div>
                       <p className="text-gray-400 font-medium">No recent orders</p>
@@ -735,7 +593,7 @@ export default function ServerPage() {
                   ) : (
                     <div className="space-y-4">
                       <AnimatePresence>
-                        {recentOrders.map((order, index) => (
+                        {data.recentOrders.map((order: any, index: number) => (
                           <motion.div key={order.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, delay: index * 0.05, type: "spring", stiffness: 500, damping: 30 }}>
                             <div className="p-4 rounded-xl bg-gray-800/70 border border-gray-700/30 backdrop-blur-sm hover:bg-gray-800/90 transition-colors">
                               <div className="flex justify-between items-center mb-2">
@@ -745,7 +603,7 @@ export default function ServerPage() {
                                 </Badge>
                               </div>
                               <div className="space-y-1 mb-2">
-                                {order.items.map((item, i) => (
+                                {order.items.map((item: string, i: number) => (
                                   <div key={i} className="text-sm text-gray-300">• {item}</div>
                                 ))}
                               </div>
