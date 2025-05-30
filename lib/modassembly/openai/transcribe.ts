@@ -5,10 +5,20 @@
 
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openai: OpenAI | null = null;
 
+function getOpenAIClient(): OpenAI {
+    if (!openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error("OPENAI_API_KEY environment variable is not set");
+        }
+        openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openai;
+}
 
 export async function transcribeAudioFile(audioBlob: Blob, filename: string = "audio.webm"): Promise<{ items: string[], transcription: string }> {
     try {
@@ -36,7 +46,8 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         console.log(`Sending to OpenAI: ${audioFileName}, type: ${mimeType}, size: ${audioFile.size}`);
 
         // First, transcribe the audio
-        const transcription = await openai.audio.transcriptions.create({
+        const client = getOpenAIClient();
+        const transcription = await client.audio.transcriptions.create({
             file: audioFile,
             model: "whisper-1",
             response_format: "text"
@@ -56,7 +67,7 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
         console.log("Transcription text:", transcriptionText);
         
         // Use GPT to extract just the menu items
-        const extraction = await openai.chat.completions.create({
+        const extraction = await client.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [
                 {
