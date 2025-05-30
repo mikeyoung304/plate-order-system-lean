@@ -57,7 +57,7 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
   
   revalidatePath('/', 'layout')
   revalidatePath('/server')
-  redirect('/server') // Redirect to server page for better demo experience
+  redirect('/direct-server') // Temporary: use direct server route
 }
 
 export async function signUp(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
