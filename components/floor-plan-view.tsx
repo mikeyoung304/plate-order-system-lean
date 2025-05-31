@@ -546,29 +546,16 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           </button>
         </div>
 
-        {/* Seat Status Legend */}
-        <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-sm rounded-lg p-3 z-10">
-          <h4 className="text-xs font-semibold text-white mb-2">Seat Status</h4>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <div className="w-3 h-3 rounded-full bg-white/50 border border-white/60"></div>
-              <span>Available</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span>Ordering</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span>Waiting</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span>Eating</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span>Needs Clearing</span>
+        {/* Minimal Seat Status Indicator - Only show on desktop */}
+        <div className="absolute top-4 left-4 z-10 hidden md:block">
+          <div className="bg-gray-900/80 backdrop-blur-sm rounded-lg px-2 py-1">
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <div className="w-2 h-2 rounded-full bg-white/50"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <span className="ml-1">Status</span>
             </div>
           </div>
         </div>
@@ -582,6 +569,33 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
                </div>
            </div>
         )}
+      </div>
+      
+      {/* Mobile Legend - Below the floor plan */}
+      <div className="md:hidden mt-4 bg-gray-900/60 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30">
+        <div className="text-xs font-medium text-gray-300 mb-2">Seat Status Colors:</div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-2 text-gray-400">
+            <div className="w-3 h-3 rounded-full bg-white/50 border border-white/60"></div>
+            <span>Available</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span>Ordering</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span>Waiting</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span>Eating</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-400 col-span-2 justify-center">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span>Needs Clearing</span>
+          </div>
+        </div>
       </div>
     </motion.div>
   )
