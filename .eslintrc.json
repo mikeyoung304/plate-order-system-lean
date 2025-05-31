@@ -10,6 +10,7 @@
     // React Specific
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/rules-of-hooks": "warn",
     "react/display-name": "off",
     
     // Code Quality

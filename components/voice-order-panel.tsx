@@ -28,6 +28,9 @@ export function VoiceOrderPanel({
   testMode = false 
 }: VoiceOrderPanelProps) {
 
+  // --- ALL HOOKS MUST BE CALLED FIRST ---
+  const { toast } = useToast();
+
   const sanitizedProps = useMemo(() => {
     if (!tableId || !tableName || typeof seatNumber !== 'number') {
       console.error('VoiceOrderPanel: Invalid props provided');
@@ -41,9 +44,6 @@ export function VoiceOrderPanel({
       orderType: ['food', 'drink'].includes(orderType) ? orderType : 'food'
     };
   }, [tableId, tableName, seatNumber, orderType]);
-
-  // --- Consolidated State Management ---
-  const { toast } = useToast();
   
   const voiceState = useVoiceRecordingState({
     onSuccess: (items) => {
@@ -64,23 +64,12 @@ export function VoiceOrderPanel({
     maxRetries: 3
   });
 
-  // Early return if props are invalid
-  if (!sanitizedProps) {
-    return (
-      <div className="voice-order-panel p-4 border rounded-lg shadow-md bg-destructive/10 text-destructive flex items-center justify-center">
-        <AlertCircle className="mr-2 h-5 w-5" />
-        Invalid configuration. Please check table and seat information.
-      </div>
-    );
-  }
-
-  // --- Simplified Helper Functions ---
+  // --- Helper Functions (all hooks must come before these) ---
   const handleCancel = useCallback(() => {
     voiceState.cancel();
     onCancel?.();
   }, [voiceState, onCancel]);
 
-  // --- Simplified Voice Recording Logic ---
   const handleStartRecording = useCallback(async () => {
     await voiceState.startRecording();
   }, [voiceState]);
@@ -93,8 +82,8 @@ export function VoiceOrderPanel({
     await voiceState.confirmOrder();
   }, [voiceState]);
 
-  // --- Rendering Logic ---
   const transcriptionDisplayText = useMemo(() => {
+    if (!sanitizedProps) return "Invalid configuration";
     if (voiceState.isSubmitting) return "Submitting your order...";
     if (voiceState.isProcessing) return "Processing audio...";
     if (voiceState.isRecording) return "Listening... Tap to stop recording";
@@ -106,8 +95,18 @@ export function VoiceOrderPanel({
       return `${voiceState.error} (Retry ${voiceState.retryCount}/3)`;
     }
     if (voiceState.hasError) return voiceState.error;
-    return `Tap microphone to start recording your ${sanitizedProps.orderType} order`;
-  }, [voiceState, sanitizedProps.orderType]);
+    return `Tap microphone to start recording your ${sanitizedProps?.orderType || 'food'} order`;
+  }, [voiceState, sanitizedProps]);
+
+  // Early return AFTER all hooks have been called
+  if (!sanitizedProps) {
+    return (
+      <div className="voice-order-panel p-4 border rounded-lg shadow-md bg-destructive/10 text-destructive flex items-center justify-center">
+        <AlertCircle className="mr-2 h-5 w-5" />
+        Invalid configuration. Please check table and seat information.
+      </div>
+    );
+  }
 
   const getButtonIcon = () => {
     if (voiceState.isProcessing || voiceState.isSubmitting) return <Loader2 className="h-6 w-6 animate-spin" />;
