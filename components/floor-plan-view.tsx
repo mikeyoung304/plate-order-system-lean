@@ -496,9 +496,9 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
         className="relative w-full bg-gray-900/70 border border-gray-700/50 rounded-xl shadow-lg overflow-hidden"
         style={{ height: canvasSize.height, minHeight: '300px' }}
       >
-        {/* Table count */}
+        {/* Table count - Desktop only */}
         {tables.length > 0 && (
-          <div className="absolute top-2 right-2 z-10">
+          <div className="absolute top-2 right-2 z-10 hidden md:block">
             <Badge variant="outline" className="bg-gray-800 text-gray-400 border-gray-700">
               {tables.length} {tables.length === 1 ? 'table' : 'tables'}
             </Badge>
@@ -518,85 +518,21 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           aria-label="Floor plan"
         />
 
-        {/* Mobile Zoom Controls */}
-        <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
-          <button
-            onClick={() => adjustZoom(0.2)}
-            className="w-12 h-12 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-lg font-bold"
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-          <div className="bg-gray-800/90 text-white text-xs px-2 py-1 rounded text-center min-w-[3rem]">
-            {Math.round(zoom * 100)}%
-          </div>
-          <button
-            onClick={() => adjustZoom(-0.2)}
-            className="w-12 h-12 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-lg font-bold"
-            aria-label="Zoom out"
-          >
-            -
-          </button>
+        {/* Minimal Zoom Controls - Apple Style */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-10 md:hidden">
           <button
             onClick={resetToFit}
-            className="w-12 h-10 bg-teal-600/90 hover:bg-teal-500 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-xs font-bold"
+            className="w-8 h-8 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full flex items-center justify-center touch-manipulation border border-white/10"
             aria-label="Reset view"
           >
-            RESET
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
           </button>
         </div>
 
-        {/* Minimal Seat Status Indicator - Only show on desktop */}
-        <div className="absolute top-4 left-4 z-10 hidden md:block">
-          <div className="bg-gray-900/80 backdrop-blur-sm rounded-lg px-2 py-1">
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <div className="w-2 h-2 rounded-full bg-white/50"></div>
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span className="ml-1">Status</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Instructions Overlay */}
-        {tables.length > 0 && (
-           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/80 px-3 py-2 rounded-lg pointer-events-none backdrop-blur-sm border border-gray-700/30">
-               <div className="text-center">
-                 <div className="text-teal-400 font-medium">📱 Tap any table to order</div>
-                 <div className="mt-1">Pinch to zoom • Drag to pan • Tap RESET to fit</div>
-               </div>
-           </div>
-        )}
       </div>
       
-      {/* Mobile Legend - Below the floor plan */}
-      <div className="md:hidden mt-4 bg-gray-900/60 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30">
-        <div className="text-xs font-medium text-gray-300 mb-2">Seat Status Colors:</div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center gap-2 text-gray-400">
-            <div className="w-3 h-3 rounded-full bg-white/50 border border-white/60"></div>
-            <span>Available</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span>Ordering</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>Waiting</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span>Eating</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400 col-span-2 justify-center">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span>Needs Clearing</span>
-          </div>
-        </div>
-      </div>
     </motion.div>
   )
 }
