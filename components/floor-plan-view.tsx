@@ -142,13 +142,17 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     const bounds = calculateTableBounds(tables)
     if (!bounds.width || !bounds.height) return
     
-    const padding = 50
+    const isMobile = window.innerWidth < 768
+    const padding = isMobile ? 30 : 50 // Less padding on mobile
     const availableWidth = canvasSize.width - padding * 2
     const availableHeight = canvasSize.height - padding * 2
     
     const scaleX = availableWidth / bounds.width
     const scaleY = availableHeight / bounds.height
-    const fitZoom = Math.min(scaleX, scaleY, 2) // Cap at 2x zoom
+    
+    // On mobile, allow more zoom to make tables easier to tap
+    const maxZoom = isMobile ? 3 : 2
+    const fitZoom = Math.min(scaleX, scaleY, maxZoom)
     
     setZoom(fitZoom)
     setPanOffset({
@@ -174,12 +178,22 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     setSpotlights(spots);
   }, [canvasSize]);
 
-  // Adjust canvas size
+  // Adjust canvas size for mobile
   useEffect(() => {
     const updateCanvasSize = () => {
       if (containerRef.current) {
-        const width = Math.min(800, containerRef.current.clientWidth - 20);
-        setCanvasSize({ width, height: width * 0.75 });
+        const containerWidth = containerRef.current.clientWidth - 20;
+        const isMobile = window.innerWidth < 768;
+        
+        if (isMobile) {
+          // Mobile: Use full width and taller aspect ratio for better table spacing
+          const width = Math.min(600, containerWidth);
+          setCanvasSize({ width, height: width * 1.2 }); // Taller on mobile
+        } else {
+          // Desktop: Standard sizing
+          const width = Math.min(800, containerWidth);
+          setCanvasSize({ width, height: width * 0.75 });
+        }
       }
     };
     updateCanvasSize();
@@ -309,8 +323,9 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
         const rotatedX = relX * Math.cos(-rotationRad) - relY * Math.sin(-rotationRad);
         const rotatedY = relX * Math.sin(-rotationRad) + relY * Math.cos(-rotationRad);
         
-        // Add buffer for easier clicking
-        const buffer = 15; // Increased buffer for better usability
+        // Add buffer for easier clicking - larger on mobile
+        const isMobile = window.innerWidth < 768;
+        const buffer = isMobile ? 25 : 15; // Much larger tap area on mobile
         
         if (table.type === "circle") {
             // For circle, check if point is within radius
@@ -478,8 +493,8 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
       <div
         ref={containerRef}
-        className="relative w-full bg-gray-900/70 border border-gray-700/50 rounded-xl shadow-lg overflow-hidden aspect-[4/3]"
-        style={{ height: canvasSize.height }}
+        className="relative w-full bg-gray-900/70 border border-gray-700/50 rounded-xl shadow-lg overflow-hidden"
+        style={{ height: canvasSize.height, minHeight: '300px' }}
       >
         {/* Table count */}
         {tables.length > 0 && (
@@ -507,7 +522,7 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
         <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
           <button
             onClick={() => adjustZoom(0.2)}
-            className="w-10 h-10 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg"
+            className="w-12 h-12 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-lg font-bold"
             aria-label="Zoom in"
           >
             +
@@ -517,17 +532,17 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           </div>
           <button
             onClick={() => adjustZoom(-0.2)}
-            className="w-10 h-10 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg"
+            className="w-12 h-12 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-lg font-bold"
             aria-label="Zoom out"
           >
             -
           </button>
           <button
             onClick={resetToFit}
-            className="w-10 h-8 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-xs"
-            aria-label="Fit to screen"
+            className="w-12 h-10 bg-teal-600/90 hover:bg-teal-500 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-xs font-bold"
+            aria-label="Reset view"
           >
-            FIT
+            RESET
           </button>
         </div>
 
@@ -560,8 +575,11 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
 
         {/* Instructions Overlay */}
         {tables.length > 0 && (
-           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/60 px-2 py-1 rounded pointer-events-none">
-               Tap table • Pinch to zoom • Drag to pan
+           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/80 px-3 py-2 rounded-lg pointer-events-none backdrop-blur-sm border border-gray-700/30">
+               <div className="text-center">
+                 <div className="text-teal-400 font-medium">📱 Tap any table to order</div>
+                 <div className="mt-1">Pinch to zoom • Drag to pan • Tap RESET to fit</div>
+               </div>
            </div>
         )}
       </div>
