@@ -53,7 +53,7 @@ async function setupGuestAccount() {
     console.log('👤 Creating guest user...')
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: 'guest@demo.plate',
-      password: 'Temp1',
+      password: 'demo123',
       email_confirm: true,
       user_metadata: {
         name: 'Guest Demo User',
@@ -114,7 +114,7 @@ async function setupGuestAccount() {
     console.log('')
     console.log('🎯 Demo Login Credentials:')
     console.log('   Username: Guest')
-    console.log('   Password: Temp1')
+    console.log('   Password: demo123')
     console.log('')
     console.log('🚀 Ready for professional demos!')
     

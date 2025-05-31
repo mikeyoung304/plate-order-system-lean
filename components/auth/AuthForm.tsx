@@ -95,17 +95,15 @@ export function AuthForm() {
     try {
       actions.setStatus('loading')
       
-      // Set guest credentials
-      actions.setEmail('Guest')
-      actions.setPassword('Temp1')
-
-      // Validate (includes rate limiting check)
-      actions.validateAndPrepareData()
+      // Check rate limiting only (skip other validation for demo)
+      if (state.isRateLimited) {
+        throw new Error('Too many attempts. Please wait before trying again.')
+      }
       
-      // Create guest form data
+      // Create guest form data directly (bypass form validation)
       const secureFormData = new FormData()
       secureFormData.append('email', 'guest@demo.plate')
-      secureFormData.append('password', 'Temp1')
+      secureFormData.append('password', 'demo123') // 6+ characters to meet validation
       
       startTransition(() => {
         signInAction(secureFormData)
