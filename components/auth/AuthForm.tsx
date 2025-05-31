@@ -144,7 +144,7 @@ export function AuthForm() {
           <Input
             id="email"
             name="email"
-            type="text"
+            type="email"
             placeholder="Enter 'Guest' for demo"
             value={state.email}
             onChange={(e) => actions.setEmail(e.target.value)}

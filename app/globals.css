@@ -59,6 +59,23 @@
 }
 
 @layer components {
+  /* Mobile optimizations */
+  .mobile-friendly {
+    @apply min-h-[44px] px-4 py-2;
+  }
+
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .mobile-text {
+    @apply text-base leading-relaxed;
+  }
+
+  .mobile-spacing {
+    @apply p-4 gap-4;
+  }
+
   /* Card styles */
   .card-premium {
     @apply bg-card border border-border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-card-hover;
@@ -212,6 +229,13 @@
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .voice-record-button {
+      width: 80px;
+      height: 80px;
+    }
   }
 
   .voice-record-button:hover {
