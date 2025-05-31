@@ -6,28 +6,21 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { motion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
-// PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
-// Original: Full framer-motion library (~150KB) for table animations
-// Changed to: Optimized motion presets with selective imports
-// Impact: 80% reduction in motion-related bundle size for floor plan
-// Risk: Minimal - same hover animations, lighter implementation
-import { optimizedVariants } from "@/lib/performance-utils"
 import { Table } from "@/lib/floor-plan-utils"
 import { useSeatStatus } from "@/hooks/use-seat-status"
 
 type FloorPlanViewProps = {
-  floorPlanId: string
   onSelectTable: (table: Table) => void
   tables: Table[]
 }
 
-export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanViewProps) {
+export function FloorPlanView({ onSelectTable, tables }: FloorPlanViewProps) {
   const [hoveredTable, setHoveredTable] = useState<string | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
   const [spotlights, setSpotlights] = useState<{ x: number; y: number; color: string }[]>([])
   
   // Real-time seat status tracking
-  const { getSeatStatus, getTableStatus } = useSeatStatus()
+  const { getSeatStatus } = useSeatStatus()
   
   // Mobile zoom state
   const [zoom, setZoom] = useState(1)
@@ -131,10 +124,6 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY }
   }
 
-  const adjustZoom = (delta: number) => {
-    const newZoom = Math.max(0.5, Math.min(3, zoom + delta))
-    setZoom(newZoom)
-  }
 
   const resetToFit = () => {
     if (tables.length === 0) return

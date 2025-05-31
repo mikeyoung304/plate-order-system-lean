@@ -413,7 +413,6 @@ export default function ServerPage() {
                         ) : (
                           <FloorPlanErrorBoundary>
                             <FloorPlanView 
-                              floorPlanId={floorPlanId} 
                               onSelectTable={handleSelectTable}
                               tables={data.tables} // Pass the fetched tables
                             />
