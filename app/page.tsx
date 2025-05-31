@@ -1,15 +1,35 @@
-import { redirect } from 'next/navigation'
+"use client"
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from "next/image"
 
 import { AuthForm } from "@/components/auth/AuthForm"
-import { createClient } from '@/lib/modassembly/supabase/server'
+import { useAuth } from '@/lib/modassembly/supabase/auth'
 
-export default async function LandingPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function LandingPage() {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
 
+  // Client-side redirect for authenticated users
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/dashboard')
+    }
+  }, [user, isLoading, router])
+
+  // Don't render anything while loading to avoid flash
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      </div>
+    )
+  }
+
+  // Don't render if user is authenticated (preventing flash before redirect)
   if (user) {
-    redirect('/dashboard')
+    return null
   }
 
   return (

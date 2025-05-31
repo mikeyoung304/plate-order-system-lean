@@ -121,7 +121,31 @@ export function AuthForm() {
   const isLoading = state.status === 'loading' || isPending
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-6">
+      {/* Prominent Demo Button */}
+      <div className="text-center">
+        <Button 
+          onClick={handleGuestDemo}
+          size="lg"
+          className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-semibold py-4 text-lg shadow-lg"
+          disabled={state.isRateLimited || isLoading}
+        >
+          {isLoading ? "Launching Demo..." : "🍽️ Try Live Demo"}
+        </Button>
+        <p className="mt-2 text-xs text-white/60">
+          Instant access • No signup required • Full restaurant system
+        </p>
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-gray-700" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-gray-900 px-2 text-gray-500">Or continue with account</span>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {state.mode === 'signup' && (
           <div className="space-y-2">
@@ -217,15 +241,6 @@ export function AuthForm() {
           disabled={isLoading}
         >
           {state.mode === 'signup' ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-        </Button>
-
-        <Button 
-          variant="secondary" 
-          onClick={handleGuestDemo}
-          className="w-full"
-          disabled={state.isRateLimited || isLoading}
-        >
-          {isLoading ? "Processing..." : "Try Demo (Guest)"}
         </Button>
 
         <div className="flex items-center justify-center pt-4">
