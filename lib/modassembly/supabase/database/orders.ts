@@ -76,6 +76,7 @@ export async function createOrder(orderData: {
   items: string[];
   transcript: string;
   type: 'food' | 'drink';
+  special_id?: string;
 }): Promise<Order> {
   return measureApiCall('create_order', async () => {
     // Security: Comprehensive validation of order data
@@ -122,7 +123,8 @@ export async function createOrder(orderData: {
           items: sanitizedData.items,
           transcript: sanitizedData.transcript || '',
           type: orderData.type,
-          status: 'in_progress'
+          status: 'in_progress',
+          special_id: orderData.special_id || null
         }
       ])
       .select(`

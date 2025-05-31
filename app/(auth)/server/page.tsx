@@ -139,6 +139,7 @@ export default function ServerPage() {
     items: string[]
     type: 'food' | 'drink'
     isSpecial?: boolean
+    specialId?: string
   }) => {
     try {
       // Get the seat ID using the fetchSeatId function
@@ -161,7 +162,8 @@ export default function ServerPage() {
         server_id: data.user?.id!,
         items: orderData.items,
         transcript: orderData.isSpecial ? `Special: ${orderData.items.join(', ')}` : orderData.items.join(', '),
-        type: orderData.type
+        type: orderData.type,
+        special_id: orderData.specialId
       })
 
       // Show success toast

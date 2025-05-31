@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table } from "@/lib/floor-plan-utils"
 import { getSeatResidentSuggestions } from "@/lib/modassembly/supabase/database/suggestions"
+import { getTodaysFeaturedSpecial, incrementSpecialOrders, type AvailableSpecial } from "@/lib/modassembly/supabase/database/daily-specials"
 
 type SeatSuggestion = {
   resident: {
@@ -23,10 +24,7 @@ type SeatSuggestion = {
   usualOrder?: string
 }
 
-type DailySpecial = {
-  description: string
-  mealPeriod: string
-}
+// Using AvailableSpecial type from daily-specials service
 
 type QuickOrderModalProps = {
   table: Table | null
@@ -39,6 +37,7 @@ type QuickOrderModalProps = {
     items: string[]
     type: 'food' | 'drink'
     isSpecial?: boolean
+    specialId?: string
   }) => void
   onShowVoicePanel: () => void
 }
@@ -48,18 +47,7 @@ const getSeatSuggestions = async (tableId: string, seatNumber: number): Promise<
   return await getSeatResidentSuggestions(tableId, seatNumber, 3)
 }
 
-const getTodaysSpecial = (): DailySpecial => {
-  // In real app, this would check current time and fetch from database
-  const currentHour = new Date().getHours()
-  
-  if (currentHour < 11) {
-    return { description: "Pancakes with Fresh Berries", mealPeriod: "breakfast" }
-  } else if (currentHour < 16) {
-    return { description: "Meatloaf & Mashed Potatoes", mealPeriod: "lunch" }
-  } else {
-    return { description: "Herb-Crusted Salmon", mealPeriod: "dinner" }
-  }
-}
+// Real API call using daily specials database
 
 export function QuickOrderModal({ 
   table, 
@@ -72,7 +60,8 @@ export function QuickOrderModal({
   const [selectedResident, setSelectedResident] = useState<SeatSuggestion | null>(null)
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showResidentSearch, setShowResidentSearch] = useState(false)
-  const [todaysSpecial] = useState(getTodaysSpecial())
+  const [todaysSpecial, setTodaysSpecial] = useState<AvailableSpecial | null>(null)
+  const [loadingSpecial, setLoadingSpecial] = useState(false)
 
   // Load seat suggestions when modal opens
   useEffect(() => {
@@ -90,22 +79,54 @@ export function QuickOrderModal({
     }
   }, [table, seatNumber])
 
+  // Load today's special when modal opens
+  useEffect(() => {
+    setLoadingSpecial(true)
+    getTodaysFeaturedSpecial()
+      .then(special => {
+        setTodaysSpecial(special)
+      })
+      .catch(error => {
+        console.error('Failed to load today\'s special:', error)
+        // Fallback to null - special section won't show
+        setTodaysSpecial(null)
+      })
+      .finally(() => setLoadingSpecial(false))
+  }, [])
+
   const confirmResident = (suggestion: SeatSuggestion) => {
     setSelectedResident(suggestion)
     setShowResidentSearch(false)
   }
 
-  const orderSpecial = () => {
-    if (!table || !seatNumber || !selectedResident) return
+  const orderSpecial = async () => {
+    if (!table || !seatNumber || !selectedResident || !todaysSpecial || !todaysSpecial.is_available) return
     
-    onOrderPlaced({
-      tableId: table.id,
-      seatNumber,
-      residentId: selectedResident.resident.id,
-      items: [todaysSpecial.description],
-      type: 'food',
-      isSpecial: true
-    })
+    try {
+      // Increment the special order count in database
+      await incrementSpecialOrders(todaysSpecial.id)
+      
+      onOrderPlaced({
+        tableId: table.id,
+        seatNumber,
+        residentId: selectedResident.resident.id,
+        items: [todaysSpecial.name],
+        type: 'food',
+        isSpecial: true,
+        specialId: todaysSpecial.id
+      })
+    } catch (error) {
+      console.error('Failed to process special order:', error)
+      // Still proceed with order but without incrementing count
+      onOrderPlaced({
+        tableId: table.id,
+        seatNumber,
+        residentId: selectedResident.resident.id,
+        items: [todaysSpecial.name],
+        type: 'food',
+        isSpecial: true
+      })
+    }
   }
 
   const orderUsual = () => {
@@ -242,20 +263,45 @@ export function QuickOrderModal({
               <h3 className="text-lg font-semibold text-gray-900">What would they like?</h3>
               
               {/* Today's Special - Primary CTA */}
-              <Button
-                size="lg"
-                className="w-full h-24 text-xl bg-green-600 hover:bg-green-700 text-white relative overflow-hidden"
-                onClick={orderSpecial}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-green-700/20"></div>
-                <div className="relative flex flex-col items-center">
-                  <div className="flex items-center mb-1">
-                    <span className="text-2xl mr-2">🍽️</span>
-                    <span className="font-bold">TODAY'S SPECIAL</span>
-                  </div>
-                  <div className="text-lg font-normal">{todaysSpecial.description}</div>
+              {loadingSpecial ? (
+                <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+                  <span className="ml-2 text-gray-600">Loading today's special...</span>
                 </div>
-              </Button>
+              ) : todaysSpecial && todaysSpecial.is_available ? (
+                <Button
+                  size="lg"
+                  className="w-full h-24 text-xl bg-green-600 hover:bg-green-700 text-white relative overflow-hidden"
+                  onClick={orderSpecial}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-green-700/20"></div>
+                  <div className="relative flex flex-col items-center">
+                    <div className="flex items-center mb-1">
+                      <span className="text-2xl mr-2">🍽️</span>
+                      <span className="font-bold">TODAY'S SPECIAL</span>
+                      {todaysSpecial.price && (
+                        <span className="ml-2 text-lg">${todaysSpecial.price}</span>
+                      )}
+                    </div>
+                    <div className="text-lg font-normal">{todaysSpecial.name}</div>
+                    {todaysSpecial.description && (
+                      <div className="text-sm opacity-90 mt-1">{todaysSpecial.description}</div>
+                    )}
+                    {todaysSpecial.orders_remaining !== undefined && todaysSpecial.orders_remaining < 5 && (
+                      <div className="text-xs opacity-80 mt-1">
+                        Only {todaysSpecial.orders_remaining} left!
+                      </div>
+                    )}
+                  </div>
+                </Button>
+              ) : todaysSpecial && !todaysSpecial.is_available ? (
+                <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <div className="font-semibold">Today's Special</div>
+                    <div className="text-sm">{todaysSpecial.name} - Currently Unavailable</div>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Usual Order */}
               {selectedResident.usualOrder && (

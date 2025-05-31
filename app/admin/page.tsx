@@ -35,6 +35,13 @@ const PrinterSettings = dynamic(() =>
   }
 )
 
+const DailySpecialsManager = dynamic(() => 
+  import('@/components/admin/daily-specials-manager').then(m => ({ default: m.DailySpecialsManager })), 
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Loading daily specials...</div>
+  }
+)
+
 export default function AdminPage() {
   const [floorPlanId] = useState("default")
   // TODO: Implement floor plan switching functionality
@@ -93,8 +100,9 @@ export default function AdminPage() {
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-4">
-            <TabsList className="grid grid-cols-4 w-full max-w-md">
+            <TabsList className="grid grid-cols-5 w-full max-w-2xl">
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="specials">Daily Specials</TabsTrigger>
               <TabsTrigger value="floor-plan">Floor Plan</TabsTrigger>
               <TabsTrigger value="printer">Printer</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -258,6 +266,10 @@ export default function AdminPage() {
                   </ul>
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="specials">
+              <DailySpecialsManager />
             </TabsContent>
 
             <TabsContent value="floor-plan">
