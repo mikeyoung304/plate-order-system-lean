@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '../client'
 
-import { useAuth, useHasRole } from './auth-context'
+import { useAuth } from './auth-context'
 import type { AppRole } from './roles'
 
 interface EnhancedProtectedRouteProps {
@@ -33,7 +33,6 @@ export function EnhancedProtectedRoute({
   retryDelay = 1000
 }: EnhancedProtectedRouteProps) {
   const { user, isLoading, profile } = useAuth()
-  const hasRoleCheck = useHasRole(roles || 'admin' as AppRole)
   const [authState, setAuthState] = useState<AuthState>({
     status: 'initializing',
     user: null,
@@ -77,7 +76,12 @@ export function EnhancedProtectedRoute({
 
         // If we have session and auth context loaded
         if (session && !isLoading) {
-          const hasRequiredRole = roles ? hasRoleCheck : true
+          // Calculate role check inside the effect to avoid dependency issues
+          let hasRequiredRole = true
+          if (roles && profile) {
+            const allowedRoles = Array.isArray(roles) ? roles : [roles]
+            hasRequiredRole = allowedRoles.includes(profile.role as AppRole)
+          }
           
           // If role required but user doesn't have it
           if (roles && !hasRequiredRole) {
@@ -117,7 +121,7 @@ export function EnhancedProtectedRoute({
     }
 
     verifyAuthState()
-  }, [isLoading, user, profile, hasRoleCheck, roles, redirectTo, retryCount, maxRetries, retryDelay])
+  }, [isLoading, user, profile, roles, redirectTo, retryCount, maxRetries, retryDelay])
 
   // Render based on auth state
   switch (authState.status) {
