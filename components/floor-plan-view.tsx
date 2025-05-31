@@ -24,10 +24,94 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
   const [hoveredTable, setHoveredTable] = useState<string | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
   const [spotlights, setSpotlights] = useState<{ x: number; y: number; color: string }[]>([])
+  
+  // Mobile zoom state
+  const [zoom, setZoom] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 })
+  const [touchStartDistance, setTouchStartDistance] = useState(0)
+  const [lastTouchCenter, setLastTouchCenter] = useState({ x: 0, y: 0 })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null);
+
+  // Touch utility functions
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0
+    const touch1 = touches[0]
+    const touch2 = touches[1]
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) + 
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    )
+  }
+
+  const getTouchCenter = (touches: React.TouchList) => {
+    if (touches.length === 0) return { x: 0, y: 0 }
+    if (touches.length === 1) return { x: touches[0].clientX, y: touches[0].clientY }
+    
+    const touch1 = touches[0]
+    const touch2 = touches[1]
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2
+    }
+  }
+
+  const calculateTableBounds = (tables: Table[]) => {
+    if (tables.length === 0) return { minX: 0, minY: 0, maxX: 800, maxY: 600 }
+    
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    
+    tables.forEach(table => {
+      const leftX = table.x
+      const rightX = table.x + table.width
+      const topY = table.y
+      const bottomY = table.y + table.height
+      
+      minX = Math.min(minX, leftX)
+      maxX = Math.max(maxX, rightX)
+      minY = Math.min(minY, topY)
+      maxY = Math.max(maxY, bottomY)
+    })
+    
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY }
+  }
+
+  const adjustZoom = (delta: number) => {
+    const newZoom = Math.max(0.5, Math.min(3, zoom + delta))
+    setZoom(newZoom)
+  }
+
+  const resetToFit = () => {
+    if (tables.length === 0) return
+    
+    const bounds = calculateTableBounds(tables)
+    if (!bounds.width || !bounds.height) return
+    
+    const padding = 50
+    const availableWidth = canvasSize.width - padding * 2
+    const availableHeight = canvasSize.height - padding * 2
+    
+    const scaleX = availableWidth / bounds.width
+    const scaleY = availableHeight / bounds.height
+    const fitZoom = Math.min(scaleX, scaleY, 2) // Cap at 2x zoom
+    
+    setZoom(fitZoom)
+    setPanOffset({
+      x: (canvasSize.width - bounds.width * fitZoom) / 2 - bounds.minX * fitZoom,
+      y: (canvasSize.height - bounds.height * fitZoom) / 2 - bounds.minY * fitZoom
+    })
+  }
+
+  // Auto-fit on load and when tables change
+  useEffect(() => {
+    if (tables.length > 0) {
+      resetToFit()
+    }
+  }, [tables, canvasSize])
 
   // Create random spotlight positions
   useEffect(() => {
@@ -79,6 +163,11 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
       // Background
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); gradient.addColorStop(0, "rgba(17, 24, 39, 0.95)"); gradient.addColorStop(1, "rgba(10, 15, 25, 0.95)"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Apply zoom and pan transformation
+      ctx.save()
+      ctx.translate(panOffset.x, panOffset.y)
+      ctx.scale(zoom, zoom)
+
       // Draw tables
       tables.forEach((table) => {
         const isHovered = hoveredTable === table.id;
@@ -116,19 +205,27 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
         ctx.restore();
       });
 
+      // Restore transformation
+      ctx.restore()
+
       animationFrameRef.current = requestAnimationFrame(drawFrame);
     };
 
     drawFrame(0);
     return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); animationFrameRef.current = null; };
-  }, [tables, hoveredTable, canvasSize, spotlights, calculateSeatPositions]);
+  }, [tables, hoveredTable, canvasSize, spotlights, calculateSeatPositions, zoom, panOffset]);
 
   // Handle canvas click - Enhanced Hit Detection with rotation support
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current; if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX, y = (e.clientY - rect.top) * scaleY;
+    
+    // Transform screen coordinates to canvas coordinates accounting for zoom/pan
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+    const x = (screenX - panOffset.x) / zoom
+    const y = (screenY - panOffset.y) / zoom
 
     let clickedTable: Table | null = null;
     // Iterate reverse for Z-index
@@ -181,7 +278,12 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     const canvas = canvasRef.current; if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX, y = (e.clientY - rect.top) * scaleY;
+    
+    // Transform screen coordinates to canvas coordinates accounting for zoom/pan
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+    const x = (screenX - panOffset.x) / zoom
+    const y = (screenY - panOffset.y) / zoom
 
     let hoveredTableId: string | null = null;
     // Find hovered table (iterate reverse for Z-index) - Using enhanced detection
@@ -230,6 +332,84 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     }
   };
 
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    
+    if (e.touches.length === 1) {
+      // Single touch - start panning
+      const touch = e.touches[0]
+      setIsPanning(true)
+      setLastPanPoint({ x: touch.clientX, y: touch.clientY })
+    } else if (e.touches.length === 2) {
+      // Two fingers - start pinch zoom
+      setIsPanning(false)
+      const distance = getTouchDistance(e.touches)
+      const center = getTouchCenter(e.touches)
+      setTouchStartDistance(distance)
+      setLastTouchCenter(center)
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    
+    if (e.touches.length === 1 && isPanning) {
+      // Single touch panning
+      const touch = e.touches[0]
+      const deltaX = touch.clientX - lastPanPoint.x
+      const deltaY = touch.clientY - lastPanPoint.y
+      
+      setPanOffset(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      }))
+      
+      setLastPanPoint({ x: touch.clientX, y: touch.clientY })
+    } else if (e.touches.length === 2) {
+      // Two finger pinch zoom
+      const currentDistance = getTouchDistance(e.touches)
+      const currentCenter = getTouchCenter(e.touches)
+      
+      if (touchStartDistance > 0) {
+        const scaleChange = currentDistance / touchStartDistance
+        const newZoom = Math.max(0.5, Math.min(3, zoom * scaleChange))
+        
+        // Zoom toward touch center
+        const canvas = canvasRef.current
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect()
+          const centerX = (currentCenter.x - rect.left) * (canvas.width / rect.width)
+          const centerY = (currentCenter.y - rect.top) * (canvas.height / rect.height)
+          
+          const zoomFactor = newZoom / zoom
+          setPanOffset(prev => ({
+            x: centerX - (centerX - prev.x) * zoomFactor,
+            y: centerY - (centerY - prev.y) * zoomFactor
+          }))
+        }
+        
+        setZoom(newZoom)
+        setTouchStartDistance(currentDistance)
+      }
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    
+    if (e.touches.length === 0) {
+      setIsPanning(false)
+      setTouchStartDistance(0)
+    } else if (e.touches.length === 1) {
+      // Went from two fingers to one
+      const touch = e.touches[0]
+      setLastPanPoint({ x: touch.clientX, y: touch.clientY })
+      setIsPanning(true)
+      setTouchStartDistance(0)
+    }
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
       <div
@@ -252,27 +432,45 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           onClick={handleCanvasClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredTable(null)}
-          onTouchStart={(e) => {
-            const touch = e.touches[0];
-            const rect = e.currentTarget.getBoundingClientRect();
-            const mockEvent = {
-              nativeEvent: {
-                offsetX: touch.clientX - rect.left,
-                offsetY: touch.clientY - rect.top,
-              },
-              preventDefault: () => e.preventDefault(),
-            } as React.MouseEvent<HTMLCanvasElement>;
-            handleCanvasClick(mockEvent);
-          }}
-          onTouchEnd={(e) => e.preventDefault()}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className="absolute inset-0 transition-opacity duration-300 touch-manipulation"
           aria-label="Floor plan"
         />
 
+        {/* Mobile Zoom Controls */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+          <button
+            onClick={() => adjustZoom(0.2)}
+            className="w-10 h-10 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <div className="bg-gray-800/90 text-white text-xs px-2 py-1 rounded text-center min-w-[3rem]">
+            {Math.round(zoom * 100)}%
+          </div>
+          <button
+            onClick={() => adjustZoom(-0.2)}
+            className="w-10 h-10 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg"
+            aria-label="Zoom out"
+          >
+            -
+          </button>
+          <button
+            onClick={resetToFit}
+            className="w-10 h-8 bg-gray-800/90 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center touch-manipulation shadow-lg text-xs"
+            aria-label="Fit to screen"
+          >
+            FIT
+          </button>
+        </div>
+
         {/* Instructions Overlay */}
         {tables.length > 0 && (
            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/60 px-2 py-1 rounded pointer-events-none">
-               Tap a table to select it
+               Tap table • Pinch to zoom • Drag to pan
            </div>
         )}
       </div>

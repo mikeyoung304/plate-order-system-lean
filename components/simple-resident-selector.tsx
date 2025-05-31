@@ -51,8 +51,8 @@ export function SimpleResidentSelector({
         // Load recent residents for this seat
         const seatSuggestions = await getSeatResidentSuggestions(tableId, seatNumber, 3)
         const recentSeatResidents = seatSuggestions.map(sug => ({
-          resident_id: sug.resident_id,
-          name: sug.name,
+          resident_id: sug.resident.id,
+          name: sug.resident.name,
           reason: `Usually sits here`
         }))
         

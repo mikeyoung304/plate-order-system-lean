@@ -29,7 +29,7 @@ const VoiceOrderPanel = dynamic(() =>
   }
 )
 
-// import { SeatPickerOverlay } from "@/components/seat-picker-overlay" // TODO: Implement seat picker functionality
+import { QuickOrderModal } from "@/components/quick-order-modal"
 import { useToast } from "@/hooks/use-toast"
 import { VoiceErrorBoundary, FloorPlanErrorBoundary } from "@/components/error-boundaries"
 import { PageLoadingState } from "@/components/loading-states"
@@ -38,7 +38,7 @@ import { createOrder, deleteOrder } from "@/lib/modassembly/supabase/database/or
 // import { updateOrderItems } from "@/lib/modassembly/supabase/database/orders" // TODO: Implement order editing
 import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SeatNavigation } from "@/components/server/seat-navigation"
+// import { SeatNavigation } from "@/components/server/seat-navigation" // No longer needed with quick ordering
 import { useSeatNavigation } from "@/hooks/use-seat-navigation"
 import { useOrderFlowState } from "@/lib/hooks/use-order-flow-state"
 import { useServerPageData } from "@/lib/hooks/use-server-page-data"
@@ -67,6 +67,12 @@ export default function ServerPage() {
   
   // Minimal remaining state
   const [floorPlanId] = useState("default")
+  
+  // Quick Order Modal state
+  const [selectedTableForOrder, setSelectedTableForOrder] = useState<any>(null)
+  const [selectedSeatForOrder, setSelectedSeatForOrder] = useState<number | null>(null)
+  const showQuickOrderModal = selectedTableForOrder && selectedSeatForOrder
+  
   // TODO: Implement floor plan switching functionality
   // const setFloorPlanId = unused for now
 
@@ -97,19 +103,98 @@ export default function ServerPage() {
   // --- Navigation and Selection Handlers ---
 
   const handleSelectTable = (table: any) => {
-    orderFlow.selectTable(table)
+    // NEW FLOW: Show seat picker immediately for quick ordering
+    setSelectedTableForOrder(table)
+    
+    // If table has only 1 seat, go directly to order modal
+    if (table.seats === 1) {
+      setSelectedSeatForOrder(1)
+    } else {
+      // Show seat picker - we'll update the flow to show seat buttons
+      orderFlow.selectTable(table)
+      orderFlow.goToStep('seatPicker')
+    }
+    
     if (navigator.vibrate) navigator.vibrate(50)
-    toast({ title: `Table ${table.label} selected`, description: "Navigate between seats", duration: 1500 })
   }
 
-  // TODO: Implement seat picker overlay functionality
-  // const handleSeatSelected = (seatNumber: number) => {
-  //   orderFlow.selectSeat(seatNumber)
-  // }
+  // NEW: Handle seat selection for quick order flow
+  const handleSeatSelected = (seatNumber: number) => {
+    setSelectedSeatForOrder(seatNumber)
+  }
 
-  // const handleCloseSeatPicker = () => {
-  //   orderFlow.resetFlow()
-  // }
+  // Quick Order Modal handlers
+  const handleQuickOrderModalClose = () => {
+    setSelectedTableForOrder(null)
+    setSelectedSeatForOrder(null)
+    orderFlow.resetFlow()
+  }
+
+  const handleQuickOrderPlaced = async (orderData: {
+    tableId: string
+    seatNumber: number
+    residentId: string
+    items: string[]
+    type: 'food' | 'drink'
+    isSpecial?: boolean
+  }) => {
+    try {
+      // Get the seat ID using the fetchSeatId function
+      const seatId = await fetchSeatId(orderData.tableId, orderData.seatNumber)
+      
+      if (!seatId) {
+        toast({ 
+          title: "Error", 
+          description: "Invalid seat selection.", 
+          variant: "destructive" 
+        })
+        return
+      }
+
+      // Create the order
+      await createOrder({
+        table_id: orderData.tableId,
+        seat_id: seatId,
+        resident_id: orderData.residentId,
+        server_id: data.user?.id!,
+        items: orderData.items,
+        transcript: orderData.isSpecial ? `Special: ${orderData.items.join(', ')}` : orderData.items.join(', '),
+        type: orderData.type
+      })
+
+      // Show success toast
+      toast({
+        title: "Order Placed! 🎉",
+        description: `${orderData.isSpecial ? "Today's special" : orderData.items.join(', ')} ordered for Table ${selectedTableForOrder?.label}, Seat ${orderData.seatNumber}`,
+        duration: 3000
+      })
+
+      // Refresh orders and close modal
+      await data.refreshRecentOrders()
+      setSelectedTableForOrder(null)
+      setSelectedSeatForOrder(null)
+      orderFlow.resetFlow()
+
+    } catch (error) {
+      console.error('Quick order submission error:', error)
+      toast({ 
+        title: 'Order Failed', 
+        description: 'Could not place order. Please try again.', 
+        variant: 'destructive' 
+      })
+    }
+  }
+
+  const handleShowVoicePanel = () => {
+    // Close quick order modal and show voice panel with selected context
+    if (selectedTableForOrder && selectedSeatForOrder) {
+      orderFlow.selectTable(selectedTableForOrder)
+      orderFlow.selectSeat(selectedSeatForOrder)
+      orderFlow.showVoiceOrder()
+      setSelectedTableForOrder(null)
+      setSelectedSeatForOrder(null)
+    }
+  }
 
   // Reset selection fully when going back
   const handleBackToFloorPlan = () => {
@@ -336,15 +421,15 @@ export default function ServerPage() {
                 </motion.div>
               )}
 
-              {/* Seat Navigation View */}
+              {/* Quick Seat Selection View */}
               {resolvedView === 'seatPicker' && orderFlow.selectedTable && (
-                <motion.div key="seat-nav" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                <motion.div key="quick-seat-picker" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                   <Card className="bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden">
                     <CardContent className="p-0">
                       <div className="p-6 border-b border-gray-700/30 flex items-center justify-between">
                         <div>
                           <h2 className="text-xl font-medium text-white">Table {orderFlow.selectedTable.label}</h2>
-                          <p className="text-gray-400 text-sm mt-1">Navigate between seats to take orders</p>
+                          <p className="text-gray-400 text-sm mt-1">Tap a seat to start ordering</p>
                         </div>
                         <Button variant="ghost" onClick={() => orderFlow.goToStep('floorPlan')} className="text-gray-400 hover:text-white">
                           <ChevronLeft className="h-4 w-4 mr-2" />
@@ -352,30 +437,34 @@ export default function ServerPage() {
                         </Button>
                       </div>
                       <div className="p-6">
-                        <SeatNavigation
-                          tableId={orderFlow.selectedTable.label}
-                          currentSeat={seatNav.currentSeat}
-                          maxSeats={seatNav.maxSeats}
-                          onSeatChange={(seatNumber) => {
-                            seatNav.setCurrentSeat(seatNumber)
-                            orderFlow.selectSeat(seatNumber)
-                          }}
-                          seats={seatNav.seatOrders.map(seat => ({
-                            id: seat.seatNumber,
-                            hasOrder: seat.hasOrder,
-                            orderCount: seat.orderCount
-                          }))}
-                        />
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {Array.from({ length: orderFlow.selectedTable.seats }, (_, i) => i + 1).map((seatNumber) => {
+                            const hasOrder = seatNav.seatOrders.find(s => s.seatNumber === seatNumber)?.hasOrder || false
+                            return (
+                              <Button
+                                key={seatNumber}
+                                onClick={() => handleSeatSelected(seatNumber)}
+                                className={`h-20 text-lg font-semibold rounded-xl touch-manipulation ${
+                                  hasOrder 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                }`}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <span>Seat {seatNumber}</span>
+                                  {hasOrder && (
+                                    <span className="text-xs opacity-80">Has Order</span>
+                                  )}
+                                </div>
+                              </Button>
+                            )
+                          })}
+                        </div>
                         
-                        <div className="mt-6 flex gap-3">
-                          <Button 
-                            onClick={() => {
-                              orderFlow.selectSeat(seatNav.currentSeat)
-                            }}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          >
-                            Take Order for Seat {seatNav.currentSeat}
-                          </Button>
+                        <div className="mt-6 text-center">
+                          <p className="text-gray-400 text-sm">
+                            💡 Tip: One tap per seat = Instant ordering!
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -654,8 +743,14 @@ export default function ServerPage() {
           </motion.div>
         </div>
 
-        {/* Seat Picker Overlay - Rendered conditionally outside the main grid */}
-        {/* Seat picker overlay removed - now using integrated seat navigation */}
+        {/* Quick Order Modal - Revolutionary 2-tap ordering */}
+        <QuickOrderModal
+          table={selectedTableForOrder}
+          seatNumber={selectedSeatForOrder}
+          onClose={handleQuickOrderModalClose}
+          onOrderPlaced={handleQuickOrderPlaced}
+          onShowVoicePanel={handleShowVoicePanel}
+        />
 
         </div>
       </Shell>
