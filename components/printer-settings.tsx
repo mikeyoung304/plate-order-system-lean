@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Printer, Check, AlertCircle, Info } from "lucide-react"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { Printer, Check, AlertCircle, Info } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { testPrinterConnection, updatePrinterConfig, getPrinterStatus } from "@/services/printer-service"
 

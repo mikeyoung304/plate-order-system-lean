@@ -1,9 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+
 import type { Table } from "@/lib/floor-plan-utils"
 import { useCanvasInteractions } from "@/hooks/use-canvas-interactions"
 import { useFloorPlanState } from "@/hooks/use-floor-plan-state"
+
 import { Toolbar } from "./floor-plan/toolbar"
 import { Canvas } from "./floor-plan/canvas"
 import { SidePanel } from "./floor-plan/side-panel"

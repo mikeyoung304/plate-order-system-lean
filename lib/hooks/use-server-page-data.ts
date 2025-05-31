@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { Table } from '@/lib/floor-plan-utils'
 

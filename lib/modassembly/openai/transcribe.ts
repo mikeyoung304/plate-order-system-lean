@@ -24,7 +24,7 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
     try {
         // Determine the correct file extension and type for OpenAI
         let fileExtension = 'webm';
-        let mimeType = audioBlob.type || 'audio/webm';
+        const mimeType = audioBlob.type || 'audio/webm';
         
         // OpenAI supports: mp3, mp4, mpeg, mpga, m4a, wav, webm
         // Update filename to match the actual format

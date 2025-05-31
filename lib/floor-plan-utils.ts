@@ -1,17 +1,38 @@
-// File: frontend/lib/floor-plan-utils.ts
+/**
+ * Floor Plan Utilities
+ * 
+ * This module provides types and utilities for managing restaurant floor plans,
+ * table positioning, and coordinate transformations between frontend and backend systems.
+ */
 
-// Frontend Table Type (matching editor/view)
+/**
+ * Frontend representation of a restaurant table
+ * 
+ * Used in the floor plan editor and view components for canvas-based interactions.
+ * Coordinates are relative to the canvas element.
+ */
 export type Table = {
+  /** Unique identifier for the table */
   id: string
+  /** Shape of the table for rendering */
   type: "circle" | "rectangle" | "square"
+  /** X coordinate on the canvas */
   x: number
+  /** Y coordinate on the canvas */
   y: number
+  /** Width in pixels */
   width: number
+  /** Height in pixels */
   height: number
+  /** Number of seats available */
   seats: number
+  /** Display label (e.g., "Table 1", "VIP Table") */
   label: string
+  /** Rotation angle in degrees (optional) */
   rotation?: number
+  /** Current availability status */
   status?: "available" | "occupied" | "reserved"
+  /** Z-index for layering (optional) */
   zIndex?: number
 }
 

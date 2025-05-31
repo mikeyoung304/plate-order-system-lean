@@ -2,12 +2,15 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import dynamic from 'next/dynamic'
+import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User, Edit3, Trash2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+
 import { Shell } from "@/components/shell"
 import { EnhancedProtectedRoute as ProtectedRoute } from "@/lib/modassembly/supabase/auth/enhanced-protected-route"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import dynamic from 'next/dynamic'
 
 // Dynamic imports for heavy components
 const FloorPlanView = dynamic(() => 
@@ -26,14 +29,13 @@ const VoiceOrderPanel = dynamic(() =>
   }
 )
 
-import { SeatPickerOverlay } from "@/components/seat-picker-overlay"
+// import { SeatPickerOverlay } from "@/components/seat-picker-overlay" // TODO: Implement seat picker functionality
 import { useToast } from "@/hooks/use-toast"
 import { VoiceErrorBoundary, FloorPlanErrorBoundary } from "@/components/error-boundaries"
 import { PageLoadingState } from "@/components/loading-states"
-import { ChevronLeft, Utensils, Coffee, Info, Clock, History, User, Edit3, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { motion, AnimatePresence } from "framer-motion"
-import { createOrder, updateOrderItems, deleteOrder } from "@/lib/modassembly/supabase/database/orders"
+import { createOrder, deleteOrder } from "@/lib/modassembly/supabase/database/orders"
+// import { updateOrderItems } from "@/lib/modassembly/supabase/database/orders" // TODO: Implement order editing
 import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SeatNavigation } from "@/components/server/seat-navigation"
@@ -41,11 +43,12 @@ import { useSeatNavigation } from "@/hooks/use-seat-navigation"
 import { useOrderFlowState } from "@/lib/hooks/use-order-flow-state"
 import { useServerPageData } from "@/lib/hooks/use-server-page-data"
 
-// Add type definition for OrderSuggestion and Order
-type OrderSuggestion = {
-  items: string[]
-  frequency: number
-}
+// Add type definition for Order
+// TODO: OrderSuggestion type for future suggestion system
+// type OrderSuggestion = {
+//   items: string[]
+//   frequency: number
+// }
 
 type Order = {
   id: string
@@ -63,14 +66,16 @@ export default function ServerPage() {
   const { toast } = useToast()
   
   // Minimal remaining state
-  const [floorPlanId, setFloorPlanId] = useState("default")
+  const [floorPlanId] = useState("default")
+  // TODO: Implement floor plan switching functionality
+  // const setFloorPlanId = unused for now
 
   // Seat navigation state
   const seatNav = useSeatNavigation({
     tableId: orderFlow.selectedTable?.label || "1",
     maxSeats: 8,
-    onSeatComplete: (seatNumber) => {
-      console.log(`Seat ${seatNumber} order completed`)
+    onSeatComplete: (_seatNumber) => {
+      // console.log(`Seat ${seatNumber} order completed`) // TODO: Add logging
     },
     onTableComplete: () => {
       toast({
@@ -97,13 +102,14 @@ export default function ServerPage() {
     toast({ title: `Table ${table.label} selected`, description: "Navigate between seats", duration: 1500 })
   }
 
-  const handleSeatSelected = (seatNumber: number) => {
-    orderFlow.selectSeat(seatNumber)
-  }
+  // TODO: Implement seat picker overlay functionality
+  // const handleSeatSelected = (seatNumber: number) => {
+  //   orderFlow.selectSeat(seatNumber)
+  // }
 
-  const handleCloseSeatPicker = () => {
-    orderFlow.resetFlow()
-  }
+  // const handleCloseSeatPicker = () => {
+  //   orderFlow.resetFlow()
+  // }
 
   // Reset selection fully when going back
   const handleBackToFloorPlan = () => {
@@ -174,7 +180,7 @@ export default function ServerPage() {
         type: orderFlow.orderType || 'food'
       };
 
-      const order = await createOrder(orderPayload);
+      await createOrder(orderPayload);
       
       // Mark seat as complete in navigation
       if (orderFlow.selectedSeat) {
@@ -241,7 +247,7 @@ export default function ServerPage() {
   };
 
   // Order modification functions
-  const handleEditOrder = (order: Order) => {
+  const handleEditOrder = (_order: Order) => {
     // TODO: Implement edit order dialog/modal
     toast({
       title: "Edit Order",

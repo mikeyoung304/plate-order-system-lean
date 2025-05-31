@@ -1,14 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { Shell } from "@/components/shell"
-import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 import { 
   Clock, 
   ChefHat, 
@@ -25,6 +17,15 @@ import {
   Volume2,
   VolumeX
 } from "lucide-react"
+
+import { Shell } from "@/components/shell"
+import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { fetchRecentOrders, updateOrderStatus, type Order } from "@/lib/modassembly/supabase/database/orders"
 import { createClient } from "@/lib/modassembly/supabase/client"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
+
 import { initializeSecurityAndPerformance } from '@/lib/initialization'
 
 export function SecurityPerformanceInit() {

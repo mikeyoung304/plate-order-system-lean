@@ -3,8 +3,9 @@
 'use client'
 
 import React, { Component, ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw, Home } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
 
 interface Props {
   children: ReactNode

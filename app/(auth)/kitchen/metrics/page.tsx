@@ -2,6 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { 
+  ChevronLeft, 
+  Clock, 
+  TrendingUp, 
+  CheckCircle,
+  AlertTriangle,
+  Target,
+  Calendar,
+  BarChart3
+} from 'lucide-react'
+
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,17 +24,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { 
-  ChevronLeft, 
-  Clock, 
-  TrendingUp, 
-  Users, 
-  CheckCircle,
-  AlertTriangle,
-  Target,
-  Calendar,
-  BarChart3
-} from 'lucide-react'
 import { useKDSStations } from '@/hooks/use-kds-orders'
 import { fetchStationMetrics } from '@/lib/modassembly/supabase/database/kds'
 

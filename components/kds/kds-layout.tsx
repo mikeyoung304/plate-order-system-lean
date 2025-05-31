@@ -2,19 +2,6 @@
 
 import { useState, useCallback, useMemo, memo } from 'react'
 import dynamic from 'next/dynamic'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
 import { 
   RefreshCw, 
   Settings, 
@@ -31,8 +18,20 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react'
-import { OrderCard } from './order-card'
-import { TableGroupCard } from './table-group-card'
+
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 import { useKDSState, useKDSAudio } from '@/lib/hooks/use-kds-state'
 import { useTableGroupedOrders } from '@/hooks/use-table-grouped-orders'
 import { useToast } from '@/hooks/use-toast'
@@ -44,6 +43,9 @@ import {
   addOrderNotes,
   type KDSOrderRouting 
 } from '@/lib/modassembly/supabase/database/kds'
+
+import { TableGroupCard } from './table-group-card'
+import { OrderCard } from './order-card'
 
 // Lazy load voice command panel for better performance
 const VoiceCommandPanel = dynamic(() => 

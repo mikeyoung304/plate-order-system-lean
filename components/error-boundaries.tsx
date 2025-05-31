@@ -8,8 +8,9 @@ import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-
 // Impact: 80% reduction in motion-related bundle size for error boundaries
 // Risk: Minimal - same error animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance-utils'
 import { AlertTriangle, RefreshCw, Home, Bug, ChevronDown, ChevronUp, Copy, CheckCircle } from 'lucide-react'
+
+import { optimizedVariants } from '@/lib/performance-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'

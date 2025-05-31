@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { redirect } from 'next/navigation'
-import { useAuth, useHasRole } from './auth-context'
+
 import { createClient } from '../client'
+
+import { useAuth, useHasRole } from './auth-context'
 import type { AppRole } from './roles'
 
 interface EnhancedProtectedRouteProps {

@@ -1,6 +1,17 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+import { 
+  Grid2x2, 
+  Maximize, 
+  Minimize,
+  ChevronLeft,
+  Settings,
+  BarChart3
+} from 'lucide-react'
+import Link from 'next/link'
+
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 // PERFORMANCE_OPTIMIZATION: Dynamic import for KDS Layout
 // Original: Static import loading heavy real-time component immediately
@@ -8,7 +19,6 @@ import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 // Impact: Faster kitchen page loads, reduced initial bundle
 // Risk: Minimal - KDS is main feature, users expect short load time
 
-import dynamic from 'next/dynamic'
 
 const KDSLayout = dynamic(() => 
   import('@/components/kds/kds-layout').then(m => ({ default: m.KDSLayout })), 
@@ -27,19 +37,9 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { 
-  Monitor, 
-  Grid2x2, 
-  Maximize, 
-  Minimize,
-  ChevronLeft,
-  Settings,
-  BarChart3
-} from 'lucide-react'
 import { useKDSStations } from '@/hooks/use-kds-orders'
-import Link from 'next/link'
+
 
 type LayoutMode = 'single' | 'multi' | 'split'
 

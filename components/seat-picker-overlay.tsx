@@ -8,9 +8,10 @@ import React from "react"; // Ensure React is imported
 // Impact: 80% reduction in motion-related bundle size for seat picker
 // Risk: Minimal - same seat hover animations, lighter implementation
 import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+
 import { optimizedVariants } from "@/lib/performance-utils";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { Table } from "@/lib/floor-plan-utils"; // Use shared type
 
 type SeatPickerOverlayProps = {

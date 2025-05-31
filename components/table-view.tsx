@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { motion } from "framer-motion"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 // PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
@@ -8,7 +10,6 @@ import { Button } from "@/components/ui/button"
 // Changed to: Optimized motion presets with selective imports
 // Impact: 80% reduction in motion-related bundle size for table views
 // Risk: Minimal - same seat hover animations, lighter implementation
-import { motion } from "framer-motion"
 import { optimizedVariants } from "@/lib/performance-utils"
 
 type TableViewProps = {

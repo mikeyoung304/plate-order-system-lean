@@ -6,8 +6,9 @@
 // Impact: 80% reduction in motion-related bundle size for loading states
 // Risk: Minimal - same loading animations, lighter implementation
 import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance-utils'
 import { Loader2, Mic, Clock, ChefHat, Coffee, Users, CheckCircle, AlertCircle, Utensils } from 'lucide-react'
+
+import { optimizedVariants } from '@/lib/performance-utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'

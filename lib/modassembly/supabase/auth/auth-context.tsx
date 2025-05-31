@@ -1,8 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/modassembly/supabase/client'
 import type { User, Session } from '@supabase/supabase-js'
+
+import { createClient } from '@/lib/modassembly/supabase/client'
+
 import type { AppRole } from './roles'
 
 export type UserProfile = {

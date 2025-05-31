@@ -1,10 +1,11 @@
 "use client"
 
+import { Settings, ChevronRight } from "lucide-react"
+
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Settings, ChevronRight } from "lucide-react"
 
 interface DisplayOptionsProps {
   isOpen: boolean

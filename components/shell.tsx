@@ -2,6 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+
 import { Sidebar } from "@/components/sidebar"
 import { cn } from "@/lib/utils"
 // PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
@@ -9,7 +11,6 @@ import { cn } from "@/lib/utils"
 // Changed to: Optimized motion presets with selective imports
 // Impact: 80% reduction in motion-related bundle size for app shell
 // Risk: Minimal - same page transitions, lighter implementation
-import { motion } from "framer-motion"
 import { optimizedVariants } from "@/lib/performance-utils"
 
 interface ShellProps {

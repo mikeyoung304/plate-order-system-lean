@@ -1,10 +1,6 @@
 "use client"
 
 import { useState, useCallback, memo } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import { 
   Clock, 
   User, 
@@ -17,6 +13,11 @@ import {
   Play,
   AlertTriangle
 } from 'lucide-react'
+
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { useOrderTiming } from '@/hooks/use-kds-orders'
 import type { KDSOrderRouting } from '@/lib/modassembly/supabase/database/kds'
 

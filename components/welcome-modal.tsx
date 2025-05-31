@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+
 import { createClient } from '@/lib/modassembly/supabase/client'
 
 export function WelcomeModal() {

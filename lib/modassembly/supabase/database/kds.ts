@@ -632,7 +632,7 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
     }
     
     // Intelligent routing logic
-    let targetStations: { station: KDSStation; priority: number; sequence: number }[] = []
+    const targetStations: { station: KDSStation; priority: number; sequence: number }[] = []
     
     if (order.type === 'beverage' || order.type === 'drink') {
       // Route beverages to bar station

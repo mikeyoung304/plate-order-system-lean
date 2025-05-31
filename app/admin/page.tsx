@@ -1,16 +1,48 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import dynamic from 'next/dynamic'
+
 import { Sidebar } from "@/components/sidebar"
 import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FloorPlanEditor } from "@/components/floor-plan-editor"
-import { TableList } from "@/components/table-list"
-import { PrinterSettings } from "@/components/printer-settings"
+
+// PERFORMANCE_OPTIMIZATION: Dynamic imports for heavy admin components
+// Original: Static imports loading all admin components immediately
+// Changed to: Lazy loading for better initial page performance
+// Impact: Faster admin page loads, reduced initial bundle size
+// Risk: Minimal - admin features are secondary to core ordering functionality
+
+const FloorPlanEditor = dynamic(() => 
+  import('@/components/floor-plan-editor').then(m => ({ default: m.FloorPlanEditor })), 
+  { 
+    loading: () => <div className="h-64 flex items-center justify-center">Loading floor plan editor...</div>,
+    ssr: false // Floor plan editor uses canvas and client-side features
+  }
+)
+
+const TableList = dynamic(() => 
+  import('@/components/table-list').then(m => ({ default: m.TableList })), 
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Loading table list...</div>
+  }
+)
+
+const PrinterSettings = dynamic(() => 
+  import('@/components/printer-settings').then(m => ({ default: m.PrinterSettings })), 
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Loading printer settings...</div>
+  }
+)
 
 export default function AdminPage() {
-  const [floorPlanId, setFloorPlanId] = useState("default")
-  const [activeTab, setActiveTab] = useState("analytics")
+  const [floorPlanId] = useState("default")
+  // TODO: Implement floor plan switching functionality
+  // const setFloorPlanId = unused for now
+  
+  // TODO: Implement tab state management if needed
+  // const [activeTab, setActiveTab] = useState("analytics")
+  
   const [isLoading, setIsLoading] = useState(true)
 
   // Mock data for analytics

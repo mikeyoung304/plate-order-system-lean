@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/modassembly/supabase/client';
+
 import { createTable, updateTable, deleteTable } from './tables';
 import { createSeatsForTable, updateSeatsForTable, deleteSeatsForTable } from './seats';
 

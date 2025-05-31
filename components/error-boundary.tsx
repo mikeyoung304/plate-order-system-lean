@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { AlertCircle, RefreshCw } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 
 interface ErrorBoundaryProps {
   children: React.ReactNode

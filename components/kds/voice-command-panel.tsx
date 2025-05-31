@@ -1,6 +1,16 @@
 "use client"
 
 import { useState, useCallback } from 'react'
+import { 
+  Mic, 
+  MicOff, 
+  Volume2, 
+  HelpCircle, 
+  CheckCircle, 
+  AlertTriangle,
+  Loader2
+} from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,15 +22,6 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from '@/components/ui/dialog'
-import { 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  HelpCircle, 
-  CheckCircle, 
-  AlertTriangle,
-  Loader2
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useVoiceCommands, type VoiceCommand, VOICE_FEEDBACK } from '@/lib/kds/voice-commands'
 import { toast } from '@/hooks/use-toast'

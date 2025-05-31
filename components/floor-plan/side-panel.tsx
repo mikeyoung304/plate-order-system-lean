@@ -1,6 +1,7 @@
 "use client"
 
 import type { Table } from "@/lib/floor-plan-utils"
+
 import { TableProperties } from "./table-properties"
 import { DisplayOptions } from "./display-options"
 import { TableList } from "./table-list"

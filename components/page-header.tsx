@@ -1,7 +1,8 @@
 import type React from "react"
+import { Clock } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Clock } from "lucide-react"
 
 interface PageHeaderProps {
   title: string

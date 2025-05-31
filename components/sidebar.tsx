@@ -4,20 +4,23 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import Image from "next/image"
+import { LayoutDashboard, Utensils, ChefHat, Shield, Settings, Menu, X, LogOut, ChevronLeft } from "lucide-react"
+import { motion } from "framer-motion"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { LayoutDashboard, Utensils, ChefHat, Shield, Settings, Menu, X, LogOut, ChevronLeft } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 // PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
 // Original: Full framer-motion library (~150KB) for sidebar animations
 // Changed to: Optimized motion presets with selective imports
 // Impact: 80% reduction in motion-related bundle size for navigation
 // Risk: Minimal - same navigation animations, lighter implementation
-import { motion } from "framer-motion"
+
 import { optimizedVariants } from "@/lib/performance-utils"
 import { useToast } from "@/components/ui/use-toast"
 import { signOut } from "@/app/auth/actions"

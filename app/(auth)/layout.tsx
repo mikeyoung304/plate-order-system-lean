@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+
 import { createClient } from '@/lib/modassembly/supabase/server'
 
 export default async function AuthLayout({
