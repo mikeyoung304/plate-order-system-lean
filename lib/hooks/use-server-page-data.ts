@@ -58,7 +58,7 @@ export function useServerPageData(floorPlanId: string = "default") {
       
       // Load all data in parallel
       const [tablesResult, residentsResult, ordersResult] = await Promise.all([
-        supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId),
+        supabase.from('tables').select('*'), // Remove floor_plan_id filter since column doesn't exist
         supabase.from('profiles').select('*').eq('role', 'resident'),
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
       ])
@@ -70,14 +70,14 @@ export function useServerPageData(floorPlanId: string = "default") {
       // Transform tables data to frontend format
       const tables = (tablesResult.data || []).map((table: any): Table => ({
         id: table.id,
-        label: table.name || `Table ${table.id}`,
+        label: `Table ${table.label}`, // Use label field from schema
         status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
-        seats: table.seat_count || 4,
-        x: table.position_x || 0,
-        y: table.position_y || 0,
+        seats: table.seat_count || 4, // Will calculate from seats table later
+        x: table.x || Math.random() * 600 + 50, // Use x from table or random position
+        y: table.y || Math.random() * 400 + 50, // Use y from table or random position  
         width: table.width || 100,
         height: table.height || 100,
-        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        type: (table.type || 'circle') as 'circle' | 'rectangle' | 'square',
         rotation: table.rotation || 0,
         zIndex: 1
       }))
@@ -146,7 +146,7 @@ export function useServerPageData(floorPlanId: string = "default") {
         y: table.position_y || 0,
         width: table.width || 100,
         height: table.height || 100,
-        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        type: (table.type || 'circle') as 'circle' | 'rectangle' | 'square',
         rotation: table.rotation || 0,
         zIndex: 1
       }))
