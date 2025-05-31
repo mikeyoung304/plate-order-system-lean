@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 // Risk: Minimal - same hover animations, lighter implementation
 import { optimizedVariants } from "@/lib/performance-utils"
 import { Table } from "@/lib/floor-plan-utils"
+import { useSeatStatus } from "@/hooks/use-seat-status"
 
 type FloorPlanViewProps = {
   floorPlanId: string
@@ -24,6 +25,9 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
   const [hoveredTable, setHoveredTable] = useState<string | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
   const [spotlights, setSpotlights] = useState<{ x: number; y: number; color: string }[]>([])
+  
+  // Real-time seat status tracking
+  const { getSeatStatus, getTableStatus } = useSeatStatus()
   
   // Mobile zoom state
   const [zoom, setZoom] = useState(1)
@@ -57,6 +61,53 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
     return {
       x: (touch1.clientX + touch2.clientX) / 2,
       y: (touch1.clientY + touch2.clientY) / 2
+    }
+  }
+
+  // Get seat color based on real-time status
+  const getSeatColors = (tableId: string, seatNumber: number, isHovered: boolean) => {
+    const seatStatus = getSeatStatus(tableId, seatNumber)
+    
+    if (!seatStatus || seatStatus.status === 'available') {
+      // Default available seat colors
+      return {
+        fillStart: isHovered ? "rgba(56, 189, 174, 0.7)" : "rgba(255, 255, 255, 0.5)",
+        fillEnd: isHovered ? "rgba(56, 189, 174, 0.4)" : "rgba(200, 200, 200, 0.3)",
+        stroke: isHovered ? "rgba(56, 189, 174, 0.8)" : "rgba(255, 255, 255, 0.6)"
+      }
+    }
+    
+    switch (seatStatus.status) {
+      case 'ordering':
+        return {
+          fillStart: "rgba(59, 130, 246, 0.8)", // Blue
+          fillEnd: "rgba(59, 130, 246, 0.5)",
+          stroke: "rgba(59, 130, 246, 1)"
+        }
+      case 'waiting':
+        return {
+          fillStart: "rgba(251, 191, 36, 0.8)", // Amber/Yellow
+          fillEnd: "rgba(251, 191, 36, 0.5)",
+          stroke: "rgba(251, 191, 36, 1)"
+        }
+      case 'eating':
+        return {
+          fillStart: "rgba(34, 197, 94, 0.8)", // Green
+          fillEnd: "rgba(34, 197, 94, 0.5)",
+          stroke: "rgba(34, 197, 94, 1)"
+        }
+      case 'needs_clearing':
+        return {
+          fillStart: "rgba(239, 68, 68, 0.8)", // Red
+          fillEnd: "rgba(239, 68, 68, 0.5)",
+          stroke: "rgba(239, 68, 68, 1)"
+        }
+      default:
+        return {
+          fillStart: isHovered ? "rgba(56, 189, 174, 0.7)" : "rgba(255, 255, 255, 0.5)",
+          fillEnd: isHovered ? "rgba(56, 189, 174, 0.4)" : "rgba(200, 200, 200, 0.3)",
+          stroke: isHovered ? "rgba(56, 189, 174, 0.8)" : "rgba(255, 255, 255, 0.6)"
+        }
     }
   }
 
@@ -198,9 +249,22 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.translate(centerX, centerY); ctx.rotate(-rotationRad); ctx.fillText(table.label, 0, 0); ctx.rotate(rotationRad); ctx.translate(-centerX, -centerY);
 
-        // Draw Seats
+        // Draw Seats with real-time status colors
         const seatRadius = 5; const seatPositions = calculateSeatPositions(table.type, table.x, table.y, table.width, table.height, table.seats);
-        seatPositions.forEach((position) => { const seatGradient = ctx.createRadialGradient(position.x, position.y, 0, position.x, position.y, seatRadius); const seatStroke = isHovered ? "rgba(56, 189, 174, 0.8)" : "rgba(255, 255, 255, 0.6)"; seatGradient.addColorStop(0, isHovered ? "rgba(56, 189, 174, 0.7)" : "rgba(255, 255, 255, 0.5)"); seatGradient.addColorStop(1, isHovered ? "rgba(56, 189, 174, 0.4)" : "rgba(200, 200, 200, 0.3)"); ctx.fillStyle = seatGradient; ctx.strokeStyle = seatStroke; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(position.x, position.y, seatRadius, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); });
+        seatPositions.forEach((position, seatIndex) => { 
+          const seatNumber = seatIndex + 1
+          const seatColors = getSeatColors(table.id, seatNumber, isHovered)
+          const seatGradient = ctx.createRadialGradient(position.x, position.y, 0, position.x, position.y, seatRadius)
+          seatGradient.addColorStop(0, seatColors.fillStart)
+          seatGradient.addColorStop(1, seatColors.fillEnd)
+          ctx.fillStyle = seatGradient
+          ctx.strokeStyle = seatColors.stroke
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.arc(position.x, position.y, seatRadius, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.stroke()
+        });
 
         ctx.restore();
       });
@@ -465,6 +529,33 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
           >
             FIT
           </button>
+        </div>
+
+        {/* Seat Status Legend */}
+        <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-sm rounded-lg p-3 z-10">
+          <h4 className="text-xs font-semibold text-white mb-2">Seat Status</h4>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-white/50 border border-white/60"></div>
+              <span>Available</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span>Ordering</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <span>Waiting</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span>Eating</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span>Needs Clearing</span>
+            </div>
+          </div>
         </div>
 
         {/* Instructions Overlay */}

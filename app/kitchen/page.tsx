@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { fetchRecentOrders, updateOrderStatus, type Order } from "@/lib/modassembly/supabase/database/orders"
 import { createClient } from "@/lib/modassembly/supabase/client"
+import { DiningRoomOverview } from "@/components/kds/dining-room-overview"
 
 interface TableGroup {
   tableId: string
@@ -52,6 +53,7 @@ export default function KitchenPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [filterBy, setFilterBy] = useState<FilterBy>('all')
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showDiningRoom, setShowDiningRoom] = useState(true)
   const { toast } = useToast()
 
   // Load orders
@@ -331,6 +333,17 @@ export default function KitchenPage() {
                 {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
 
+              {/* Dining Room Toggle */}
+              <Button
+                variant={showDiningRoom ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowDiningRoom(!showDiningRoom)}
+                title={showDiningRoom ? 'Hide dining room' : 'Show dining room'}
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Dining Room
+              </Button>
+
               {/* Refresh */}
               <Button
                 variant="outline"
@@ -343,6 +356,13 @@ export default function KitchenPage() {
               </Button>
             </div>
           </div>
+
+          {/* Dining Room Overview */}
+          {showDiningRoom && (
+            <div className="mb-6">
+              <DiningRoomOverview />
+            </div>
+          )}
 
           {/* Content */}
           <ScrollArea className="h-[calc(100vh-250px)]">

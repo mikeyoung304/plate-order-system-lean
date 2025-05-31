@@ -42,6 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSeatNavigation } from "@/hooks/use-seat-navigation"
 import { useOrderFlowState } from "@/lib/hooks/use-order-flow-state"
 import { useServerPageData } from "@/lib/hooks/use-server-page-data"
+import { useSeatStatus } from "@/hooks/use-seat-status"
 
 // Add type definition for Order
 // TODO: OrderSuggestion type for future suggestion system
@@ -63,6 +64,7 @@ export default function ServerPage() {
   // Consolidated state management
   const orderFlow = useOrderFlowState()
   const data = useServerPageData("default")
+  const { getSeatStatus } = useSeatStatus()
   const { toast } = useToast()
   
   // Minimal remaining state
@@ -439,21 +441,62 @@ export default function ServerPage() {
                       <div className="p-6">
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                           {Array.from({ length: orderFlow.selectedTable.seats }, (_, i) => i + 1).map((seatNumber) => {
+                            const seatStatus = getSeatStatus(orderFlow.selectedTable.id, seatNumber)
                             const hasOrder = seatNav.seatOrders.find(s => s.seatNumber === seatNumber)?.hasOrder || false
+                            
+                            // Determine button styling based on real-time status
+                            let buttonClass = 'h-20 text-lg font-semibold rounded-xl touch-manipulation '
+                            let statusText = ''
+                            let statusColor = ''
+                            
+                            if (seatStatus) {
+                              switch (seatStatus.status) {
+                                case 'ordering':
+                                  buttonClass += 'bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-400'
+                                  statusText = 'Ordering'
+                                  statusColor = 'text-blue-200'
+                                  break
+                                case 'waiting':
+                                  buttonClass += 'bg-yellow-600 hover:bg-yellow-700 text-white border-2 border-yellow-400'
+                                  statusText = `Waiting ${seatStatus.estimatedWaitTime ? `(${seatStatus.estimatedWaitTime}m)` : ''}`
+                                  statusColor = 'text-yellow-200'
+                                  break
+                                case 'eating':
+                                  buttonClass += 'bg-green-600 hover:bg-green-700 text-white border-2 border-green-400'
+                                  statusText = 'Eating'
+                                  statusColor = 'text-green-200'
+                                  break
+                                case 'needs_clearing':
+                                  buttonClass += 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-400 animate-pulse'
+                                  statusText = 'Needs Clearing'
+                                  statusColor = 'text-red-200'
+                                  break
+                                default:
+                                  buttonClass += 'bg-gray-600 hover:bg-gray-700 text-white'
+                                  statusText = 'Available'
+                                  statusColor = 'text-gray-300'
+                              }
+                            } else if (hasOrder) {
+                              buttonClass += 'bg-green-600 hover:bg-green-700 text-white'
+                              statusText = 'Has Order'
+                              statusColor = 'text-green-200'
+                            } else {
+                              buttonClass += 'bg-gray-600 hover:bg-gray-700 text-white'
+                              statusText = 'Available'
+                              statusColor = 'text-gray-300'
+                            }
+                            
                             return (
                               <Button
                                 key={seatNumber}
                                 onClick={() => handleSeatSelected(seatNumber)}
-                                className={`h-20 text-lg font-semibold rounded-xl touch-manipulation ${
-                                  hasOrder 
-                                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                }`}
+                                className={buttonClass}
                               >
                                 <div className="flex flex-col items-center">
                                   <span>Seat {seatNumber}</span>
-                                  {hasOrder && (
-                                    <span className="text-xs opacity-80">Has Order</span>
+                                  <span className={`text-xs ${statusColor}`}>{statusText}</span>
+                                  {seatStatus?.residentName && (
+                                    <span className="text-xs opacity-70 truncate max-w-full">{seatStatus.residentName}</span>
                                   )}
                                 </div>
                               </Button>
