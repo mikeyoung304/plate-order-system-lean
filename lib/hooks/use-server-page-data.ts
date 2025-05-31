@@ -135,15 +135,15 @@ export function useServerPageData(floorPlanId: string = "default") {
   // Refresh specific data
   const refreshTables = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId)
+      const { data, error } = await supabase.from('tables').select('*') // Remove floor_plan_id filter since column doesn't exist
       if (error) throw error
       const tables = (data || []).map((table: any): Table => ({
         id: table.id,
-        label: table.name || `Table ${table.id}`,
+        label: `Table ${table.label}`, // Use label field from schema
         status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
-        seats: table.seat_count || 4,
-        x: table.position_x || 0,
-        y: table.position_y || 0,
+        seats: table.seat_count || 4, // Will calculate from seats table later
+        x: table.x || Math.random() * 600 + 50, // Use x from table or random position
+        y: table.y || Math.random() * 400 + 50, // Use y from table or random position  
         width: table.width || 100,
         height: table.height || 100,
         type: (table.type || 'circle') as 'circle' | 'rectangle' | 'square',
@@ -154,7 +154,7 @@ export function useServerPageData(floorPlanId: string = "default") {
     } catch (error) {
       console.error('Error refreshing tables:', error)
     }
-  }, [floorPlanId])
+  }, [])
 
   const refreshRecentOrders = useCallback(async () => {
     try {
