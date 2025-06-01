@@ -3,16 +3,23 @@ import { z } from 'zod'
 const envSchema = z.object({
   // Public environment variables
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL'),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
-  
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
+    .string()
+    .min(1, 'Supabase anon key is required'),
+
   // Server-side only environment variables
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required').optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .min(1, 'Supabase service role key is required')
+    .optional(),
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required').optional(),
-  
+
   // Development/Production flags
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
-  
+
   // Database credentials (for direct PostgreSQL access)
   SUPABASE_DB_PASSWORD: z.string().optional(),
 })
@@ -33,7 +40,7 @@ function validateEnv(): Env {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errorMessage = error.errors
-        .map((err) => `${err.path.join('.')}: ${err.message}`)
+        .map(err => `${err.path.join('.')}: ${err.message}`)
         .join('\n')
       throw new Error(`Environment validation failed:\n${errorMessage}`)
     }
@@ -56,20 +63,20 @@ export const publicEnv = {
   NODE_ENV: env.NODE_ENV,
 } as const
 
-// Type guard for server-side environment variables  
-export function assertServerEnv(): asserts env is Env & {
+// Type guard for server-side environment variables
+export function assertServerEnv(envToCheck = env): asserts envToCheck is Env & {
   SUPABASE_SERVICE_ROLE_KEY: string
   OPENAI_API_KEY: string
 } {
   if (typeof window !== 'undefined') {
     throw new Error('Server environment variables accessed on client side')
   }
-  
-  if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+
+  if (!envToCheck.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required on server side')
   }
-  
-  if (!env.OPENAI_API_KEY) {
+
+  if (!envToCheck.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is required for voice features')
   }
 }

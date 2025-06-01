@@ -5,9 +5,9 @@ import '@testing-library/jest-dom'
 describe('Testing Setup', () => {
   it('should run tests successfully', () => {
     const TestComponent = () => <div>Test Component</div>
-    
+
     render(<TestComponent />)
-    
+
     expect(screen.getByText('Test Component')).toBeInTheDocument()
   })
 })

@@ -17,6 +17,7 @@ This roadmap provides specific, actionable steps to transform this vibe-coded co
 **Goal**: Remove 40% of codebase with ZERO user impact
 
 ### Day 1 Morning: Delete Obvious Bloat
+
 ```bash
 # These can be deleted immediately with no impact
 rm components/ai-order-assistant.tsx              # 290 lines of fake AI
@@ -27,6 +28,7 @@ rm lib/dev-experience/                           # Meta-programming nonsense
 ```
 
 ### Day 1 Afternoon: Dependency Massacre
+
 ```json
 // Remove from package.json:
 - "framer-motion"           # For fake audio bars
@@ -45,6 +47,7 @@ npm install
 ```
 
 ### Day 2: Code Cleanup
+
 - [ ] Remove all "OVERNIGHT_SESSION" comments (500+ lines)
 - [ ] Delete mock data files in `/mocks/`
 - [ ] Remove abandoned test infrastructure
@@ -52,7 +55,8 @@ npm install
 - [ ] Remove duplicate route pages (/direct-server, /server-bypass)
 - [ ] Delete unused API routes
 
-**Expected Result**: 
+**Expected Result**:
+
 - -12,000 lines of code
 - -400KB bundle size
 - Same exact functionality
@@ -62,48 +66,48 @@ npm install
 **Goal**: One way to do everything
 
 ### State Management Consolidation
+
 ```typescript
 // DECISION: Local state + Supabase realtime only
 // DELETE: All custom caching, all global UI state
 
 // Bad (current):
-const [isLoading, setIsLoading] = useState(false);
-const [loadingText, setLoadingText] = useState('');
-const [loadingProgress, setLoadingProgress] = useState(0);
+const [isLoading, setIsLoading] = useState(false)
+const [loadingText, setLoadingText] = useState('')
+const [loadingProgress, setLoadingProgress] = useState(0)
 
 // Good (new):
 const [loadingState, setLoadingState] = useState({
   isLoading: false,
   text: '',
-  progress: 0
-});
+  progress: 0,
+})
 ```
 
 ### Error Handling Consolidation
+
 ```typescript
 // DECISION: try/catch + single error boundary
 // DELETE: Custom error types, multiple patterns
 
 // Single pattern for all async operations:
 try {
-  const result = await operation();
-  return { success: true, data: result };
+  const result = await operation()
+  return { success: true, data: result }
 } catch (error) {
-  console.error('Operation failed:', error);
-  return { success: false, error: error.message };
+  console.error('Operation failed:', error)
+  return { success: false, error: error.message }
 }
 ```
 
 ### Data Fetching Consolidation
+
 ```typescript
 // DECISION: Direct Supabase for all data
 // DELETE: API routes that just proxy Supabase, custom wrappers
 
 // Single pattern:
-const { data, error } = await supabase
-  .from('table')
-  .select('*')
-  .single();
+const { data, error } = await supabase.from('table').select('*').single()
 ```
 
 ## Phase 3: Component Surgery (1 week)
@@ -113,6 +117,7 @@ const { data, error } = await supabase
 ### Week 1: High-Impact Refactors
 
 #### Simplify VoiceOrderPanel (516 → 150 lines)
+
 ```typescript
 // Remove:
 - Fake audio visualizer (40 bars doing nothing)
@@ -129,6 +134,7 @@ const { data, error } = await supabase
 ```
 
 #### Split Kitchen Display Components
+
 ```typescript
 // Current: Monolithic KDS component
 // New structure:
@@ -139,12 +145,13 @@ const { data, error } = await supabase
 ```
 
 #### Replace Security Theater
+
 ```typescript
 // Delete lib/security/index.ts (350 lines)
 // Replace with:
 export const sanitizeInput = (input: string) => {
-  return DOMPurify.sanitize(input);
-};
+  return DOMPurify.sanitize(input)
+}
 // That's it. 3 lines.
 ```
 
@@ -153,18 +160,21 @@ export const sanitizeInput = (input: string) => {
 **Goal**: Make fake features real or delete them
 
 ### Delete These Fake Features
+
 - [ ] AI Order Assistant (it's just time-based if/else)
 - [ ] Weather-based predictions (mentioned but not implemented)
 - [ ] Push notifications (can't actually push)
 - [ ] Analytics dashboard (100% mock data)
 
 ### Make These Real
+
 - [ ] Printer integration (currently returns mock success)
 - [ ] Actual prep time tracking (not random numbers)
 - [ ] Real order analytics (not hardcoded data)
 - [ ] Guest mode (scripts exist, add UI)
 
 ### Simplify These
+
 - [ ] Voice order: Remove "confidence" scores
 - [ ] Resident selector: Remove "ML" language
 - [ ] Performance: Use browser DevTools, not custom
@@ -174,22 +184,25 @@ export const sanitizeInput = (input: string) => {
 ### Component State Fixes
 
 #### Before: VoiceOrderPanel Chaos
+
 ```typescript
 // 10 different useStates
 ```
 
 #### After: Single State Object
+
 ```typescript
 const [voiceState, dispatch] = useReducer(voiceReducer, {
   recording: false,
   processing: false,
   transcription: '',
   items: [],
-  error: null
-});
+  error: null,
+})
 ```
 
 ### Remove Global State Abuse
+
 - [ ] Theme doesn't need global state (CSS variables)
 - [ ] UI state should be local
 - [ ] Only auth and user need context
@@ -197,33 +210,34 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## Phase 6: Dependency Diet (1 day)
 
 ### Final Dependency List
+
 ```json
 {
   "dependencies": {
     // Core (required)
     "next": "15.x",
-    "react": "19.x", 
+    "react": "19.x",
     "react-dom": "19.x",
     "@supabase/supabase-js": "2.x",
     "@supabase/ssr": "0.x",
-    
+
     // Business critical
-    "openai": "4.x",              // Voice transcription
+    "openai": "4.x", // Voice transcription
     "isomorphic-dompurify": "2.x", // XSS prevention
-    
+
     // UI essentials
-    "clsx": "2.x",                // Class names
-    "lucide-react": "0.x",        // Icons
-    "@radix-ui/react-dialog": "1.x",     // Modals
+    "clsx": "2.x", // Class names
+    "lucide-react": "0.x", // Icons
+    "@radix-ui/react-dialog": "1.x", // Modals
     "@radix-ui/react-dropdown-menu": "2.x", // Menus
-    "@radix-ui/react-select": "1.x",     // Selects
-    
+    "@radix-ui/react-select": "1.x", // Selects
+
     // Forms & validation
-    "react-hook-form": "7.x",     // If keeping complex forms
-    "zod": "3.x",                 // If keeping validation
-    
+    "react-hook-form": "7.x", // If keeping complex forms
+    "zod": "3.x", // If keeping validation
+
     // Utilities
-    "react-hot-toast": "2.x"      // Notifications
+    "react-hot-toast": "2.x" // Notifications
   }
 }
 ```
@@ -231,12 +245,14 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## Phase 7: Performance Reality (2 days)
 
 ### Remove Performance Theater
+
 - [ ] Delete custom monitoring
 - [ ] Remove "smart" caching
 - [ ] Delete memory optimization
 - [ ] Remove custom memoization
 
 ### Add Real Performance
+
 - [ ] Proper React.memo usage
 - [ ] Actually lazy load routes
 - [ ] Real image optimization
@@ -245,6 +261,7 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## Phase 8: Testing & Documentation (3-4 days)
 
 ### Add Real Tests
+
 ```typescript
 // Focus on critical paths:
 - Order creation flow
@@ -255,14 +272,17 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ```
 
 ### Write Honest Documentation
+
 ```markdown
 # What This Actually Does
+
 - Simple order management for assisted living
 - Voice ordering for accessibility
 - Kitchen display system
 - Basic table management
 
-# What It Doesn't Do  
+# What It Doesn't Do
+
 - No AI predictions (removed fake ML)
 - No complex analytics (basic only)
 - No offline mode (requires connection)
@@ -271,6 +291,7 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## Success Metrics
 
 ### Quantitative Goals
+
 - [ ] Code: 28,420 → <10,000 lines (-65%)
 - [ ] Dependencies: 57 → ~15 (-74%)
 - [ ] Bundle: ~800KB → ~200KB (-75%)
@@ -278,6 +299,7 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 - [ ] Test coverage: >50% (from 0%)
 
 ### Qualitative Goals
+
 - [ ] New dev onboarding: <1 day
 - [ ] Any component understandable in <5 minutes
 - [ ] Clear patterns throughout
@@ -287,11 +309,13 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## Maintenance Mode
 
 ### Weekly Tasks
+
 - Review and reject any "clever" abstractions
 - Check for dependency updates (security only)
 - Ensure no vibe-coding creep
 
-### Monthly Tasks  
+### Monthly Tasks
+
 - Bundle size audit
 - Performance check
 - Remove any unused code
@@ -300,6 +324,7 @@ const [voiceState, dispatch] = useReducer(voiceReducer, {
 ## The North Star
 
 **Every decision should be guided by:**
+
 1. Does this solve a real user problem?
 2. Is this the simplest solution?
 3. Will a junior dev understand this?
@@ -312,8 +337,9 @@ This cleanup will be painful. You'll delete code that took days to write. You'll
 **But that's the point.**
 
 The end result will be an app that:
+
 - Actually works reliably
-- Serves real users with real needs  
+- Serves real users with real needs
 - Can be maintained by any developer
 - Builds trust instead of theater
 
@@ -321,6 +347,6 @@ Remember: The best code is boring code. Make this codebase boring, reliable, and
 
 ---
 
-*Timeline: 4-5 weeks for complete cleanup*
-*Team size: 1-2 developers*
-*Commitment required: No new features during cleanup*
+_Timeline: 4-5 weeks for complete cleanup_
+_Team size: 1-2 developers_
+_Commitment required: No new features during cleanup_

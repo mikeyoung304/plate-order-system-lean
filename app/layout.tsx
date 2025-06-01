@@ -1,27 +1,28 @@
-import type React from "react"
-import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/lib/modassembly/supabase/auth"
-import { createClient } from "@/lib/modassembly/supabase/server"
-import { headers } from "next/headers"
-import { redirect } from "next/navigation"
-import { WelcomeModal } from "@/components/welcome-modal"
-import { FooterAttribution } from "@/components/footer-attribution"
-import { AuthStatusPanel } from "@/components/debug/auth-status-panel"
-import { SecurityPerformanceInit } from "@/components/security-performance-init"
-import { BetaFeedbackButton } from "@/components/beta-feedback-button"
-import { OnboardingTooltips } from "@/components/onboarding-tooltips"
-import { BetaNavigation } from "@/components/beta-navigation"
-import { QuickStartGuide } from "@/components/quick-start-guide"
-import "./globals.css"
+import type React from 'react'
+import { Inter } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
+import { AuthProvider } from '@/lib/modassembly/supabase/auth'
+import { createClient } from '@/lib/modassembly/supabase/server'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { WelcomeModal } from '@/components/welcome-modal'
+import { FooterAttribution } from '@/components/footer-attribution'
+import { AuthStatusPanel } from '@/components/debug/auth-status-panel'
+import { SecurityPerformanceInit } from '@/components/security-performance-init'
+import { BetaFeedbackButton } from '@/components/beta-feedback-button'
+import { OnboardingTooltips } from '@/components/onboarding-tooltips'
+import { BetaNavigation } from '@/components/beta-navigation'
+import { QuickStartGuide } from '@/components/quick-start-guide'
+import './globals.css'
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: "Plate | Voice Ordering System",
-  description: "Modern restaurant order management system with voice recognition",
-  generator: 'v0.dev'
+  title: 'Plate | Voice Ordering System',
+  description:
+    'Modern restaurant order management system with voice recognition',
+  generator: 'v0.dev',
 }
 
 export const viewport = {
@@ -38,22 +39,22 @@ export default async function RootLayout({
 }) {
   // Server-side auth check
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
   // Get current path using headers
   const headersList = await headers()
-  const url = headersList.get("x-url") || "http://localhost"
+  const url = headersList.get('x-url') || 'http://localhost'
   const pathname = new URL(url).pathname
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme='dark'>
           <AuthProvider>
-            <div className="min-h-screen flex flex-col">
-              <main className="flex-grow pb-10">
-                {children}
-              </main>
+            <div className='min-h-screen flex flex-col'>
+              <main className='flex-grow pb-10'>{children}</main>
               <FooterAttribution />
             </div>
             <WelcomeModal />

@@ -23,22 +23,24 @@ type ResidentProfile = {
  */
 export async function getUser() {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   if (!session?.user) {
     return { user: null, profile: null }
   }
-  
+
   // Get user profile
   const { data } = await supabase
     .from('profiles')
     .select('role, name')
     .eq('user_id', session.user.id)
     .single()
-  
+
   return {
     user: session.user,
-    profile: data || { role: null, name: null }
+    profile: data || { role: null, name: null },
   }
 }
 
@@ -48,7 +50,7 @@ export async function getUser() {
  */
 export async function getAllResidents(): Promise<User[]> {
   const supabase = createClient()
-  
+
   // Get all residents from profiles
   const { data: residents, error } = await supabase
     .from('profiles')
@@ -68,4 +70,4 @@ export async function getAllResidents(): Promise<User[]> {
     id: resident.user_id,
     name: resident.name,
   }))
-} 
+}

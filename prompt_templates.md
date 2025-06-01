@@ -6,6 +6,7 @@
 ## Feature: [Voice Feature Name]
 
 ### Requirements
+
 - [ ] Microphone permission handling
 - [ ] Audio recording with visual feedback
 - [ ] Transcription via OpenAI API
@@ -16,18 +17,21 @@
 ### Implementation Steps
 
 1. **Create Recording Hook**
+
    - Set up Web Audio API
    - Handle permission requests
    - Implement start/stop recording
    - Save audio to temporary blob
 
 2. **Transcription Service**
+
    - Send audio to OpenAI endpoint
    - Parse response to item array
    - Handle common speech patterns
    - Return structured order data
 
 3. **UI Integration**
+
    - Add recording button with states
    - Show visual feedback during recording
    - Display transcription preview
@@ -40,7 +44,9 @@
    - Audio quality issues
 
 ### Testing
+
 - [ ] Test with different accents
 - [ ] Test with background noise
 - [ ] Test error scenarios
 - [ ] Test on mobile devices
+```

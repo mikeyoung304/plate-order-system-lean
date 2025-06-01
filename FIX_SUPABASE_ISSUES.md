@@ -1,10 +1,12 @@
 # 🔧 Fix Supabase RLS & WebSocket Issues
 
 ## The Good News:
+
 ✅ Your Supabase tables exist!
 ✅ Your credentials are correct!
 
 ## The Issues:
+
 1. **Row Level Security (RLS)** is blocking data access
 2. **WebSocket/Realtime** connection failing
 3. **User role** might not be set properly
@@ -12,12 +14,13 @@
 ## Quick Fixes:
 
 ### 1. Check Your User's Role
+
 First, let's see what role your user has:
 
 ```sql
 -- Run this in Supabase SQL Editor
 -- Replace with your actual email
-SELECT 
+SELECT
   u.email,
   p.role,
   p.id
@@ -27,6 +30,7 @@ WHERE u.email = 'your-email@example.com';
 ```
 
 ### 2. Update Your Profile Role
+
 If role is null or not 'server'/'admin':
 
 ```sql
@@ -35,11 +39,12 @@ INSERT INTO profiles (id, role)
 SELECT id, 'admin'
 FROM auth.users
 WHERE email = 'your-email@example.com'
-ON CONFLICT (id) 
+ON CONFLICT (id)
 DO UPDATE SET role = 'admin';
 ```
 
 ### 3. Fix RLS Policies (Temporary)
+
 For testing, you can temporarily disable RLS:
 
 ```sql
@@ -51,6 +56,7 @@ ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
 ```
 
 ### 4. Enable Realtime
+
 ```sql
 -- Enable realtime for tables
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
@@ -59,13 +65,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE seats;
 ```
 
 ### 5. Check If KDS Tables Exist
+
 The server page might be looking for KDS tables:
 
 ```sql
 -- Check if these exist
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
 AND table_name LIKE 'kds%';
 ```
 
@@ -81,6 +88,7 @@ If they don't exist, run:
 ## Alternative: Simplified Server Page
 
 If still having issues, I can create a simplified server page that:
+
 - Doesn't use realtime
 - Has better error handling
 - Works without all features initially

@@ -22,6 +22,7 @@ The Plate Order System is designed specifically for assisted living facility din
 ### Installation
 
 1. Clone the repository and set up environment variables:
+
    ```bash
    git clone <repository-url>
    cd plate-order-system
@@ -30,6 +31,7 @@ The Plate Order System is designed specifically for assisted living facility din
    ```
 
 2. Start the development environment:
+
    ```bash
    npm run dev
    ```
@@ -42,6 +44,7 @@ The Plate Order System is designed specifically for assisted living facility din
 This application consists of three main components:
 
 1. **Frontend**: Next.js-based web application with:
+
    - Floor Plan Editor for table management
    - Voice ordering capabilities
    - Server, Kitchen, Expo, and Bar views
@@ -52,31 +55,37 @@ This application consists of three main components:
 ## Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js (React)
 - **Styling**: Tailwind CSS
 - **State Management**: React Context API with standards based on clean code principles
 - **API Client**: Fetch API, Supabase Client
 
 ### Infrastructure
+
 - **Database**: Supabase (PostgreSQL)
 
 ## Key Features
 
 ### Floor Plan Management
+
 - Create, edit, and manage restaurant floor plans
 - Customize tables with different shapes, sizes, and seat counts
 
 ### Resident Recognition
+
 - Track resident seating patterns
 - Automatically suggest residents when a seat is selected
 
 ### Order Management
+
 - Take orders via voice or traditional input
 - Recommend items based on resident preferences
 - Track order status through different stations
 - Real-time updates via WebSockets
 
 ### User Interfaces
+
 - **Server View**: For taking orders and managing tables
 - **Kitchen View**: For food preparation tracking
 - **Bar View**: For beverage order management

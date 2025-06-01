@@ -1,239 +1,289 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Transcription Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        .success { background-color: #d4edda; border-color: #c3e6cb; }
-        .error { background-color: #f8d7da; border-color: #f5c6cb; }
-        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
-        .info { background-color: #d1ecf1; border-color: #bee5eb; }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .record-btn {
-            background-color: #007bff;
-            color: white;
-        }
-        .record-btn.recording {
-            background-color: #dc3545;
-        }
-        .test-btn {
-            background-color: #28a745;
-            color: white;
-        }
-        #results {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .record-btn {
+        background-color: #007bff;
+        color: white;
+      }
+      .record-btn.recording {
+        background-color: #dc3545;
+      }
+      .test-btn {
+        background-color: #28a745;
+        color: white;
+      }
+      #results {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Voice Transcription System Test</h1>
-    
+
     <div class="status info">
-        <strong>Instructions:</strong>
-        <ol>
-            <li>Make sure you're running the app with HTTPS: <code>npm run dev:https</code></li>
-            <li>Click "Test Microphone Access" to check permissions</li>
-            <li>Click "Record Test Audio" to test voice recording</li>
-            <li>Click "Test Transcription API" to test the backend</li>
-        </ol>
+      <strong>Instructions:</strong>
+      <ol>
+        <li>
+          Make sure you're running the app with HTTPS:
+          <code>npm run dev:https</code>
+        </li>
+        <li>Click "Test Microphone Access" to check permissions</li>
+        <li>Click "Record Test Audio" to test voice recording</li>
+        <li>Click "Test Transcription API" to test the backend</li>
+      </ol>
     </div>
 
     <div id="status" class="status info">Ready to test...</div>
 
     <div>
-        <button id="testMic" class="test-btn">Test Microphone Access</button>
-        <button id="recordBtn" class="record-btn">Record Test Audio</button>
-        <button id="testAPI" class="test-btn">Test Transcription API</button>
+      <button id="testMic" class="test-btn">Test Microphone Access</button>
+      <button id="recordBtn" class="record-btn">Record Test Audio</button>
+      <button id="testAPI" class="test-btn">Test Transcription API</button>
     </div>
 
     <div id="results"></div>
 
     <script>
-        let mediaRecorder = null;
-        let audioChunks = [];
+      let mediaRecorder = null
+      let audioChunks = []
 
-        function updateStatus(message, type = 'info') {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
+      function updateStatus(message, type = 'info') {
+        const statusDiv = document.getElementById('status')
+        statusDiv.textContent = message
+        statusDiv.className = `status ${type}`
+      }
+
+      function addResult(title, content, type = 'info') {
+        const resultsDiv = document.getElementById('results')
+        const resultElement = document.createElement('div')
+        resultElement.className = `status ${type}`
+        resultElement.innerHTML = `<strong>${title}:</strong><br><pre>${content}</pre>`
+        resultsDiv.appendChild(resultElement)
+      }
+
+      // Test microphone access
+      document.getElementById('testMic').addEventListener('click', async () => {
+        try {
+          updateStatus('Testing microphone access...', 'info')
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          })
+          stream.getTracks().forEach(track => track.stop())
+
+          updateStatus('Microphone access granted!', 'success')
+          addResult(
+            'Microphone Test',
+            'SUCCESS: Microphone permission granted',
+            'success'
+          )
+
+          // Check if we're on HTTPS
+          if (location.protocol === 'https:') {
+            addResult('HTTPS Check', 'SUCCESS: Running on HTTPS', 'success')
+          } else {
+            addResult(
+              'HTTPS Check',
+              'WARNING: Running on HTTP. Voice recording may not work in production.',
+              'warning'
+            )
+          }
+        } catch (error) {
+          updateStatus('Microphone access denied or failed', 'error')
+          addResult('Microphone Test', `ERROR: ${error.message}`, 'error')
         }
+      })
 
-        function addResult(title, content, type = 'info') {
-            const resultsDiv = document.getElementById('results');
-            const resultElement = document.createElement('div');
-            resultElement.className = `status ${type}`;
-            resultElement.innerHTML = `<strong>${title}:</strong><br><pre>${content}</pre>`;
-            resultsDiv.appendChild(resultElement);
+      // Test audio recording
+      document
+        .getElementById('recordBtn')
+        .addEventListener('click', async () => {
+          const button = document.getElementById('recordBtn')
+
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            // Stop recording
+            mediaRecorder.stop()
+            button.textContent = 'Record Test Audio'
+            button.classList.remove('recording')
+            updateStatus('Processing audio...', 'info')
+          } else {
+            // Start recording
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                },
+              })
+
+              audioChunks = []
+              mediaRecorder = new MediaRecorder(stream)
+
+              mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                  audioChunks.push(event.data)
+                }
+              }
+
+              mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(track => track.stop())
+
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+                addResult(
+                  'Audio Recording',
+                  `SUCCESS: Recorded ${audioBlob.size} bytes of audio (${audioBlob.type})`,
+                  'success'
+                )
+
+                // Automatically test transcription
+                testTranscription(audioBlob)
+              }
+
+              mediaRecorder.start()
+              button.textContent = 'Stop Recording'
+              button.classList.add('recording')
+              updateStatus(
+                'Recording... (speak now, then click stop)',
+                'warning'
+              )
+
+              // Auto-stop after 10 seconds
+              setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                  mediaRecorder.stop()
+                  button.textContent = 'Record Test Audio'
+                  button.classList.remove('recording')
+                }
+              }, 10000)
+            } catch (error) {
+              updateStatus('Failed to start recording', 'error')
+              addResult('Audio Recording', `ERROR: ${error.message}`, 'error')
+            }
+          }
+        })
+
+      // Test transcription API
+      async function testTranscription(audioBlob) {
+        try {
+          updateStatus('Testing transcription API...', 'info')
+
+          const formData = new FormData()
+          formData.append('audio', audioBlob)
+
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(`HTTP ${response.status}: ${errorText}`)
+          }
+
+          const result = await response.json()
+
+          updateStatus('Transcription completed!', 'success')
+          addResult(
+            'Transcription API',
+            `SUCCESS:\\nTranscription: "${result.transcription}"\\nItems: ${JSON.stringify(result.items, null, 2)}`,
+            'success'
+          )
+        } catch (error) {
+          updateStatus('Transcription failed', 'error')
+          addResult('Transcription API', `ERROR: ${error.message}`, 'error')
         }
+      }
 
-        // Test microphone access
-        document.getElementById('testMic').addEventListener('click', async () => {
-            try {
-                updateStatus('Testing microphone access...', 'info');
-                
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                stream.getTracks().forEach(track => track.stop());
-                
-                updateStatus('Microphone access granted!', 'success');
-                addResult('Microphone Test', 'SUCCESS: Microphone permission granted', 'success');
-                
-                // Check if we're on HTTPS
-                if (location.protocol === 'https:') {
-                    addResult('HTTPS Check', 'SUCCESS: Running on HTTPS', 'success');
-                } else {
-                    addResult('HTTPS Check', 'WARNING: Running on HTTP. Voice recording may not work in production.', 'warning');
-                }
-                
-            } catch (error) {
-                updateStatus('Microphone access denied or failed', 'error');
-                addResult('Microphone Test', `ERROR: ${error.message}`, 'error');
-            }
-        });
+      // Test API without audio
+      document.getElementById('testAPI').addEventListener('click', async () => {
+        try {
+          updateStatus('Testing API endpoint...', 'info')
 
-        // Test audio recording
-        document.getElementById('recordBtn').addEventListener('click', async () => {
-            const button = document.getElementById('recordBtn');
-            
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                // Stop recording
-                mediaRecorder.stop();
-                button.textContent = 'Record Test Audio';
-                button.classList.remove('recording');
-                updateStatus('Processing audio...', 'info');
-            } else {
-                // Start recording
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        }
-                    });
-                    
-                    audioChunks = [];
-                    mediaRecorder = new MediaRecorder(stream);
-                    
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            audioChunks.push(event.data);
-                        }
-                    };
-                    
-                    mediaRecorder.onstop = () => {
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        addResult('Audio Recording', `SUCCESS: Recorded ${audioBlob.size} bytes of audio (${audioBlob.type})`, 'success');
-                        
-                        // Automatically test transcription
-                        testTranscription(audioBlob);
-                    };
-                    
-                    mediaRecorder.start();
-                    button.textContent = 'Stop Recording';
-                    button.classList.add('recording');
-                    updateStatus('Recording... (speak now, then click stop)', 'warning');
-                    
-                    // Auto-stop after 10 seconds
-                    setTimeout(() => {
-                        if (mediaRecorder && mediaRecorder.state === 'recording') {
-                            mediaRecorder.stop();
-                            button.textContent = 'Record Test Audio';
-                            button.classList.remove('recording');
-                        }
-                    }, 10000);
-                    
-                } catch (error) {
-                    updateStatus('Failed to start recording', 'error');
-                    addResult('Audio Recording', `ERROR: ${error.message}`, 'error');
-                }
-            }
-        });
+          const response = await fetch('/api/transcribe', {
+            method: 'GET',
+          })
 
-        // Test transcription API
-        async function testTranscription(audioBlob) {
-            try {
-                updateStatus('Testing transcription API...', 'info');
-                
-                const formData = new FormData();
-                formData.append('audio', audioBlob);
-                
-                const response = await fetch('/api/transcribe', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                const result = await response.json();
-                
-                updateStatus('Transcription completed!', 'success');
-                addResult('Transcription API', `SUCCESS:\\nTranscription: "${result.transcription}"\\nItems: ${JSON.stringify(result.items, null, 2)}`, 'success');
-                
-            } catch (error) {
-                updateStatus('Transcription failed', 'error');
-                addResult('Transcription API', `ERROR: ${error.message}`, 'error');
-            }
+          if (response.status === 405) {
+            addResult(
+              'API Endpoint',
+              'SUCCESS: API endpoint is responsive (Method Not Allowed is expected for GET)',
+              'success'
+            )
+          } else {
+            addResult(
+              'API Endpoint',
+              `Unexpected response: ${response.status}`,
+              'warning'
+            )
+          }
+
+          updateStatus('API endpoint test completed', 'success')
+        } catch (error) {
+          updateStatus('API test failed', 'error')
+          addResult('API Endpoint', `ERROR: ${error.message}`, 'error')
         }
+      })
 
-        // Test API without audio
-        document.getElementById('testAPI').addEventListener('click', async () => {
-            try {
-                updateStatus('Testing API endpoint...', 'info');
-                
-                const response = await fetch('/api/transcribe', {
-                    method: 'GET'
-                });
-                
-                if (response.status === 405) {
-                    addResult('API Endpoint', 'SUCCESS: API endpoint is responsive (Method Not Allowed is expected for GET)', 'success');
-                } else {
-                    addResult('API Endpoint', `Unexpected response: ${response.status}`, 'warning');
-                }
-                
-                updateStatus('API endpoint test completed', 'success');
-                
-            } catch (error) {
-                updateStatus('API test failed', 'error');
-                addResult('API Endpoint', `ERROR: ${error.message}`, 'error');
-            }
-        });
-
-        // Check initial page load
-        window.addEventListener('load', () => {
-            if (location.protocol === 'https:') {
-                addResult('Page Load', 'SUCCESS: Loaded with HTTPS - Voice recording should work', 'success');
-            } else {
-                addResult('Page Load', 'WARNING: Loaded with HTTP - Use npm run dev:https for voice recording', 'warning');
-            }
-        });
+      // Check initial page load
+      window.addEventListener('load', () => {
+        if (location.protocol === 'https:') {
+          addResult(
+            'Page Load',
+            'SUCCESS: Loaded with HTTPS - Voice recording should work',
+            'success'
+          )
+        } else {
+          addResult(
+            'Page Load',
+            'WARNING: Loaded with HTTP - Use npm run dev:https for voice recording',
+            'warning'
+          )
+        }
+      })
     </script>
-</body>
+  </body>
 </html>

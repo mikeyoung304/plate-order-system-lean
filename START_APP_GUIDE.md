@@ -15,16 +15,20 @@ Then open your browser to: **http://localhost:3000**
 ## Step-by-Step Guide:
 
 ### Step 1: Open Terminal
+
 - On Mac: Press `Cmd + Space`, type "Terminal", press Enter
 - Navigate to project: `cd /Users/mike/Plate-Restaurant-System-App`
 
 ### Step 2: Start the Server
+
 Run this command:
+
 ```bash
 npm run dev
 ```
 
 You should see:
+
 ```
    ▲ Next.js 15.2.4
    - Local:        http://localhost:3000
@@ -36,6 +40,7 @@ You should see:
 ```
 
 ### Step 3: Open in Browser
+
 - Open your web browser (Chrome, Safari, Firefox)
 - Go to: **http://localhost:3000**
 - You should see the Plate login page!
@@ -45,6 +50,7 @@ You should see:
 ### If "npm run dev" fails:
 
 1. **Install dependencies first:**
+
    ```bash
    npm install
    ```
@@ -58,11 +64,13 @@ You should see:
 ### If browser shows "Cannot connect":
 
 1. **Check if server is running**
+
    - Look at your Terminal
    - Should show "Ready" message
    - No red error messages
 
 2. **Try different browser**
+
    - Sometimes browser cache causes issues
    - Try Incognito/Private mode
 
@@ -75,6 +83,7 @@ You should see:
 ## What You'll See:
 
 1. **Login Page** (http://localhost:3000)
+
    - Plate logo
    - Email/Password fields
    - Sign In / Sign Up toggle
@@ -92,6 +101,7 @@ You should see:
 ## Test Login:
 
 Create a test account:
+
 1. Click "Need an account? Create one"
 2. Enter:
    - Name: Test User

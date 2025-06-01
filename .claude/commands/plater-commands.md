@@ -1,6 +1,7 @@
 # .claude/commands/plater-commands.md
 
 ## /project:add-supabase-table
+
 Create a new Supabase table with proper RLS policies:
 
 1. Navigate to /supabase/migrations
@@ -12,6 +13,7 @@ Create a new Supabase table with proper RLS policies:
 7. Run migration locally and test
 
 ## /project:add-voice-command
+
 Add a new voice command to the ordering system:
 
 1. Update voice command parser in /lib/modassembly/openai/
@@ -21,6 +23,7 @@ Add a new voice command to the ordering system:
 5. Update documentation
 
 ## /project:add-realtime-feature
+
 Implement a new real-time feature:
 
 1. Identify the table(s) to watch
@@ -31,6 +34,7 @@ Implement a new real-time feature:
 6. Test with multiple concurrent users
 
 ## /project:add-admin-feature
+
 Add a new admin dashboard feature:
 
 1. Create new route under app/(auth)/admin/
@@ -41,6 +45,7 @@ Add a new admin dashboard feature:
 6. Add feature flag if needed
 
 ## /project:optimize-query
+
 Optimize a slow database query:
 
 1. Identify the slow query using Supabase logs
@@ -51,6 +56,7 @@ Optimize a slow database query:
 6. Add query performance monitoring
 
 ## /project:add-test
+
 Add tests for a feature:
 
 1. Create test file following naming convention
@@ -60,6 +66,7 @@ Add tests for a feature:
 5. Run tests and ensure coverage
 
 ## /project:debug-auth
+
 Debug authentication issues:
 
 1. Check browser cookies for session
@@ -70,6 +77,7 @@ Debug authentication issues:
 6. Review auth callback configuration
 
 ## /project:deploy-check
+
 Pre-deployment checklist:
 
 1. Run TypeScript type checking

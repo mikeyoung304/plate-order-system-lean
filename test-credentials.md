@@ -13,16 +13,17 @@ https://supabase.com/dashboard/project/eiipozoogrrfudhjoqms/sql/new
 -- Email: server@platetest.com
 -- Password: testserver123
 
--- Cook User:  
+-- Cook User:
 -- Email: cook@platetest.com
 -- Password: testcook123
 
 -- Admin User:
--- Email: admin@platetest.com  
+-- Email: admin@platetest.com
 -- Password: testadmin123
 ```
 
 ## Or use the signup form:
+
 1. Go to http://localhost:3000
 2. Click "Need an account? Create one"
 3. Enter test credentials

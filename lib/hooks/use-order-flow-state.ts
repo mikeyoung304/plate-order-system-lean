@@ -1,7 +1,12 @@
-import { useReducer, useCallback } from 'react'
+import { useCallback, useReducer } from 'react'
 
 // Order flow state machine types
-export type OrderFlowStep = 'floorPlan' | 'seatPicker' | 'orderType' | 'residentSelect' | 'voiceOrder'
+export type OrderFlowStep =
+  | 'floorPlan'
+  | 'seatPicker'
+  | 'orderType'
+  | 'residentSelect'
+  | 'voiceOrder'
 
 export interface OrderFlowState {
   currentStep: OrderFlowStep
@@ -31,10 +36,13 @@ const initialState: OrderFlowState = {
   orderType: null,
   selectedResident: null,
   selectedSuggestion: null,
-  showVoiceOrderPanel: false
+  showVoiceOrderPanel: false,
 }
 
-function orderFlowReducer(state: OrderFlowState, action: OrderFlowAction): OrderFlowState {
+function orderFlowReducer(
+  state: OrderFlowState,
+  action: OrderFlowAction
+): OrderFlowState {
   switch (action.type) {
     case 'SELECT_TABLE':
       return {
@@ -45,7 +53,7 @@ function orderFlowReducer(state: OrderFlowState, action: OrderFlowAction): Order
         selectedSeat: null,
         orderType: null,
         selectedResident: null,
-        selectedSuggestion: null
+        selectedSuggestion: null,
       }
 
     case 'SELECT_SEAT':
@@ -56,7 +64,7 @@ function orderFlowReducer(state: OrderFlowState, action: OrderFlowAction): Order
         // Reset downstream selections
         orderType: null,
         selectedResident: null,
-        selectedSuggestion: null
+        selectedSuggestion: null,
       }
 
     case 'SELECT_ORDER_TYPE':
@@ -66,34 +74,34 @@ function orderFlowReducer(state: OrderFlowState, action: OrderFlowAction): Order
         currentStep: 'residentSelect',
         // Reset downstream selections
         selectedResident: null,
-        selectedSuggestion: null
+        selectedSuggestion: null,
       }
 
     case 'SELECT_RESIDENT':
       return {
         ...state,
-        selectedResident: action.residentId
+        selectedResident: action.residentId,
         // Stay on same step to allow suggestion selection
       }
 
     case 'SELECT_SUGGESTION':
       return {
         ...state,
-        selectedSuggestion: action.suggestion
+        selectedSuggestion: action.suggestion,
       }
 
     case 'SHOW_VOICE_ORDER':
       return {
         ...state,
         currentStep: 'voiceOrder',
-        showVoiceOrderPanel: true
+        showVoiceOrderPanel: true,
       }
 
     case 'HIDE_VOICE_ORDER':
       return {
         ...state,
         currentStep: 'residentSelect',
-        showVoiceOrderPanel: false
+        showVoiceOrderPanel: false,
       }
 
     case 'RESET_FLOW':
@@ -102,7 +110,7 @@ function orderFlowReducer(state: OrderFlowState, action: OrderFlowAction): Order
     case 'GO_TO_STEP':
       return {
         ...state,
-        currentStep: action.step
+        currentStep: action.step,
       }
 
     default:
@@ -168,14 +176,18 @@ export function useOrderFlowState() {
     }
   })()
 
-  const isComplete = state.selectedTable && state.selectedSeat && state.orderType && state.selectedResident
+  const isComplete =
+    state.selectedTable &&
+    state.selectedSeat &&
+    state.orderType &&
+    state.selectedResident
 
   return {
     // State
     ...state,
     canProceedToNextStep,
     isComplete,
-    
+
     // Actions
     selectTable,
     selectSeat,
@@ -185,6 +197,6 @@ export function useOrderFlowState() {
     showVoiceOrder,
     hideVoiceOrder,
     resetFlow,
-    goToStep
+    goToStep,
   }
 }

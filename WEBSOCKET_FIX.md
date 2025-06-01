@@ -1,11 +1,13 @@
 # 🔧 WebSocket Connection Fix
 
 ## The Error:
+
 ```
 WebSocket connection to 'wss://eiipozoogrrfudhjoqms.supabase.co/realtime/v1/websocket...' failed
 ```
 
 ## What This Means:
+
 - ✅ Your app is working fine
 - ✅ You can still use all features
 - ⚠️ Real-time updates won't work (orders won't auto-refresh)
@@ -14,7 +16,9 @@ WebSocket connection to 'wss://eiipozoogrrfudhjoqms.supabase.co/realtime/v1/webs
 ## Quick Fixes:
 
 ### Option 1: Ignore It (Recommended for Testing)
+
 The app works fine without real-time. It will:
+
 - Fetch data when you load pages
 - Auto-refresh every 5 seconds
 - All features work normally
@@ -22,10 +26,12 @@ The app works fine without real-time. It will:
 ### Option 2: Fix Supabase Realtime
 
 1. **Check Supabase Dashboard:**
+
    - Go to: https://supabase.com/dashboard/project/eiipozoogrrfudhjoqms/settings/api
    - Ensure "Realtime" is enabled
 
 2. **Enable Realtime on Tables:**
+
    ```sql
    -- Run in Supabase SQL Editor
    ALTER TABLE orders REPLICA IDENTITY FULL;
@@ -42,6 +48,7 @@ The app works fine without real-time. It will:
 ### Option 3: Disable Realtime Temporarily
 
 Add this to your `.env.local`:
+
 ```
 NEXT_PUBLIC_DISABLE_REALTIME=true
 ```
@@ -49,6 +56,7 @@ NEXT_PUBLIC_DISABLE_REALTIME=true
 ## Is Your App Working?
 
 Despite the WebSocket error, you should be able to:
+
 - ✅ Create an account
 - ✅ Log in
 - ✅ Access dashboard
@@ -58,18 +66,21 @@ Despite the WebSocket error, you should be able to:
 ## Testing Without WebSocket:
 
 1. **Create Account:**
+
    - Go to http://localhost:3000
    - Click "Need an account? Create one"
    - Fill in details and submit
 
 2. **Log In:**
+
    - Use your created credentials
    - You'll be redirected to dashboard
 
 3. **Test Features:**
-   - Click "Server View" 
+   - Click "Server View"
    - Click "Kitchen View"
    - Everything works, just no auto-updates
 
 ## Bottom Line:
+
 **This error doesn't break your app!** It's just a nice-to-have feature that's failing. You can continue testing and using the app normally.

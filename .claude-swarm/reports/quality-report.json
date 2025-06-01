@@ -1,0 +1,684 @@
+{
+  "timestamp": "2025-06-01T18:24:22.342Z",
+  "metrics": {
+    "filesAnalyzed": 151,
+    "issuesFound": 84,
+    "issuesFixed": 0,
+    "performanceImprovements": 9,
+    "securityImprovements": 2
+  },
+  "issues": [
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/(auth)/kitchen/kds/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/(auth)/kitchen/kds/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/(auth)/kitchen/metrics/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/(auth)/kitchen/metrics/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "maintenance",
+      "severity": "low",
+      "message": "2 TODO comment(s) found",
+      "suggestion": "Review and address TODO items",
+      "autoFixable": false,
+      "file": "app/(auth)/kitchen/metrics/page.tsx"
+    },
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/(auth)/server/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/(auth)/server/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "maintenance",
+      "severity": "low",
+      "message": "1 TODO comment(s) found",
+      "suggestion": "Review and address TODO items",
+      "autoFixable": false,
+      "file": "app/(auth)/server/page.tsx"
+    },
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/admin/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/admin/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "best-practice",
+      "severity": "low",
+      "message": "Component missing type definitions",
+      "suggestion": "Add TypeScript interfaces or PropTypes",
+      "autoFixable": false,
+      "file": "app/admin/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/api/auth-check/route.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/api/test-env/route.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/api/transcribe/route.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/api/vercel-auth/route.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/dashboard/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/dashboard/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "best-practice",
+      "severity": "low",
+      "message": "Component missing type definitions",
+      "suggestion": "Add TypeScript interfaces or PropTypes",
+      "autoFixable": false,
+      "file": "app/dashboard/page.tsx"
+    },
+    {
+      "type": "performance",
+      "severity": "medium",
+      "message": "Large inline style objects in JSX can cause unnecessary re-renders",
+      "suggestion": "Extract styles to separate objects or CSS classes",
+      "autoFixable": false,
+      "file": "app/expo/page.tsx"
+    },
+    {
+      "type": "performance",
+      "severity": "low",
+      "message": "Component may benefit from memoization",
+      "suggestion": "Consider React.memo for expensive components",
+      "autoFixable": false,
+      "file": "app/expo/page.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/expo/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "best-practice",
+      "severity": "low",
+      "message": "Component missing type definitions",
+      "suggestion": "Add TypeScript interfaces or PropTypes",
+      "autoFixable": false,
+      "file": "app/kitchen/page-simple.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "app/kitchen/page.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/about-dialog.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/auth/AuthForm-old.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/auth/AuthForm.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/beta-feedback-button.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/beta-navigation.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/debug/auth-status-panel.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/error-boundaries.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "High nesting complexity detected",
+      "suggestion": "Consider extracting functions or using early returns",
+      "file": "components/floor-plan/canvas.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/floor-plan/canvas.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/floor-plan-editor.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/floor-plan-view.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "maintenance",
+      "severity": "low",
+      "message": "1 TODO comment(s) found",
+      "suggestion": "Review and address TODO items",
+      "autoFixable": false,
+      "file": "components/kds/kds-layout.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/kds/offline-indicator.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "High nesting complexity detected",
+      "suggestion": "Consider extracting functions or using early returns",
+      "file": "components/kds/voice-command-panel.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "performance",
+      "severity": "medium",
+      "message": "Large inline style objects in JSX can cause unnecessary re-renders",
+      "suggestion": "Extract styles to separate objects or CSS classes",
+      "autoFixable": false,
+      "file": "components/onboarding-tooltips.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/onboarding-tooltips.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/onboarding-tooltips.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/printer-settings.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/quick-start-guide.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/seat-picker-overlay.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/sidebar.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/table-list.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/table-view.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "performance",
+      "severity": "medium",
+      "message": "Large inline style objects in JSX can cause unnecessary re-renders",
+      "suggestion": "Extract styles to separate objects or CSS classes",
+      "autoFixable": false,
+      "file": "components/voice-order-panel.tsx"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "components/welcome-modal.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-canvas-drawing.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-canvas-interactions-optimized.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-canvas-interactions.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-floor-plan-reducer.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-floor-plan-reducer.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-floor-plan-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-kds-orders.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-kds-orders.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-server-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-server-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "hooks/use-table-grouped-orders.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-auth-form-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-auth-form-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-kds-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-order-flow-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-order-flow-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-server-page-data.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-voice-recording-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/hooks/use-voice-recording-state.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/kds/voice-commands.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/openai/transcribe.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/auth/auth-context.tsx",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/floor-plan.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/kds.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/kds.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/orders.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/seats.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "maintenance",
+      "severity": "low",
+      "message": "2 TODO comment(s) found",
+      "suggestion": "Review and address TODO items",
+      "autoFixable": false,
+      "file": "lib/modassembly/supabase/database/suggestions.ts"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/database/tables.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "lib/modassembly/supabase/middleware.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "security",
+      "severity": "high",
+      "message": "Potential hardcoded secret detected",
+      "suggestion": "Use environment variables for sensitive data",
+      "autoFixable": false,
+      "file": "scripts/seed-demo-data.ts"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "scripts/seed-demo-data.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "scripts/seed-demo-data.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "scripts/seed-demo-data.ts",
+      "autoFixable": false
+    },
+    {
+      "type": "security",
+      "severity": "high",
+      "message": "Potential hardcoded secret detected",
+      "suggestion": "Use environment variables for sensitive data",
+      "autoFixable": false,
+      "file": "scripts/setup-guest-account.ts"
+    },
+    {
+      "type": "complexity",
+      "severity": "medium",
+      "message": "Function is too long",
+      "suggestion": "Break down into smaller functions",
+      "file": "scripts/setup-guest-account.ts",
+      "autoFixable": false
+    }
+  ]
+}

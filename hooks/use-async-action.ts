@@ -7,18 +7,21 @@ export function useAsyncAction<T extends any[]>(
 ) {
   const [loading, setLoading] = useState(false)
 
-  const execute = useCallback(async (...args: T) => {
-    setLoading(true)
-    try {
-      await action(...args)
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('Unknown error')
-      onError?.(err)
-      console.error('Action failed:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [action, onError])
+  const execute = useCallback(
+    async (...args: T) => {
+      setLoading(true)
+      try {
+        await action(...args)
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error('Unknown error')
+        onError?.(err)
+        console.error('Action failed:', err)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [action, onError]
+  )
 
   return { execute, loading }
 }
@@ -30,22 +33,25 @@ export function useAsyncSetAction<T>(
 ) {
   const [loadingIds, setLoadingIds] = useState<Set<T>>(new Set())
 
-  const execute = useCallback(async (id: T) => {
-    setLoadingIds(prev => new Set(prev).add(id))
-    try {
-      await action(id)
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('Unknown error')
-      onError?.(err, id)
-      console.error('Action failed:', err)
-    } finally {
-      setLoadingIds(prev => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-    }
-  }, [action, onError])
+  const execute = useCallback(
+    async (id: T) => {
+      setLoadingIds(prev => new Set(prev).add(id))
+      try {
+        await action(id)
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error('Unknown error')
+        onError?.(err, id)
+        console.error('Action failed:', err)
+      } finally {
+        setLoadingIds(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }
+    },
+    [action, onError]
+  )
 
   const isLoading = useCallback((id: T) => loadingIds.has(id), [loadingIds])
 

@@ -7,39 +7,39 @@ repos:
         language: system
         pass_filenames: false
         types: [typescript, tsx]
-        
+
       - id: lint
         name: ESLint
         entry: npm run lint:fix
         language: system
         types: [javascript, typescript, tsx]
-        
+
       - id: format
         name: Prettier
         entry: npm run format
         language: system
         types: [javascript, typescript, tsx, json, css, scss, md]
-        
+
       - id: test-unit
         name: Unit Tests
         entry: npm run test:unit
         language: system
         pass_filenames: false
         stages: [push]
-        
+
       - id: build
         name: Next.js Build
         entry: npm run build
         language: system
         pass_filenames: false
         stages: [push]
-        
+
       - id: check-env
         name: Environment Variables Check
         entry: ./scripts/check-env.sh
         language: script
         pass_filenames: false
-        
+
       - id: migration-check
         name: Database Migration Check
         entry: npx supabase db diff

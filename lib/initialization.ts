@@ -3,7 +3,7 @@ import { cleanupRateLimit } from '@/lib/utils/security'
 export function initializeSecurityAndPerformance(): void {
   // Start periodic cleanup of rate limiting records
   const interval = setInterval(cleanupRateLimit, 60 * 60 * 1000) // Every hour
-  
+
   // Clean up on page unload
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', () => {
@@ -18,9 +18,11 @@ export function debounce<T extends (...args: any[]) => any>(
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout | undefined
-  
+
   return (...args: Parameters<T>) => {
-    if (timeoutId) clearTimeout(timeoutId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
     timeoutId = setTimeout(() => func(...args), delay)
   }
 }

@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type { Table } from "@/lib/floor-plan-utils"
-import { TableProperties } from "./table-properties"
-import { DisplayOptions } from "./display-options"
-import { TableList } from "./table-list"
+import type { Table } from '@/lib/floor-plan-utils'
+import { TableProperties } from './table-properties'
+import { DisplayOptions } from './display-options'
+import { TableList } from './table-list'
 
 interface SidePanelProps {
   // Table state
@@ -11,19 +11,19 @@ interface SidePanelProps {
   selectedTable: Table | null
   onSelectTable: (table: Table) => void
   onUpdateTable: (property: keyof Table, value: any) => void
-  
+
   // Table actions
   onDeleteTable: () => void
   onDuplicateTable: () => void
   onBringToFront: () => void
   onSendToBack: () => void
-  
+
   // Panel states
   isTablesPanelOpen: boolean
   isControlsPanelOpen: boolean
   onToggleTablesPanel: (open: boolean) => void
   onToggleControlsPanel: (open: boolean) => void
-  
+
   // Grid settings
   isGridVisible: boolean
   gridSize: number
@@ -31,7 +31,7 @@ interface SidePanelProps {
   onToggleGrid: () => void
   onToggleSnap: () => void
   onGridSizeChange: (size: number) => void
-  
+
   // Display settings
   showTooltips: boolean
   showTableLabels: boolean
@@ -51,19 +51,19 @@ export function SidePanel({
   selectedTable,
   onSelectTable,
   onUpdateTable,
-  
+
   // Table actions
   onDeleteTable,
   onDuplicateTable,
   onBringToFront,
   onSendToBack,
-  
+
   // Panel states
   isTablesPanelOpen,
   isControlsPanelOpen,
   onToggleTablesPanel,
   onToggleControlsPanel,
-  
+
   // Grid settings
   isGridVisible,
   gridSize,
@@ -71,7 +71,7 @@ export function SidePanel({
   onToggleGrid,
   onToggleSnap,
   onGridSizeChange,
-  
+
   // Display settings
   showTooltips,
   showTableLabels,
@@ -82,10 +82,10 @@ export function SidePanel({
   onToggleLabels,
   onToggleSeats,
   onToggleDimensions,
-  onToggleStatus
+  onToggleStatus,
 }: SidePanelProps) {
   return (
-    <div className="w-full lg:w-80 flex flex-col gap-4">
+    <div className='w-full lg:w-80 flex flex-col gap-4'>
       {/* Table Properties */}
       <TableProperties
         selectedTable={selectedTable}
@@ -97,19 +97,17 @@ export function SidePanel({
         onBringToFront={onBringToFront}
         onSendToBack={onSendToBack}
       />
-      
+
       {/* Display Options */}
       <DisplayOptions
         isOpen={isControlsPanelOpen}
         onToggle={onToggleControlsPanel}
-        
         isGridVisible={isGridVisible}
         gridSize={gridSize}
         snapToGrid={snapToGrid}
         onToggleGrid={onToggleGrid}
         onToggleSnap={onToggleSnap}
         onGridSizeChange={onGridSizeChange}
-        
         showTooltips={showTooltips}
         showTableLabels={showTableLabels}
         showTableSeats={showTableSeats}
@@ -121,7 +119,7 @@ export function SidePanel({
         onToggleDimensions={onToggleDimensions}
         onToggleStatus={onToggleStatus}
       />
-      
+
       {/* Table List */}
       <TableList
         tables={tables}

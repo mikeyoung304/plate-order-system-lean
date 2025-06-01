@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { useState, useCallback, useEffect } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useCallback, useEffect } from 'react'
+import { useToast } from '@/hooks/use-toast'
 
 interface UseSeatNavigationProps {
   tableId: string
@@ -23,59 +23,62 @@ export function useSeatNavigation({
   initialSeat = 1,
   maxSeats = 8,
   onSeatComplete,
-  onTableComplete
+  onTableComplete,
 }: UseSeatNavigationProps) {
   const [currentSeat, setCurrentSeat] = useState(initialSeat)
   const [seatOrders, setSeatOrders] = useState<SeatOrder[]>(
     Array.from({ length: maxSeats }, (_, i) => ({
       seatNumber: i + 1,
       hasOrder: false,
-      orderCount: 0
+      orderCount: 0,
     }))
   )
   const { toast } = useToast()
 
   // Mark seat as having an order
-  const markSeatComplete = useCallback((seatNumber: number) => {
-    setSeatOrders(prev => 
-      prev.map(seat => 
-        seat.seatNumber === seatNumber 
-          ? { 
-              ...seat, 
-              hasOrder: true, 
-              orderCount: seat.orderCount + 1,
-              lastOrderTime: new Date()
-            }
-          : seat
+  const markSeatComplete = useCallback(
+    (seatNumber: number) => {
+      setSeatOrders(prev =>
+        prev.map(seat =>
+          seat.seatNumber === seatNumber
+            ? {
+                ...seat,
+                hasOrder: true,
+                orderCount: seat.orderCount + 1,
+                lastOrderTime: new Date(),
+              }
+            : seat
+        )
       )
-    )
-    onSeatComplete?.(seatNumber)
-    
-    toast({
-      title: "Order Added",
-      description: `Seat ${seatNumber} order recorded`,
-      duration: 2000
-    })
-  }, [onSeatComplete, toast])
+      onSeatComplete?.(seatNumber)
+
+      toast({
+        title: 'Order Added',
+        description: `Seat ${seatNumber} order recorded`,
+        duration: 2000,
+      })
+    },
+    [onSeatComplete, toast]
+  )
 
   // Navigate to next available seat
   const goToNextSeat = useCallback(() => {
     const nextAvailableSeat = seatOrders.find(
       seat => seat.seatNumber > currentSeat && !seat.hasOrder
     )
-    
+
     if (nextAvailableSeat) {
       setCurrentSeat(nextAvailableSeat.seatNumber)
       return true
     }
-    
+
     // If no seats ahead, go to first available seat
     const firstAvailableSeat = seatOrders.find(seat => !seat.hasOrder)
     if (firstAvailableSeat) {
       setCurrentSeat(firstAvailableSeat.seatNumber)
       return true
     }
-    
+
     // All seats have orders
     return false
   }, [currentSeat, seatOrders])
@@ -83,37 +86,44 @@ export function useSeatNavigation({
   // Smart navigation after order completion
   const completeCurrentSeatAndNext = useCallback(() => {
     markSeatComplete(currentSeat)
-    
+
     // Auto-advance to next seat
     setTimeout(() => {
       const moved = goToNextSeat()
       if (!moved) {
         // All seats complete
         toast({
-          title: "Table Complete! 🎉",
+          title: 'Table Complete! 🎉',
           description: `All seats at Table ${tableId} have ordered`,
-          duration: 3000
+          duration: 3000,
         })
         onTableComplete?.()
       }
     }, 500) // Small delay for better UX
-  }, [currentSeat, markSeatComplete, goToNextSeat, tableId, toast, onTableComplete])
+  }, [
+    currentSeat,
+    markSeatComplete,
+    goToNextSeat,
+    tableId,
+    toast,
+    onTableComplete,
+  ])
 
   // Check if all seats are complete
   const isTableComplete = seatOrders.every(seat => seat.hasOrder)
-  
+
   // Get completion statistics
   const completedSeats = seatOrders.filter(seat => seat.hasOrder).length
   const completionPercentage = Math.round((completedSeats / maxSeats) * 100)
 
   // Reset table state
   const resetTable = useCallback(() => {
-    setSeatOrders(prev => 
+    setSeatOrders(prev =>
       prev.map(seat => ({
         ...seat,
         hasOrder: false,
         orderCount: 0,
-        lastOrderTime: undefined
+        lastOrderTime: undefined,
       }))
     )
     setCurrentSeat(1)
@@ -122,11 +132,14 @@ export function useSeatNavigation({
   // Auto-save progress to localStorage
   useEffect(() => {
     const saveKey = `table-${tableId}-progress`
-    localStorage.setItem(saveKey, JSON.stringify({
-      currentSeat,
-      seatOrders,
-      timestamp: new Date().toISOString()
-    }))
+    localStorage.setItem(
+      saveKey,
+      JSON.stringify({
+        currentSeat,
+        seatOrders,
+        timestamp: new Date().toISOString(),
+      })
+    )
   }, [tableId, currentSeat, seatOrders])
 
   // Load saved progress on mount
@@ -135,7 +148,8 @@ export function useSeatNavigation({
     const saved = localStorage.getItem(saveKey)
     if (saved) {
       try {
-        const { currentSeat: savedSeat, seatOrders: savedOrders } = JSON.parse(saved)
+        const { currentSeat: savedSeat, seatOrders: savedOrders } =
+          JSON.parse(saved)
         setCurrentSeat(savedSeat)
         setSeatOrders(savedOrders)
       } catch (error) {
@@ -152,17 +166,19 @@ export function useSeatNavigation({
     completedSeats,
     completionPercentage,
     maxSeats,
-    
+
     // Actions
     setCurrentSeat,
     markSeatComplete,
     completeCurrentSeatAndNext,
     goToNextSeat,
     resetTable,
-    
+
     // Derived data
     currentSeatOrder: seatOrders.find(s => s.seatNumber === currentSeat),
-    nextAvailableSeat: seatOrders.find(s => s.seatNumber > currentSeat && !s.hasOrder)?.seatNumber,
-    availableSeats: seatOrders.filter(s => !s.hasOrder).map(s => s.seatNumber)
+    nextAvailableSeat: seatOrders.find(
+      s => s.seatNumber > currentSeat && !s.hasOrder
+    )?.seatNumber,
+    availableSeats: seatOrders.filter(s => !s.hasOrder).map(s => s.seatNumber),
   }
 }

@@ -3,76 +3,82 @@
  * IMPORTANT!!! Ask the user before editing this file.
  */
 
-import OpenAI from "openai";
+import OpenAI from 'openai'
 
 // Lazy initialization to avoid build-time errors
-let openai: OpenAI | null = null;
+let openai: OpenAI | null = null
 
 function getOpenAIClient(): OpenAI {
-    if (!openai) {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error("OPENAI_API_KEY environment variable is not set");
-        }
-        openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
-        });
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set')
     }
-    return openai;
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openai
 }
 
-export async function transcribeAudioFile(audioBlob: Blob, filename: string = "audio.webm"): Promise<{ items: string[], transcription: string }> {
-    try {
-        // Determine the correct file extension and type for OpenAI
-        let fileExtension = 'webm';
-        let mimeType = audioBlob.type || 'audio/webm';
-        
-        // OpenAI supports: mp3, mp4, mpeg, mpga, m4a, wav, webm
-        // Update filename to match the actual format
-        if (mimeType.includes('mp4')) {
-            fileExtension = 'mp4';
-        } else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) {
-            fileExtension = 'mp3';
-        } else if (mimeType.includes('wav')) {
-            fileExtension = 'wav';
-        } else if (mimeType.includes('m4a')) {
-            fileExtension = 'm4a';
-        }
-        
-        const audioFileName = `recording.${fileExtension}`;
-        
-        // Convert Blob to File object for OpenAI API
-        const audioFile = new File([audioBlob], audioFileName, { type: mimeType });
-        
-        console.log(`Sending to OpenAI: ${audioFileName}, type: ${mimeType}, size: ${audioFile.size}`);
+export async function transcribeAudioFile(
+  audioBlob: Blob,
+  filename: string = 'audio.webm'
+): Promise<{ items: string[]; transcription: string }> {
+  try {
+    // Determine the correct file extension and type for OpenAI
+    let fileExtension = 'webm'
+    const mimeType = audioBlob.type || 'audio/webm'
 
-        // First, transcribe the audio
-        const client = getOpenAIClient();
-        const transcription = await client.audio.transcriptions.create({
-            file: audioFile,
-            model: "whisper-1",
-            response_format: "text"
-        });
+    // OpenAI supports: mp3, mp4, mpeg, mpga, m4a, wav, webm
+    // Update filename to match the actual format
+    if (mimeType.includes('mp4')) {
+      fileExtension = 'mp4'
+    } else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) {
+      fileExtension = 'mp3'
+    } else if (mimeType.includes('wav')) {
+      fileExtension = 'wav'
+    } else if (mimeType.includes('m4a')) {
+      fileExtension = 'm4a'
+    }
 
-        // Parse the transcription to extract items
-        console.log("Raw transcription response:", transcription);
-        
-        // The response is the text directly when using response_format: "text"
-        const transcriptionText = typeof transcription === 'string' ? transcription : (transcription as any).text;
-        
-        if (!transcriptionText) {
-            console.error("No transcription text received");
-            throw new Error("No transcription text received from API");
-        }
-        
-        console.log("Transcription text:", transcriptionText);
-        
-        // Use GPT to extract just the menu items
-        const extraction = await client.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a restaurant order parser. Extract menu items with their modifications from the customer's speech. 
+    const audioFileName = `recording.${fileExtension}`
+
+    // Convert Blob to File object for OpenAI API
+    const audioFile = new File([audioBlob], audioFileName, { type: mimeType })
+
+    // Processing audio file for transcription
+
+    // First, transcribe the audio
+    const client = getOpenAIClient()
+    const transcription = await client.audio.transcriptions.create({
+      file: audioFile,
+      model: 'whisper-1',
+      response_format: 'text',
+    })
+
+    // Parse the transcription to extract items
+    // Raw transcription received from API
+
+    // The response is the text directly when using response_format: "text"
+    const transcriptionText =
+      typeof transcription === 'string'
+        ? transcription
+        : (transcription as any).text
+
+    if (!transcriptionText) {
+      console.error('No transcription text received')
+      throw new Error('No transcription text received from API')
+    }
+
+    // Processing transcription text
+
+    // Use GPT to extract just the menu items
+    const extraction = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a restaurant order parser. Extract menu items with their modifications from the customer's speech. 
                     Remove filler words like "I'd like", "please", "can I have", but KEEP all modifications, special requests, and specifications.
                     Return ONLY a JSON array of food/drink items with their modifications. 
                     
@@ -82,48 +88,50 @@ export async function transcribeAudioFile(audioBlob: Blob, filename: string = "a
                     "I want the grilled chicken, extra crispy, with no salt" → ["Grilled Chicken - extra crispy, no salt"]
                     "Two coffees, one black and one with cream" → ["Coffee - black", "Coffee - with cream"]
                     "Hamburger with swiss cheese, lettuce, tomato, no pickles" → ["Hamburger - swiss cheese, lettuce, tomato, no pickles"]
-                    "Diet coke with no ice" → ["Diet Coke - no ice"]`
-                },
-                {
-                    role: "user",
-                    content: transcriptionText
-                }
-            ],
-            temperature: 0.3,
-            max_tokens: 200
-        });
-        
-        console.log("GPT extraction response:", extraction.choices[0].message.content);
-        
-        try {
-            const parsedItems = JSON.parse(extraction.choices[0].message.content || '[]');
-            if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-                return {
-                    items: parsedItems,
-                    transcription: transcriptionText
-                };
-            }
-        } catch (parseError) {
-            console.error("Failed to parse GPT response as JSON:", parseError);
-        }
-        
-        // Fallback to simple parsing if GPT fails
-        const cleanText = transcriptionText.toLowerCase();
-        const items = cleanText
-            .split(/[,\n]|and/)
-            .map((item: string) => item.trim())
-            .filter((item: string) => item.length > 0)
-            .map((item: string) => {
-                // Capitalize first letter of each word
-                return item.replace(/\b\w/g, char => char.toUpperCase());
-            });
-        
+                    "Diet coke with no ice" → ["Diet Coke - no ice"]`,
+        },
+        {
+          role: 'user',
+          content: transcriptionText,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 200,
+    })
+
+    // GPT extraction completed
+
+    try {
+      const parsedItems = JSON.parse(
+        extraction.choices[0].message.content || '[]'
+      )
+      if (Array.isArray(parsedItems) && parsedItems.length > 0) {
         return {
-            items: items.length > 0 ? items : [transcriptionText.trim()],
-            transcription: transcriptionText
-        };
-    } catch (error) {
-        console.error("Error transcribing audio:", error);
-        throw new Error("Failed to transcribe audio");
+          items: parsedItems,
+          transcription: transcriptionText,
+        }
+      }
+    } catch (parseError) {
+      console.error('Failed to parse GPT response as JSON:', parseError)
     }
+
+    // Fallback to simple parsing if GPT fails
+    const cleanText = transcriptionText.toLowerCase()
+    const items = cleanText
+      .split(/[,\n]|and/)
+      .map((item: string) => item.trim())
+      .filter((item: string) => item.length > 0)
+      .map((item: string) => {
+        // Capitalize first letter of each word
+        return item.replace(/\b\w/g, char => char.toUpperCase())
+      })
+
+    return {
+      items: items.length > 0 ? items : [transcriptionText.trim()],
+      transcription: transcriptionText,
+    }
+  } catch (error) {
+    console.error('Error transcribing audio:', error)
+    throw new Error('Failed to transcribe audio')
+  }
 }

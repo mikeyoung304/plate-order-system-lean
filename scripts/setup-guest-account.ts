@@ -30,85 +30,84 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   process.exit(1)
 }
 
-const supabase = createClient(
-  supabaseUrl,
-  supabaseServiceRoleKey,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
 
 async function setupGuestAccount() {
   console.log('🎯 Setting up guest demo account...')
-  
+
   try {
     // Check for existing guest user by looking up the auth user first
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const existingGuestAuth = authUsers?.users?.find(u => u.email === 'guest@restaurant.plate')
-    
+    const existingGuestAuth = authUsers?.users?.find(
+      u => u.email === 'guest@restaurant.plate'
+    )
+
     if (existingGuestAuth) {
       console.log('🧹 Removing existing guest account...')
       await supabase.auth.admin.deleteUser(existingGuestAuth.id)
     }
-    
+
     // Create fresh guest user
     console.log('👤 Creating guest user...')
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: 'guest@restaurant.plate',
-      password: 'guest123',
-      email_confirm: true,
-      user_metadata: {
-        name: 'Guest User',
-        role: 'admin'
-      }
-    })
-    
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email: 'guest@restaurant.plate',
+        password: 'guest123',
+        email_confirm: true,
+        user_metadata: {
+          name: 'Guest User',
+          role: 'admin',
+        },
+      })
+
     if (authError) {
       console.error('❌ Failed to create auth user:', authError)
       throw authError
     }
-    
+
     if (!authData.user) {
       throw new Error('No user data returned from auth creation')
     }
-    
+
     // First check if profile exists
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('user_id')
       .eq('user_id', authData.user.id)
       .single()
-    
+
     if (existingProfile) {
       console.log('👤 Profile already exists, updating...')
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           name: 'Guest User',
-          role: 'admin'
+          role: 'admin',
         })
         .eq('user_id', authData.user.id)
-      
+
       if (updateError) {
         console.error('❌ Failed to update profile:', updateError)
         throw updateError
       }
     } else {
       console.log('📝 Creating guest profile...')
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          name: 'Guest User',
-          role: 'admin'
-        })
-      
+      const { error: profileError } = await supabase.from('profiles').insert({
+        user_id: authData.user.id,
+        name: 'Guest User',
+        role: 'admin',
+      })
+
       if (profileError) {
         console.error('❌ Failed to create profile:', profileError)
         throw profileError
       }
     }
-    
+
     // Role is already assigned via the profile creation
-    
+
     console.log('')
     console.log('✅ Guest account successfully created!')
     console.log('')
@@ -117,7 +116,6 @@ async function setupGuestAccount() {
     console.log('   Password: guest123')
     console.log('')
     console.log('🚀 Ready for professional demos!')
-    
   } catch (error) {
     console.error('❌ Failed to setup guest account:', error)
     process.exit(1)
@@ -126,28 +124,32 @@ async function setupGuestAccount() {
 
 async function cleanupOldGuestData() {
   console.log('🧹 Cleaning up old demo data...')
-  
+
   try {
     // Clean orders older than 4 hours
     const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-    
+
     // Find guest user by auth email first
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const guestAuth = authUsers?.users?.find(u => u.email === 'guest@restaurant.plate')
-    
-    const { data: guestProfile } = guestAuth ? await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id', guestAuth.id)
-      .single() : { data: null }
-    
+    const guestAuth = authUsers?.users?.find(
+      u => u.email === 'guest@restaurant.plate'
+    )
+
+    const { data: guestProfile } = guestAuth
+      ? await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('user_id', guestAuth.id)
+          .single()
+      : { data: null }
+
     if (guestProfile) {
       await supabase
         .from('orders')
         .delete()
         .eq('server_id', guestProfile.user_id)
         .lt('created_at', fourHoursAgo)
-      
+
       console.log('✅ Cleaned up old guest orders')
     }
   } catch (error) {
@@ -161,7 +163,9 @@ async function main() {
 }
 
 // Run if called directly
-main().then(() => process.exit(0)).catch((error) => {
-  console.error('Script failed:', error)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error('Script failed:', error)
+    process.exit(1)
+  })

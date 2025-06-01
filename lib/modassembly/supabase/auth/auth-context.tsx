@@ -2,13 +2,14 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import type { User, Session } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import type { AppRole } from './roles'
+import { Profile, UserRole } from '@/types/database'
 
 export type UserProfile = {
   user_id: string
-  role: AppRole
-  name: string
+  role: UserRole
+  name: string | null
 }
 
 interface AuthContextType {
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = createClient()
 
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const fetchUserProfile = async (
+    userId: string
+  ): Promise<UserProfile | null> => {
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, user_id, role, name')
@@ -45,28 +48,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('id, user_id, role, name')
         .eq('id', userId)
         .single()
-      
+
       if (profileById) {
         return {
           user_id: profileById.user_id || userId,
           role: profileById.role,
-          name: profileById.name
+          name: profileById.name,
         }
       }
     }
 
-    return profile ? {
-      user_id: profile.user_id || userId,
-      role: profile.role,
-      name: profile.name
-    } : null
+    return profile
+      ? {
+          user_id: profile.user_id || userId,
+          role: profile.role,
+          name: profile.name,
+        }
+      : null
   }
 
   const refreshAuth = async () => {
     try {
       setIsLoading(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
       setSession(session)
       setUser(session?.user || null)
 
@@ -98,21 +105,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session)
-        setUser(session?.user || null)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session)
+      setUser(session?.user || null)
 
-        if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id)
-          setProfile(userProfile)
-        } else {
-          setProfile(null)
-        }
-
-        setIsLoading(false)
+      if (session?.user) {
+        const userProfile = await fetchUserProfile(session.user.id)
+        setProfile(userProfile)
+      } else {
+        setProfile(null)
       }
-    )
+
+      setIsLoading(false)
+    })
 
     return () => subscription.unsubscribe()
   }, [])
@@ -123,14 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     isLoading,
     signOut,
-    refreshAuth
+    refreshAuth,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth(): AuthContextType {
@@ -151,21 +154,23 @@ export function useProfile(): UserProfile | null {
   return profile
 }
 
-export function useRole(): AppRole | null {
+export function useRole(): UserRole | null {
   const { profile } = useAuth()
   return profile?.role || null
 }
 
-export function useIsRole(role: AppRole): boolean {
+export function useIsRole(role: UserRole): boolean {
   const userRole = useRole()
   return userRole === role
 }
 
-export function useHasRole(roles: AppRole | AppRole[]): boolean {
+export function useHasRole(roles: UserRole | UserRole[]): boolean {
   const userRole = useRole()
-  
-  if (!userRole) return false
-  
+
+  if (!userRole) {
+    return false
+  }
+
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
-  return allowedRoles.includes(userRole as AppRole)
+  return allowedRoles.includes(userRole)
 }

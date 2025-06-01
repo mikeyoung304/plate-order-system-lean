@@ -1,7 +1,9 @@
 # 🚨 DATABASE SETUP REQUIRED!
 
 ## The Problem:
+
 Your Supabase database is empty! The tables don't exist yet, which is why:
+
 - You only see Server/Expo options (no role check working)
 - Server page crashes (no tables to query)
 - WebSocket errors (no tables to watch)
@@ -14,9 +16,9 @@ Your Supabase database is empty! The tables don't exist yet, which is why:
    https://supabase.com/dashboard/project/eiipozoogrrfudhjoqms/sql/new
 
 2. **Run each migration in order:**
-   
+
    Copy and paste each file's contents in this exact order:
-   
+
    a) `supabase/migrations/20250511210425_setup_rbac.sql`
    b) `supabase/migrations/20250511222049_user_roles_permission.sql`
    c) `supabase/migrations/20250511222516_user_role_assignment.sql`
@@ -40,14 +42,16 @@ Your Supabase database is empty! The tables don't exist yet, which is why:
 ## After Running Migrations:
 
 1. **Create a test user with admin role:**
+
    ```sql
    -- Run this after migrations
-   UPDATE profiles 
-   SET role = 'admin' 
+   UPDATE profiles
+   SET role = 'admin'
    WHERE id = (SELECT id FROM auth.users WHERE email = 'your-email@example.com');
    ```
 
 2. **Enable Realtime (optional):**
+
    ```sql
    ALTER TABLE orders REPLICA IDENTITY FULL;
    ALTER TABLE tables REPLICA IDENTITY FULL;
@@ -58,13 +62,16 @@ Your Supabase database is empty! The tables don't exist yet, which is why:
 3. **Refresh your app** and login again
 
 ## You'll Know It Worked When:
+
 - ✅ No more WebSocket errors
 - ✅ Dashboard shows all role options
 - ✅ Server page loads without crashing
 - ✅ Tables appear in floor plan
 
 ## Need Help?
+
 The migrations create:
+
 - User roles system (admin, server, cook, resident)
 - Tables and seats for floor plan
 - Orders system

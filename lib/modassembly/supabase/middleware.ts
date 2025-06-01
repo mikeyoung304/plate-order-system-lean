@@ -4,108 +4,120 @@
  */
 
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-    // Check if required environment variables are present
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.error('Missing required Supabase environment variables in middleware')
-        // Allow access to test-env endpoint for debugging
-        if (request.nextUrl.pathname === '/api/test-env') {
-            return NextResponse.next({ request })
-        }
-        // Return error response for other routes
-        return new NextResponse(
-            JSON.stringify({ error: 'Server configuration error' }),
-            { status: 500, headers: { 'content-type': 'application/json' } }
-        )
-    }
-
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
-
-    // Vercel production fix - ensure cookies work
-    if (process.env.NODE_ENV === 'production') {
-        // Force cookie options for Vercel
-        const originalSetAll = supabaseResponse.cookies.set
-        supabaseResponse.cookies.set = function(name: string, value: string, options?: any) {
-            return originalSetAll.call(this, name, value, {
-                ...options,
-                sameSite: 'lax',
-                secure: true,
-                httpOnly: true,
-                path: '/',
-                // Critical: no domain for Vercel
-                domain: undefined
-            })
-        }
-    }
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
+  // Check if required environment variables are present
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    console.error(
+      'Missing required Supabase environment variables in middleware'
     )
-
-    // Do not run code between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
-    // IMPORTANT: DO NOT REMOVE auth.getUser()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
-
-    // Define protected routes
-    const isProtectedRoute = request.nextUrl.pathname.startsWith('/admin') ||
-                           request.nextUrl.pathname.startsWith('/server') ||
-                           request.nextUrl.pathname.startsWith('/kitchen') ||
-                           request.nextUrl.pathname.startsWith('/expo') ||
-                           request.nextUrl.pathname.startsWith('/dashboard')
-
-    // Redirect unauthenticated users trying to access protected routes
-    if (!user && isProtectedRoute) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/'
-        return NextResponse.redirect(url)
+    // Allow access to test-env endpoint for debugging
+    if (request.nextUrl.pathname === '/api/test-env') {
+      return NextResponse.next({ request })
     }
+    // Return error response for other routes
+    return new NextResponse(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { 'content-type': 'application/json' } }
+    )
+  }
 
-    // Redirect authenticated users from login page to server page
-    if (user && request.nextUrl.pathname === '/') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/server'
-        return NextResponse.redirect(url)
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  // Vercel production fix - ensure cookies work
+  if (process.env.NODE_ENV === 'production') {
+    // Force cookie options for Vercel
+    const originalSetAll = supabaseResponse.cookies.set
+    supabaseResponse.cookies.set = function (
+      name: string,
+      value: string,
+      options?: any
+    ) {
+      return originalSetAll.call(this, name, value, {
+        ...options,
+        sameSite: 'lax',
+        secure: true,
+        httpOnly: true,
+        path: '/',
+        // Critical: no domain for Vercel
+        domain: undefined,
+      })
     }
+  }
 
-    // IMPORTANT: You *must* return the supabaseResponse object as it is.
-    // If you're creating a new response object with NextResponse.next() make sure to:
-    // 1. Pass the request in it, like so:
-    //    const myNewResponse = NextResponse.next({ request })
-    // 2. Copy over the cookies, like so:
-    //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-    // 3. Change the myNewResponse object to fit your needs, but avoid changing
-    //    the cookies!
-    // 4. Finally:
-    //    return myNewResponse
-    // If this is not done, you may be causing the browser and server to go out
-    // of sync and terminate the user's session prematurely!
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
 
-    return supabaseResponse
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  // IMPORTANT: DO NOT REMOVE auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Define protected routes
+  const isProtectedRoute =
+    request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/server') ||
+    request.nextUrl.pathname.startsWith('/kitchen') ||
+    request.nextUrl.pathname.startsWith('/expo') ||
+    request.nextUrl.pathname.startsWith('/dashboard')
+
+  // Redirect unauthenticated users trying to access protected routes
+  if (!user && isProtectedRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users from login page to server page
+  if (user && request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/server'
+    return NextResponse.redirect(url)
+  }
+
+  // IMPORTANT: You *must* return the supabaseResponse object as it is.
+  // If you're creating a new response object with NextResponse.next() make sure to:
+  // 1. Pass the request in it, like so:
+  //    const myNewResponse = NextResponse.next({ request })
+  // 2. Copy over the cookies, like so:
+  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
+  // 3. Change the myNewResponse object to fit your needs, but avoid changing
+  //    the cookies!
+  // 4. Finally:
+  //    return myNewResponse
+  // If this is not done, you may be causing the browser and server to go out
+  // of sync and terminate the user's session prematurely!
+
+  return supabaseResponse
 }

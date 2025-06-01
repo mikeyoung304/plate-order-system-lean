@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 // PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
 // Original: Full framer-motion library (~150KB) for table view animations
 // Changed to: Pure CSS animations with equivalent functionality
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 type TableViewProps = {
   table: {
     id: string
-    type: "circle" | "rectangle" | "square"
+    type: 'circle' | 'rectangle' | 'square'
     x: number
     y: number
     width: number
@@ -34,7 +34,7 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
     // Calculate seat size based on table dimensions
     const seatSize = Math.min(width, height) * 0.2
 
-    if (type === "circle") {
+    if (type === 'circle') {
       // For circular tables, arrange seats in a circle
       const radius = (Math.min(width, height) / 2) * 0.8 // 80% of radius for better spacing
       const centerX = width / 2
@@ -53,7 +53,7 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
           size: seatSize,
         })
       }
-    } else if (type === "rectangle" || type === "square") {
+    } else if (type === 'rectangle' || type === 'square') {
       // For rectangular tables, distribute seats around the perimeter
       const tableRatio = width / height
 
@@ -62,14 +62,22 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
 
       if (tableRatio >= 1) {
         // Wider than tall
-        seatsPerLongSide = Math.ceil(seatCount * (tableRatio / (2 * tableRatio + 2)))
+        seatsPerLongSide = Math.ceil(
+          seatCount * (tableRatio / (2 * tableRatio + 2))
+        )
         seatsPerShortSide = Math.ceil((seatCount - 2 * seatsPerLongSide) / 2)
-        if (seatsPerShortSide < 0) seatsPerShortSide = 0
+        if (seatsPerShortSide < 0) {
+          seatsPerShortSide = 0
+        }
       } else {
         // Taller than wide
-        seatsPerShortSide = Math.ceil(seatCount * (1 / tableRatio / (2 * (1 / tableRatio) + 2)))
+        seatsPerShortSide = Math.ceil(
+          seatCount * (1 / tableRatio / (2 * (1 / tableRatio) + 2))
+        )
         seatsPerLongSide = Math.ceil((seatCount - 2 * seatsPerShortSide) / 2)
-        if (seatsPerLongSide < 0) seatsPerLongSide = 0
+        if (seatsPerLongSide < 0) {
+          seatsPerLongSide = 0
+        }
       }
 
       // Ensure we don't exceed the total seat count
@@ -82,14 +90,21 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
         if (seatsPerLongSide >= excess) {
           adjustedSeatsPerLongSide = seatsPerLongSide - Math.ceil(excess / 2)
         } else {
-          adjustedSeatsPerShortSide = Math.max(0, seatsPerShortSide - Math.ceil((excess - seatsPerLongSide) / 2))
+          adjustedSeatsPerShortSide = Math.max(
+            0,
+            seatsPerShortSide - Math.ceil((excess - seatsPerLongSide) / 2)
+          )
         }
       }
 
       let seatNumber = 1
 
       // Top side (short)
-      for (let i = 0; i < adjustedSeatsPerShortSide && seatNumber <= seatCount; i++) {
+      for (
+        let i = 0;
+        i < adjustedSeatsPerShortSide && seatNumber <= seatCount;
+        i++
+      ) {
         const spacing = width / (adjustedSeatsPerShortSide + 1)
         seats.push({
           number: seatNumber++,
@@ -100,7 +115,11 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
       }
 
       // Right side (long)
-      for (let i = 0; i < adjustedSeatsPerLongSide && seatNumber <= seatCount; i++) {
+      for (
+        let i = 0;
+        i < adjustedSeatsPerLongSide && seatNumber <= seatCount;
+        i++
+      ) {
         const spacing = height / (adjustedSeatsPerLongSide + 1)
         seats.push({
           number: seatNumber++,
@@ -111,7 +130,11 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
       }
 
       // Bottom side (short)
-      for (let i = 0; i < adjustedSeatsPerShortSide && seatNumber <= seatCount; i++) {
+      for (
+        let i = 0;
+        i < adjustedSeatsPerShortSide && seatNumber <= seatCount;
+        i++
+      ) {
         const spacing = width / (adjustedSeatsPerShortSide + 1)
         seats.push({
           number: seatNumber++,
@@ -122,7 +145,11 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
       }
 
       // Left side (long)
-      for (let i = 0; i < adjustedSeatsPerLongSide && seatNumber <= seatCount; i++) {
+      for (
+        let i = 0;
+        i < adjustedSeatsPerLongSide && seatNumber <= seatCount;
+        i++
+      ) {
         const spacing = height / (adjustedSeatsPerLongSide + 1)
         seats.push({
           number: seatNumber++,
@@ -139,24 +166,27 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
   const seats = generateSeats()
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative mb-8" style={{ width: `${table.width}px`, height: `${table.height}px` }}>
+    <div className='flex flex-col items-center justify-center'>
+      <div
+        className='relative mb-8'
+        style={{ width: `${table.width}px`, height: `${table.height}px` }}
+      >
         {/* Table */}
         <div
           className={`absolute inset-0 bg-gray-800 border-2 border-gray-700 ${
-            table.type === "circle" ? "rounded-full" : "rounded-lg"
+            table.type === 'circle' ? 'rounded-full' : 'rounded-lg'
           }`}
         >
-          <div className="flex items-center justify-center h-full">
-            <span className="text-gray-400 font-medium">{table.label}</span>
+          <div className='flex items-center justify-center h-full'>
+            <span className='text-gray-400 font-medium'>{table.label}</span>
           </div>
         </div>
 
         {/* Seats */}
-        {seats.map((seat) => (
+        {seats.map(seat => (
           <div
             key={seat.number}
-            className="absolute"
+            className='absolute'
             style={{
               left: `${seat.x}px`,
               top: `${seat.y}px`,
@@ -166,7 +196,9 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
           >
             <Button
               className={`table-seat w-full h-full rounded-full ${
-                hoveredSeat === seat.number ? "bg-primary hover:bg-primary/90" : "bg-gray-700 hover:bg-gray-600"
+                hoveredSeat === seat.number
+                  ? 'bg-primary hover:bg-primary/90'
+                  : 'bg-gray-700 hover:bg-gray-600'
               }`}
               onClick={() => onSelectSeat(seat.number)}
               onMouseEnter={() => setHoveredSeat(seat.number)}
@@ -178,10 +210,12 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
         ))}
       </div>
 
-      <Card className="w-full max-w-md">
-      <CardContent className="p-4">
-      <p className="text-center text-sm text-muted-foreground">Select a seat to place an order for {table.label}</p>
-      </CardContent>
+      <Card className='w-full max-w-md'>
+        <CardContent className='p-4'>
+          <p className='text-center text-sm text-muted-foreground'>
+            Select a seat to place an order for {table.label}
+          </p>
+        </CardContent>
       </Card>
     </div>
   )

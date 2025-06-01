@@ -13,22 +13,34 @@
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(194, 65, 12, 0.3) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.2) 0%,
+    rgba(194, 65, 12, 0.3) 100%
+  );
   border: 2px solid rgba(245, 158, 11, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 0 8px rgba(245, 158, 11, 0.05);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.2),
+    0 0 0 8px rgba(245, 158, 11, 0.05);
   position: relative;
   outline: none;
 }
 
 .voice-record-button:hover {
   transform: scale(1.05);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(194, 65, 12, 0.4) 100%);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25), 0 0 0 8px rgba(245, 158, 11, 0.1);
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.3) 0%,
+    rgba(194, 65, 12, 0.4) 100%
+  );
+  box-shadow:
+    0 6px 15px rgba(0, 0, 0, 0.25),
+    0 0 0 8px rgba(245, 158, 11, 0.1);
 }
 
 .voice-record-button:active {
@@ -36,7 +48,11 @@
 }
 
 .voice-record-button.recording {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(185, 28, 28, 0.4) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.3) 0%,
+    rgba(185, 28, 28, 0.4) 100%
+  );
   border-color: rgba(239, 68, 68, 0.5);
   animation: pulse-sexy 1.5s infinite;
 }
@@ -62,7 +78,11 @@
   max-width: 300px;
   margin: 20px auto;
   gap: 2px;
-  background: linear-gradient(to bottom, rgba(30, 30, 40, 0.6) 0%, rgba(20, 20, 30, 0.8) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(30, 30, 40, 0.6) 0%,
+    rgba(20, 20, 30, 0.8) 100%
+  );
   border-radius: 12px;
   padding: 10px;
   position: relative;
@@ -72,20 +92,28 @@
 }
 
 .audio-visualization::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at center, rgba(245, 158, 11, 0.05) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at center,
+    rgba(245, 158, 11, 0.05) 0%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 
 .audio-bar {
   width: 4px;
   height: 5px;
-  background: linear-gradient(to top, rgba(245, 158, 11, 0.7), rgba(245, 158, 11, 0.3));
+  background: linear-gradient(
+    to top,
+    rgba(245, 158, 11, 0.7),
+    rgba(245, 158, 11, 0.3)
+  );
   border-radius: 2px 2px 0 0;
   transition: height 0.1s ease;
 }
@@ -98,7 +126,11 @@
   padding: 20px;
   border: 1px solid rgba(245, 158, 11, 0.2);
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.8) 0%, rgba(20, 20, 30, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.8) 0%,
+    rgba(20, 20, 30, 0.9) 100%
+  );
   margin: 20px 0;
   font-size: 16px;
   line-height: 1.6;
@@ -110,13 +142,18 @@
 }
 
 .transcription-display::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 158, 11, 0.3),
+    transparent
+  );
 }
 
 /* Order confirmation buttons */
@@ -145,15 +182,27 @@
 }
 
 .confirm-button {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8) 0%, rgba(5, 150, 105, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.8) 0%,
+    rgba(5, 150, 105, 0.8) 100%
+  );
   color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .confirm-button:hover {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.9) 0%,
+    rgba(5, 150, 105, 0.9) 100%
+  );
   transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 6px 10px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .confirm-button:active {
@@ -161,15 +210,27 @@
 }
 
 .cancel-button {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.8) 0%,
+    rgba(220, 38, 38, 0.8) 100%
+  );
   color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .cancel-button:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.9) 0%,
+    rgba(220, 38, 38, 0.9) 100%
+  );
   transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 6px 10px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .cancel-button:active {
@@ -178,7 +239,11 @@
 
 /* Dietary alert */
 .dietary-alert {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(194, 65, 12, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.1) 0%,
+    rgba(194, 65, 12, 0.05) 100%
+  );
   border-left: 4px solid rgba(245, 158, 11, 0.5);
   padding: 15px;
   margin: 20px 0;
@@ -207,7 +272,11 @@
   top: 15px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.8) 0%,
+    rgba(220, 38, 38, 0.8) 100%
+  );
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -223,7 +292,7 @@
 }
 
 .recording-indicator::before {
-  content: "";
+  content: '';
   display: block;
   width: 8px;
   height: 8px;
@@ -247,7 +316,11 @@
 .toast {
   padding: 15px 20px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
   color: white;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   opacity: 1;
@@ -260,7 +333,7 @@
 }
 
 .toast::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -269,35 +342,67 @@
 }
 
 .toast.success {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
 }
 
 .toast.success::before {
-  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+  background: linear-gradient(
+    to bottom,
+    rgba(16, 185, 129, 0.8),
+    rgba(5, 150, 105, 0.8)
+  );
 }
 
 .toast.error {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
 }
 
 .toast.error::before {
-  background: linear-gradient(to bottom, rgba(239, 68, 68, 0.8), rgba(220, 38, 38, 0.8));
+  background: linear-gradient(
+    to bottom,
+    rgba(239, 68, 68, 0.8),
+    rgba(220, 38, 38, 0.8)
+  );
 }
 
 .toast.warning {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
 }
 
 .toast.warning::before {
-  background: linear-gradient(to bottom, rgba(245, 158, 11, 0.8), rgba(194, 65, 12, 0.8));
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 158, 11, 0.8),
+    rgba(194, 65, 12, 0.8)
+  );
 }
 
 .toast.info {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
 }
 
 .toast.info::before {
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8));
+  background: linear-gradient(
+    to bottom,
+    rgba(59, 130, 246, 0.8),
+    rgba(37, 99, 235, 0.8)
+  );
 }
 
 /* Animations */

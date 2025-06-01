@@ -7,13 +7,17 @@ export default async function AuthLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
-  
+
   // Check both session and user for Vercel production
-  const { data: { session } } = await supabase.auth.getSession()
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   if (!session) {
     // Double-check with getUser before redirecting
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       redirect('/')
     }

@@ -1,9 +1,12 @@
-"use client"
+'use client'
 
-import { useState, useCallback, useEffect, useMemo } from "react"
-import { useToast } from "@/hooks/use-toast"
-import type { Table } from "@/lib/floor-plan-utils"
-import { saveFloorPlanTables, loadFloorPlanTables } from "@/lib/modassembly/supabase/database/floor-plan"
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useToast } from '@/hooks/use-toast'
+import type { Table } from '@/lib/floor-plan-utils'
+import {
+  saveFloorPlanTables,
+  loadFloorPlanTables,
+} from '@/lib/modassembly/supabase/database/floor-plan'
 
 const MAX_UNDO_STATES = 20
 
@@ -11,25 +14,25 @@ export interface FloorPlanState {
   // Tables
   tables: Table[]
   originalTables: Table[]
-  
+
   // Selection and interaction
   selectedTable: Table | null
-  
+
   // Undo/Redo
   undoStack: Table[][]
   redoStack: Table[][]
   undoPosition: number
-  
+
   // UI state
   isLoading: boolean
   isSaving: boolean
   loadError: string | null
   unsavedChanges: boolean
-  
+
   // Panel states
   isTablesPanelOpen: boolean
   isControlsPanelOpen: boolean
-  
+
   // Grid and display options
   isGridVisible: boolean
   gridSize: number
@@ -49,20 +52,20 @@ export interface FloorPlanActions {
   addTable: (table: Table) => void
   deleteTable: (tableId: string) => void
   duplicateTable: (tableId: string) => void
-  
+
   // Undo/Redo
   addToUndoStack: (tables: Table[]) => void
   undo: () => void
   redo: () => void
-  
+
   // Data operations
   loadTables: () => Promise<void>
   saveTables: () => Promise<boolean>
-  
+
   // UI state
   setIsTablesPanelOpen: (open: boolean) => void
   setIsControlsPanelOpen: (open: boolean) => void
-  
+
   // Grid and display options
   setIsGridVisible: (visible: boolean) => void
   setGridSize: (size: number) => void
@@ -74,26 +77,28 @@ export interface FloorPlanActions {
   setShowTableStatus: (show: boolean) => void
 }
 
-export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPlanActions] {
+export function useFloorPlanState(
+  floorPlanId: string
+): [FloorPlanState, FloorPlanActions] {
   const { toast } = useToast()
-  
+
   // State
   const [tables, setTablesState] = useState<Table[]>([])
   const [originalTables, setOriginalTables] = useState<Table[]>([])
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
-  
+
   const [undoStack, setUndoStack] = useState<Table[][]>([[]])
   const [redoStack, setRedoStack] = useState<Table[][]>([])
   const [undoPosition, setUndoPosition] = useState(0)
-  
+
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
-  
+
   const [isTablesPanelOpen, setIsTablesPanelOpen] = useState(true)
   const [isControlsPanelOpen, setIsControlsPanelOpen] = useState(true)
-  
+
   const [isGridVisible, setIsGridVisible] = useState(true)
   const [gridSize, setGridSize] = useState(50)
   const [snapToGrid, setSnapToGrid] = useState(true)
@@ -104,19 +109,36 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
   const [showTableStatus, setShowTableStatus] = useState(true)
 
   // Logger
-  const logger = useMemo(() => ({
-    info: (message: string, ...args: any[]) => console.log(`[FloorPlanState] ${message}`, ...args),
-    error: (message: string, ...args: any[]) => console.error(`[FloorPlanState] ${message}`, ...args),
-    warning: (message: string, ...args: any[]) => console.warn(`[FloorPlanState] ${message}`, ...args),
-  }), [])
+  const logger = useMemo(
+    () => ({
+      info: (message: string, ...args: any[]) =>
+        console.log(`[FloorPlanState] ${message}`, ...args),
+      error: (message: string, ...args: any[]) =>
+        console.error(`[FloorPlanState] ${message}`, ...args),
+      warning: (message: string, ...args: any[]) =>
+        console.warn(`[FloorPlanState] ${message}`, ...args),
+    }),
+    []
+  )
 
-  const showInternalToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'default' = 'default') => {
-    toast({
-      title: type.charAt(0).toUpperCase() + type.slice(1),
-      description: message,
-      variant: type === 'error' ? 'destructive' : type === 'warning' ? 'warning' as any : 'default',
-    })
-  }, [toast])
+  const showInternalToast = useCallback(
+    (
+      message: string,
+      type: 'success' | 'error' | 'warning' | 'default' = 'default'
+    ) => {
+      toast({
+        title: type.charAt(0).toUpperCase() + type.slice(1),
+        description: message,
+        variant:
+          type === 'error'
+            ? 'destructive'
+            : type === 'warning'
+              ? ('warning' as any)
+              : 'default',
+      })
+    },
+    [toast]
+  )
 
   // Actions
   const setTables = useCallback((newTables: Table[]) => {
@@ -124,17 +146,20 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
     setUnsavedChanges(true)
   }, [])
 
-  const updateTable = useCallback((tableId: string, updates: Partial<Table>) => {
-    setTablesState(prev => prev.map(t => 
-      t.id === tableId ? { ...t, ...updates } : t
-    ))
-    
-    setSelectedTable(prev => 
-      prev?.id === tableId ? { ...prev, ...updates } : prev
-    )
-    
-    setUnsavedChanges(true)
-  }, [])
+  const updateTable = useCallback(
+    (tableId: string, updates: Partial<Table>) => {
+      setTablesState(prev =>
+        prev.map(t => (t.id === tableId ? { ...t, ...updates } : t))
+      )
+
+      setSelectedTable(prev =>
+        prev?.id === tableId ? { ...prev, ...updates } : prev
+      )
+
+      setUnsavedChanges(true)
+    },
+    []
+  )
 
   const addTable = useCallback((table: Table) => {
     setTablesState(prev => [...prev, table])
@@ -144,41 +169,47 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
 
   const deleteTable = useCallback((tableId: string) => {
     setTablesState(prev => prev.filter(t => t.id !== tableId))
-    setSelectedTable(prev => prev?.id === tableId ? null : prev)
+    setSelectedTable(prev => (prev?.id === tableId ? null : prev))
     setUnsavedChanges(true)
   }, [])
 
-  const duplicateTable = useCallback((tableId: string) => {
-    const table = tables.find(t => t.id === tableId)
-    if (!table) return
+  const duplicateTable = useCallback(
+    (tableId: string) => {
+      const table = tables.find(t => t.id === tableId)
+      if (!table) return
 
-    const newTable: Table = {
-      ...table,
-      id: `table-${Date.now()}`,
-      x: table.x + 20,
-      y: table.y + 20,
-      label: `${table.label} (Copy)`
-    }
-
-    addTable(newTable)
-  }, [tables, addTable])
-
-  const addToUndoStack = useCallback((tablesToAdd: Table[]) => {
-    setUndoStack(stack => {
-      const newStack = [...stack.slice(0, undoPosition + 1), [...tablesToAdd]]
-      if (newStack.length > MAX_UNDO_STATES) {
-        return newStack.slice(newStack.length - MAX_UNDO_STATES)
+      const newTable: Table = {
+        ...table,
+        id: `table-${Date.now()}`,
+        x: table.x + 20,
+        y: table.y + 20,
+        label: `${table.label} (Copy)`,
       }
-      return newStack
-    })
-    
-    setUndoPosition(prev => Math.min(prev + 1, MAX_UNDO_STATES - 1))
-    setRedoStack([])
-  }, [undoPosition])
+
+      addTable(newTable)
+    },
+    [tables, addTable]
+  )
+
+  const addToUndoStack = useCallback(
+    (tablesToAdd: Table[]) => {
+      setUndoStack(stack => {
+        const newStack = [...stack.slice(0, undoPosition + 1), [...tablesToAdd]]
+        if (newStack.length > MAX_UNDO_STATES) {
+          return newStack.slice(newStack.length - MAX_UNDO_STATES)
+        }
+        return newStack
+      })
+
+      setUndoPosition(prev => Math.min(prev + 1, MAX_UNDO_STATES - 1))
+      setRedoStack([])
+    },
+    [undoPosition]
+  )
 
   const undo = useCallback(() => {
     if (undoStack.length <= 1) {
-      showInternalToast("Nothing to undo", "default")
+      showInternalToast('Nothing to undo', 'default')
       return
     }
 
@@ -192,16 +223,18 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
     setTablesState(previousState)
 
     if (selectedTable) {
-      const newSelectedTable = previousState.find(t => t.id === selectedTable.id)
+      const newSelectedTable = previousState.find(
+        t => t.id === selectedTable.id
+      )
       setSelectedTable(newSelectedTable || null)
     }
 
-    showInternalToast("Action undone", "default")
+    showInternalToast('Action undone', 'default')
   }, [undoStack, tables, selectedTable, showInternalToast])
 
   const redo = useCallback(() => {
     if (redoStack.length === 0) {
-      showInternalToast("Nothing to redo", "default")
+      showInternalToast('Nothing to redo', 'default')
       return
     }
 
@@ -211,17 +244,17 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
 
     setUndoStack(prev => [...prev, currentState])
     setRedoStack(newRedoStack)
-    
+
     if (nextState) {
       setTablesState(nextState)
-      
+
       if (selectedTable) {
         const newSelectedTable = nextState.find(t => t.id === selectedTable.id)
         setSelectedTable(newSelectedTable || null)
       }
     }
 
-    showInternalToast("Action redone", "default")
+    showInternalToast('Action redone', 'default')
   }, [redoStack, tables, selectedTable, showInternalToast])
 
   const loadTables = useCallback(async () => {
@@ -231,14 +264,14 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
 
     try {
       const floorPlanTables = await loadFloorPlanTables()
-      
+
       const frontendTables: Table[] = floorPlanTables.map((table, index) => {
         // AI: Use persisted positions if available, fallback to calculated positions
         const row = Math.floor(index / 3)
         const col = index % 3
-        const fallbackX = 100 + (col * 150)
-        const fallbackY = 100 + (row * 150)
-        
+        const fallbackX = 100 + col * 150
+        const fallbackY = 100 + row * 150
+
         return {
           id: table.id,
           label: table.label,
@@ -247,16 +280,24 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
           status: table.status,
           x: (table as any).position_x ?? (table as any).x ?? fallbackX,
           y: (table as any).position_y ?? (table as any).y ?? fallbackY,
-          width: (table as any).width ?? (table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 120)),
-          height: (table as any).height ?? (table.type === 'circle' ? 80 : (table.type === 'square' ? 100 : 80)),
+          width:
+            (table as any).width ??
+            (table.type === 'circle'
+              ? 80
+              : table.type === 'square'
+                ? 100
+                : 120),
+          height:
+            (table as any).height ??
+            (table.type === 'circle' ? 80 : table.type === 'square' ? 100 : 80),
           rotation: (table as any).rotation ?? 0,
           zIndex: (table as any).zIndex ?? 1,
-          floor_plan_id: floorPlanId
+          floor_plan_id: floorPlanId,
         }
       })
-      
+
       logger.info(`Retrieved ${frontendTables.length} tables for floor plan`)
-      
+
       setTablesState(frontendTables)
       setOriginalTables(JSON.parse(JSON.stringify(frontendTables)))
       setUnsavedChanges(false)
@@ -264,7 +305,7 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
       const errorMsg = `Error loading tables: ${error.message}`
       logger.error(errorMsg)
       setLoadError(errorMsg)
-      showInternalToast("Failed to load floor plan tables", "error")
+      showInternalToast('Failed to load floor plan tables', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -272,7 +313,7 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
 
   const saveTables = useCallback(async (): Promise<boolean> => {
     if (!floorPlanId) {
-      logger.error("Cannot save tables: No floor plan ID provided")
+      logger.error('Cannot save tables: No floor plan ID provided')
       return false
     }
 
@@ -285,27 +326,27 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
         label: table.label,
         type: table.type,
         seats: table.seats,
-        status: table.status || "available",
+        status: table.status || 'available',
         // AI: Include position and dimension data for persistence
         position_x: table.x,
         position_y: table.y,
         width: table.width,
         height: table.height,
         rotation: table.rotation,
-        zIndex: table.zIndex
+        zIndex: table.zIndex,
       }))
-      
+
       await saveFloorPlanTables(floorPlanTables)
-      
-      logger.info("Tables saved successfully")
+
+      logger.info('Tables saved successfully')
       setUnsavedChanges(false)
       setOriginalTables(JSON.parse(JSON.stringify(tables)))
-      showInternalToast("Floor plan saved successfully", "success")
+      showInternalToast('Floor plan saved successfully', 'success')
       return true
     } catch (error: any) {
       const errorMsg = `Error saving tables: ${error.message}`
       logger.error(errorMsg)
-      showInternalToast("Failed to save floor plan changes", "error")
+      showInternalToast('Failed to save floor plan changes', 'error')
       return false
     } finally {
       setIsSaving(false)
@@ -337,7 +378,7 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
     showTableLabels,
     showTableSeats,
     showTableDimensions,
-    showTableStatus
+    showTableStatus,
   }
 
   const actions: FloorPlanActions = {
@@ -361,7 +402,7 @@ export function useFloorPlanState(floorPlanId: string): [FloorPlanState, FloorPl
     setShowTableLabels,
     setShowTableSeats,
     setShowTableDimensions,
-    setShowTableStatus
+    setShowTableStatus,
   }
 
   return [state, actions]

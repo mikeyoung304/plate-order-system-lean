@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { createClient as createBrowserClient } from '@/lib/modassembly/supabase/client'
-import type { User, Session } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import type { AppRole } from './roles'
 
 export type ServerUserProfile = {
@@ -22,7 +22,9 @@ export type UserWithProfile = {
  */
 export async function getSession(): Promise<Session | null> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   return session
 }
 
@@ -41,8 +43,10 @@ export async function getUser(): Promise<User | null> {
  */
 export async function getUserWithProfile(): Promise<UserWithProfile | null> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   if (!session?.user) {
     return null
   }
@@ -55,7 +59,7 @@ export async function getUserWithProfile(): Promise<UserWithProfile | null> {
 
   return {
     user: session.user,
-    profile: profile || null
+    profile: profile || null,
   }
 }
 
@@ -65,7 +69,9 @@ export async function getUserWithProfile(): Promise<UserWithProfile | null> {
  */
 export async function getClientSession(): Promise<Session | null> {
   const supabase = createBrowserClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   return session
 }
 
@@ -84,8 +90,10 @@ export async function getClientUser(): Promise<User | null> {
  */
 export async function getClientUserWithProfile(): Promise<UserWithProfile | null> {
   const supabase = createBrowserClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   if (!session?.user) {
     return null
   }
@@ -98,7 +106,7 @@ export async function getClientUserWithProfile(): Promise<UserWithProfile | null
 
   return {
     user: session.user,
-    profile: profile || null
+    profile: profile || null,
   }
 }
 
@@ -108,7 +116,9 @@ export async function getClientUserWithProfile(): Promise<UserWithProfile | null
  */
 export async function validateSession(): Promise<boolean> {
   const session = await getSession()
-  if (!session) return false
+  if (!session) {
+    return false
+  }
 
   // Check if token is expired
   const now = Math.floor(Date.now() / 1000)
@@ -121,6 +131,8 @@ export async function validateSession(): Promise<boolean> {
  */
 export async function refreshSession(): Promise<Session | null> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.refreshSession()
+  const {
+    data: { session },
+  } = await supabase.auth.refreshSession()
   return session
 }

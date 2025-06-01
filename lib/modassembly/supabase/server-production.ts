@@ -3,13 +3,13 @@ import { createClient as createOriginalClient } from './server'
 
 export async function createClient() {
   const client = await createOriginalClient()
-  
+
   // Add production logging without modifying original
   if (process.env.NODE_ENV === 'production') {
     // Log auth operations without modifying the client
     const originalGetSession = client.auth.getSession.bind(client.auth)
     const originalGetUser = client.auth.getUser.bind(client.auth)
-    
+
     // Override specific methods while keeping the rest intact
     client.auth.getSession = async () => {
       const result = await originalGetSession()
@@ -18,7 +18,7 @@ export async function createClient() {
       }
       return result
     }
-    
+
     client.auth.getUser = async () => {
       const result = await originalGetUser()
       if (result.error) {
@@ -27,6 +27,6 @@ export async function createClient() {
       return result
     }
   }
-  
+
   return client
 }

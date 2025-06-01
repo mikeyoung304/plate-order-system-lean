@@ -5,6 +5,7 @@
 The script now includes **manual testing prompts** + **automated validation**!
 
 ### **Running the Script**:
+
 ```bash
 ./.claude-swarm/scripts/beta-test-checklist.sh
 ```
@@ -41,16 +42,19 @@ The script now includes **manual testing prompts** + **automated validation**!
    [ ] Console shows 0 errors?
    [ ] Animations smooth?
 
-Run automated checks? (y/n) 
+Run automated checks? (y/n)
 ```
 
 ### **Two Options**:
 
 #### **Option 1: Manual Testing Only**
+
 Press `n` to skip automated checks and just use the manual checklist
 
-#### **Option 2: Full Validation** 
+#### **Option 2: Full Validation**
+
 Press `y` to run:
+
 1. **TypeScript compilation check**
 2. **Complete automated system validation**
 3. **Performance monitoring**
@@ -59,6 +63,7 @@ Press `y` to run:
 ### **Perfect for Beta Testing**:
 
 #### **Daily Morning Check**:
+
 ```bash
 # Full validation before starting work
 ./.claude-swarm/scripts/beta-test-checklist.sh
@@ -66,13 +71,15 @@ Press `y` to run:
 ```
 
 #### **Quick Beta User Check**:
+
 ```bash
 # Just manual checklist for beta testers
-./.claude-swarm/scripts/beta-test-checklist.sh  
+./.claude-swarm/scripts/beta-test-checklist.sh
 # Press 'n' to skip automation, use manual list
 ```
 
 #### **Pre-Commit Validation**:
+
 ```bash
 # Full system check before committing
 ./.claude-swarm/scripts/beta-test-checklist.sh
@@ -82,21 +89,25 @@ Press `y` to run:
 ## 🎯 **Benefits**:
 
 ### **For Developers**:
+
 - **Manual checklist** guides critical testing
 - **Automated validation** catches technical issues
 - **Combined approach** ensures nothing is missed
 
 ### **For Beta Testers**:
+
 - **Clear test steps** for each major feature
 - **Easy to follow** checkbox format
 - **Covers all critical workflows**
 
 ### **For Quality Assurance**:
+
 - **Comprehensive coverage** of all features
 - **Performance validation** included
 - **Security and reliability** checks automated
 
 ## 🚀 **Result**:
+
 Perfect hybrid approach combining **human testing intuition** with **automated technical validation**!
 
 **Status**: Ready for daily beta testing use ✅

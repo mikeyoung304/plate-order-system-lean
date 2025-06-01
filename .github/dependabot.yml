@@ -1,61 +1,61 @@
 version: 2
 updates:
   # Enable version updates for npm
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 10
     reviewers:
-      - "mikeyoung304"
+      - 'mikeyoung304'
     assignees:
-      - "mikeyoung304"
+      - 'mikeyoung304'
     commit-message:
-      prefix: "deps"
-      include: "scope"
+      prefix: 'deps'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "automated"
-    
+      - 'dependencies'
+      - 'automated'
+
     # Group related updates
     groups:
       react-ecosystem:
         patterns:
-          - "react"
-          - "react-*"
-          - "@types/react*"
-      
+          - 'react'
+          - 'react-*'
+          - '@types/react*'
+
       nextjs-ecosystem:
         patterns:
-          - "next"
-          - "@next/*"
-      
+          - 'next'
+          - '@next/*'
+
       supabase-ecosystem:
         patterns:
-          - "@supabase/*"
-          - "supabase"
-      
+          - '@supabase/*'
+          - 'supabase'
+
       dev-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         patterns:
-          - "@types/*"
-          - "eslint*"
-          - "prettier"
-          - "jest"
-          - "@testing-library/*"
+          - '@types/*'
+          - 'eslint*'
+          - 'prettier'
+          - 'jest'
+          - '@testing-library/*'
 
   # Enable version updates for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
     labels:
-      - "github-actions"
-      - "automated"
+      - 'github-actions'
+      - 'automated'

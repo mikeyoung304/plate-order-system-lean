@@ -7,7 +7,11 @@
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/mike/Plate-Restaurant-System-App"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/mike/Plate-Restaurant-System-App"
+      ],
       "description": "Enhanced file system operations"
     },
     "desktop-commander": {

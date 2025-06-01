@@ -1,7 +1,14 @@
-import { useReducer, useCallback, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useReducer, useRef } from 'react'
 
 // Voice recording state machine types
-export type VoiceRecordingStep = 'idle' | 'recording' | 'processing' | 'confirming' | 'submitting' | 'success' | 'error'
+export type VoiceRecordingStep =
+  | 'idle'
+  | 'recording'
+  | 'processing'
+  | 'confirming'
+  | 'submitting'
+  | 'success'
+  | 'error'
 
 export interface VoiceRecordingState {
   step: VoiceRecordingStep
@@ -17,7 +24,12 @@ export type VoiceRecordingAction =
   | { type: 'START_RECORDING' }
   | { type: 'STOP_RECORDING' }
   | { type: 'PROCESSING' }
-  | { type: 'TRANSCRIPTION_SUCCESS'; transcription: string; items: string[]; alerts: string[] }
+  | {
+      type: 'TRANSCRIPTION_SUCCESS'
+      transcription: string
+      items: string[]
+      alerts: string[]
+    }
   | { type: 'TRANSCRIPTION_ERROR'; error: string }
   | { type: 'CONFIRM_ORDER' }
   | { type: 'SUBMIT_ORDER' }
@@ -34,10 +46,13 @@ const initialState: VoiceRecordingState = {
   dietaryAlerts: [],
   error: null,
   retryCount: 0,
-  showConfirmation: false
+  showConfirmation: false,
 }
 
-function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordingAction): VoiceRecordingState {
+function voiceRecordingReducer(
+  state: VoiceRecordingState,
+  action: VoiceRecordingAction
+): VoiceRecordingState {
   switch (action.type) {
     case 'START_RECORDING':
       return {
@@ -46,19 +61,19 @@ function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordin
         error: null,
         transcription: '',
         transcriptionItems: [],
-        dietaryAlerts: []
+        dietaryAlerts: [],
       }
 
     case 'STOP_RECORDING':
       return {
         ...state,
-        step: 'processing'
+        step: 'processing',
       }
 
     case 'PROCESSING':
       return {
         ...state,
-        step: 'processing'
+        step: 'processing',
       }
 
     case 'TRANSCRIPTION_SUCCESS':
@@ -70,7 +85,7 @@ function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordin
         dietaryAlerts: action.alerts,
         showConfirmation: true,
         error: null,
-        retryCount: 0
+        retryCount: 0,
       }
 
     case 'TRANSCRIPTION_ERROR':
@@ -80,27 +95,27 @@ function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordin
         step: 'error',
         error: action.error,
         retryCount: newRetryCount,
-        showConfirmation: false
+        showConfirmation: false,
       }
 
     case 'CONFIRM_ORDER':
       return {
         ...state,
         step: 'submitting',
-        showConfirmation: false
+        showConfirmation: false,
       }
 
     case 'SUBMIT_SUCCESS':
       return {
         ...state,
-        step: 'success'
+        step: 'success',
       }
 
     case 'SUBMIT_ERROR':
       return {
         ...state,
         step: 'error',
-        error: action.error
+        error: action.error,
       }
 
     case 'RETRY':
@@ -108,7 +123,7 @@ function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordin
         ...state,
         step: 'idle',
         error: null,
-        showConfirmation: false
+        showConfirmation: false,
       }
 
     case 'RESET':
@@ -119,7 +134,7 @@ function voiceRecordingReducer(state: VoiceRecordingState, action: VoiceRecordin
         ...state,
         step: 'idle',
         showConfirmation: false,
-        error: null
+        error: null,
       }
 
     default:
@@ -142,24 +157,29 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
   const startRecording = useCallback(async () => {
     try {
       dispatch({ type: 'START_RECORDING' })
-      
+
       // Initialize audio recorder if needed
       if (!audioRecorderRef.current) {
-        const { AudioRecorder } = await import('@/lib/modassembly/audio-recording/record')
+        const { AudioRecorder } = await import(
+          '@/lib/modassembly/audio-recording/record'
+        )
         audioRecorderRef.current = new AudioRecorder()
       }
-      
+
       // Check microphone permissions first
       const hasPermission = await audioRecorderRef.current.requestPermission()
       if (!hasPermission) {
-        throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.')
+        throw new Error(
+          'Microphone permission denied. Please allow microphone access in your browser settings.'
+        )
       }
-      
+
       await audioRecorderRef.current.startRecording()
     } catch (error) {
-      dispatch({ 
-        type: 'TRANSCRIPTION_ERROR', 
-        error: error instanceof Error ? error.message : 'Failed to start recording'
+      dispatch({
+        type: 'TRANSCRIPTION_ERROR',
+        error:
+          error instanceof Error ? error.message : 'Failed to start recording',
       })
     }
   }, [])
@@ -168,45 +188,49 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
     try {
       dispatch({ type: 'STOP_RECORDING' })
       dispatch({ type: 'PROCESSING' })
-      
+
       if (!audioRecorderRef.current) {
         throw new Error('No audio recorder available')
       }
-      
+
       const recordingResult = await audioRecorderRef.current.stopRecording()
-      
+
       // Send to transcription service
       const formData = new FormData()
       formData.append('audio', recordingResult.audioBlob)
-      
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`Transcription failed: ${response.status} - ${errorText}`)
+        throw new Error(
+          `Transcription failed: ${response.status} - ${errorText}`
+        )
       }
-      
+
       const result = await response.json()
-      
+
       // The API returns both transcription and items
       const transcription = result.transcription || ''
-      const items = result.items && Array.isArray(result.items) ? result.items : parseTranscriptionToItems(transcription)
+      const items =
+        result.items && Array.isArray(result.items)
+          ? result.items
+          : parseTranscriptionToItems(transcription)
       const alerts = checkDietaryAlerts(items) // Simple keyword check
-      
+
       dispatch({
         type: 'TRANSCRIPTION_SUCCESS',
         transcription,
         items,
-        alerts
+        alerts,
       })
-      
     } catch (error) {
       dispatch({
         type: 'TRANSCRIPTION_ERROR',
-        error: error instanceof Error ? error.message : 'Recording failed'
+        error: error instanceof Error ? error.message : 'Recording failed',
       })
       onError?.(error instanceof Error ? error.message : 'Recording failed')
     }
@@ -215,20 +239,22 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
   const confirmOrder = useCallback(async () => {
     try {
       dispatch({ type: 'CONFIRM_ORDER' })
-      
+
       // Submit order (this would integrate with order submission logic)
       // For now, simulate success
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       dispatch({ type: 'SUBMIT_SUCCESS' })
       onSuccess?.(state.transcriptionItems)
-      
     } catch (error) {
       dispatch({
         type: 'SUBMIT_ERROR',
-        error: error instanceof Error ? error.message : 'Failed to submit order'
+        error:
+          error instanceof Error ? error.message : 'Failed to submit order',
       })
-      onError?.(error instanceof Error ? error.message : 'Failed to submit order')
+      onError?.(
+        error instanceof Error ? error.message : 'Failed to submit order'
+      )
     }
   }, [state.transcriptionItems, onSuccess, onError])
 
@@ -268,7 +294,8 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
   const hasError = state.step === 'error'
   const isSuccess = state.step === 'success'
   const canRetry = state.retryCount < maxRetries && hasError
-  const shouldShowRetryMessage = state.retryCount > 0 && state.retryCount < maxRetries
+  const shouldShowRetryMessage =
+    state.retryCount > 0 && state.retryCount < maxRetries
 
   return {
     // State
@@ -280,21 +307,23 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
     isSuccess,
     canRetry,
     shouldShowRetryMessage,
-    
+
     // Actions
     startRecording,
     stopRecording,
     confirmOrder,
     retry,
     reset,
-    cancel
+    cancel,
   }
 }
 
 // Helper functions
 function parseTranscriptionToItems(transcription: string): string[] {
-  if (!transcription.trim()) return []
-  
+  if (!transcription.trim()) {
+    return []
+  }
+
   // Simple parsing - split by common separators
   return transcription
     .split(/[,;]\s*|\sand\s+/)
@@ -307,17 +336,25 @@ function parseTranscriptionToItems(transcription: string): string[] {
 function checkDietaryAlerts(items: string[]): string[] {
   const alerts: string[] = []
   const itemsText = items.join(' ').toLowerCase()
-  
+
   // Simple keyword-based alerts (would be more sophisticated in real app)
   if (itemsText.includes('nuts') || itemsText.includes('peanut')) {
     alerts.push('Contains nuts - check resident allergies')
   }
-  if (itemsText.includes('dairy') || itemsText.includes('milk') || itemsText.includes('cheese')) {
+  if (
+    itemsText.includes('dairy') ||
+    itemsText.includes('milk') ||
+    itemsText.includes('cheese')
+  ) {
     alerts.push('Contains dairy - check lactose intolerance')
   }
-  if (itemsText.includes('gluten') || itemsText.includes('bread') || itemsText.includes('wheat')) {
+  if (
+    itemsText.includes('gluten') ||
+    itemsText.includes('bread') ||
+    itemsText.includes('wheat')
+  ) {
     alerts.push('Contains gluten - check dietary restrictions')
   }
-  
+
   return alerts
 }

@@ -3,18 +3,21 @@
 ## Test User Accounts
 
 ### Admin Account
+
 - **Email**: guest@restaurant.plate
 - **Password**: guestpassword123
 - **Role**: admin
 - **Access**: Full system access, floor plan management
 
-### Server Account  
+### Server Account
+
 - **Email**: testserver@restaurant.plate
 - **Password**: testpassword123
 - **Role**: server
 - **Access**: Take orders, view tables, access voice ordering
 
 ### Resident Accounts
+
 - **Email**: john.doe@resident.plate
 - **Password**: resident123
 - **Role**: resident

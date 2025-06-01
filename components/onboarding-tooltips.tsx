@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { HelpCircle, X, ArrowRight, Mic, Users, Coffee, Utensils } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  ArrowRight,
+  Coffee,
+  HelpCircle,
+  Mic,
+  Users,
+  Utensils,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,28 +30,29 @@ const tooltipSteps: TooltipStep[] = [
     title: 'Server View',
     description: 'Click here to start taking orders and managing tables',
     target: '[href="/server"]',
-    icon: <Utensils className="w-4 h-4" />,
+    icon: <Utensils className='w-4 h-4' />,
     position: 'bottom',
-    page: '/dashboard'
+    page: '/dashboard',
   },
   {
     id: 'floor-plan-table',
     title: 'Select a Table',
     description: 'Click any table to start placing orders for that table',
     target: '.floor-plan-table',
-    icon: <Users className="w-4 h-4" />,
+    icon: <Users className='w-4 h-4' />,
     position: 'top',
-    page: '/server'
+    page: '/server',
   },
   {
     id: 'voice-order-button',
     title: 'Voice Ordering',
-    description: 'Click and speak your order naturally - "chicken, pasta, salad"',
+    description:
+      'Click and speak your order naturally - "chicken, pasta, salad"',
     target: '.voice-order-button',
-    icon: <Mic className="w-4 h-4" />,
+    icon: <Mic className='w-4 h-4' />,
     position: 'top',
-    page: '/server'
-  }
+    page: '/server',
+  },
 ]
 
 export function OnboardingTooltips() {
@@ -65,7 +74,7 @@ export function OnboardingTooltips() {
     const handleLocationChange = () => {
       const newPage = window.location.pathname
       setCurrentPage(newPage)
-      
+
       if (!hasSeenTooltips) {
         const pageSteps = tooltipSteps.filter(step => step.page === newPage)
         if (pageSteps.length > 0) {
@@ -78,14 +87,16 @@ export function OnboardingTooltips() {
 
     handleLocationChange()
     window.addEventListener('popstate', handleLocationChange)
-    
+
     return () => {
       window.removeEventListener('popstate', handleLocationChange)
     }
   }, [hasSeenTooltips])
 
   const getCurrentTooltip = () => {
-    if (currentStep === null) return null
+    if (currentStep === null) {
+      return null
+    }
     const pageSteps = tooltipSteps.filter(step => step.page === currentPage)
     return pageSteps[currentStep] || null
   }
@@ -110,7 +121,9 @@ export function OnboardingTooltips() {
   }
 
   const tooltip = getCurrentTooltip()
-  if (!tooltip || hasSeenTooltips) return null
+  if (!tooltip || hasSeenTooltips) {
+    return null
+  }
 
   return (
     <TooltipOverlay
@@ -131,7 +144,13 @@ interface TooltipOverlayProps {
   totalSteps: number
 }
 
-function TooltipOverlay({ tooltip, onNext, onSkip, stepNumber, totalSteps }: TooltipOverlayProps) {
+function TooltipOverlay({
+  tooltip,
+  onNext,
+  onSkip,
+  stepNumber,
+  totalSteps,
+}: TooltipOverlayProps) {
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
 
@@ -140,15 +159,17 @@ function TooltipOverlay({ tooltip, onNext, onSkip, stepNumber, totalSteps }: Too
       const element = document.querySelector(tooltip.target) as HTMLElement
       if (element) {
         setTargetElement(element)
-        
+
         // Calculate tooltip position
         const rect = element.getBoundingClientRect()
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
-        
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop
+        const scrollLeft =
+          window.pageXOffset || document.documentElement.scrollLeft
+
         let top = 0
         let left = 0
-        
+
         switch (tooltip.position) {
           case 'top':
             top = rect.top + scrollTop - 120
@@ -167,13 +188,14 @@ function TooltipOverlay({ tooltip, onNext, onSkip, stepNumber, totalSteps }: Too
             left = rect.right + scrollLeft + 20
             break
         }
-        
+
         setTooltipPosition({ top, left })
-        
+
         // Highlight the target element
         element.style.position = 'relative'
         element.style.zIndex = '1000'
-        element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2)'
+        element.style.boxShadow =
+          '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2)'
         element.style.borderRadius = '8px'
         element.style.transition = 'all 0.3s ease'
       }
@@ -183,7 +205,7 @@ function TooltipOverlay({ tooltip, onNext, onSkip, stepNumber, totalSteps }: Too
     findTarget()
     const timeout1 = setTimeout(findTarget, 500)
     const timeout2 = setTimeout(findTarget, 1000)
-    
+
     return () => {
       if (targetElement) {
         targetElement.style.position = ''
@@ -197,56 +219,66 @@ function TooltipOverlay({ tooltip, onNext, onSkip, stepNumber, totalSteps }: Too
     }
   }, [tooltip, targetElement])
 
-  if (!targetElement) return null
+  if (!targetElement) {
+    return null
+  }
 
   return (
     <>
       {/* Backdrop overlay */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999]" />
-      
+      <div className='fixed inset-0 bg-black/40 backdrop-blur-sm z-[999]' />
+
       {/* Tooltip */}
       <div
-        className="fixed z-[1001] w-80"
+        className='fixed z-[1001] w-80'
         style={{
           top: tooltipPosition.top,
-          left: Math.max(20, Math.min(window.innerWidth - 340, tooltipPosition.left))
+          left: Math.max(
+            20,
+            Math.min(window.innerWidth - 340, tooltipPosition.left)
+          ),
         }}
       >
-        <Card className="bg-white shadow-2xl border-2 border-blue-200">
-          <CardContent className="p-0">
+        <Card className='bg-white shadow-2xl border-2 border-blue-200'>
+          <CardContent className='p-0'>
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+            <div className='bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg'>
+              <div className='flex items-center gap-2 mb-2'>
+                <div className='w-6 h-6 rounded-full bg-white/20 flex items-center justify-center'>
                   {tooltip.icon}
                 </div>
-                <h3 className="font-semibold">{tooltip.title}</h3>
-                <Badge variant="secondary" className="ml-auto bg-white/20 text-white border-white/30">
+                <h3 className='font-semibold'>{tooltip.title}</h3>
+                <Badge
+                  variant='secondary'
+                  className='ml-auto bg-white/20 text-white border-white/30'
+                >
                   {stepNumber} of {totalSteps}
                 </Badge>
               </div>
             </div>
-            
+
             {/* Content */}
-            <div className="p-4">
-              <p className="text-gray-700 mb-4 leading-relaxed">{tooltip.description}</p>
-              
-              <div className="flex gap-2">
+            <div className='p-4'>
+              <p className='text-gray-700 mb-4 leading-relaxed'>
+                {tooltip.description}
+              </p>
+
+              <div className='flex gap-2'>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={onSkip}
-                  className="flex-1"
-                  size="sm"
+                  className='flex-1'
+                  size='sm'
                 >
                   Skip Tour
                 </Button>
                 <Button
                   onClick={onNext}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  size="sm"
+                  className='flex-1 bg-blue-600 hover:bg-blue-700'
+                  size='sm'
                 >
                   {stepNumber === totalSteps ? 'Finish' : 'Next'}
-                  <ArrowRight className="w-3 h-3 ml-1" />
+                  <ArrowRight className='w-3 h-3 ml-1' />
                 </Button>
               </div>
             </div>
@@ -263,13 +295,13 @@ export function HelpButton({ tooltipId }: { tooltipId?: string }) {
 
   return (
     <Button
-      variant="ghost"
-      size="icon"
+      variant='ghost'
+      size='icon'
       onClick={() => setShowHelp(!showHelp)}
-      className="w-8 h-8 text-gray-400 hover:text-gray-600"
-      title="Get help"
+      className='w-8 h-8 text-gray-400 hover:text-gray-600'
+      title='Get help'
     >
-      <HelpCircle className="w-4 h-4" />
+      <HelpCircle className='w-4 h-4' />
     </Button>
   )
 }

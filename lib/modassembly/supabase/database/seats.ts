@@ -3,37 +3,40 @@
  * IMPORTANT!!! Ask the user before editing this file.
  */
 
-import { createClient } from "@/lib/modassembly/supabase/client";
+import { createClient } from '@/lib/modassembly/supabase/client'
 
 /**
  * Fetch a seat ID based on table and seat label
  */
-export async function fetchSeatId(tableId: string, seatLabel: number): Promise<string | null> {
-  const supabase = createClient();
+export async function fetchSeatId(
+  tableId: string,
+  seatLabel: number
+): Promise<string | null> {
+  const supabase = createClient()
   const seatData = await supabase
     .from('seats')
     .select('id')
     .eq('table_id', tableId)
     .eq('label', seatLabel)
-    .single();
+    .single()
 
   if (seatData.error || !seatData.data) {
-    console.error('Error fetching seat:', seatData.error);
-    return null;
+    console.error('Error fetching seat:', seatData.error)
+    return null
   }
 
-  return seatData.data.id;
+  return seatData.data.id
 }
 
 /**
  * Seat interface
  */
 export interface Seat {
-  id: string;
-  table_id: string;
-  label: number;
-  status: string;
-  created_at?: string;
+  id: string
+  table_id: string
+  label: number
+  status: string
+  created_at?: string
 }
 
 /**
@@ -42,92 +45,95 @@ export interface Seat {
  * @param seatCount Number of seats to create
  * @returns Array of created seats
  */
-export async function createSeatsForTable(tableId: string, seatCount: number): Promise<Seat[]> {
-  const supabase = createClient();
-  
+export async function createSeatsForTable(
+  tableId: string,
+  seatCount: number
+): Promise<Seat[]> {
+  const supabase = createClient()
+
   // Create seat data array
   const seatData = Array.from({ length: seatCount }, (_, index) => ({
     table_id: tableId,
     label: index + 1,
-    status: 'available'
-  }));
+    status: 'available',
+  }))
 
-  const { data, error } = await supabase
-    .from('seats')
-    .insert(seatData)
-    .select();
+  const { data, error } = await supabase.from('seats').insert(seatData).select()
 
   if (error) {
-    console.error('Error creating seats:', error);
-    throw new Error(`Failed to create seats: ${error.message}`);
+    console.error('Error creating seats:', error)
+    throw new Error(`Failed to create seats: ${error.message}`)
   }
 
-  return data as Seat[];
+  return data as Seat[]
 }
 
 /**
  * Update seat count for a table
- * @param tableId Table ID to update seats for  
+ * @param tableId Table ID to update seats for
  * @param newSeatCount New number of seats
  * @returns Array of seats after update
  */
-export async function updateSeatsForTable(tableId: string, newSeatCount: number): Promise<Seat[]> {
-  const supabase = createClient();
-  
+export async function updateSeatsForTable(
+  tableId: string,
+  newSeatCount: number
+): Promise<Seat[]> {
+  const supabase = createClient()
+
   // Get current seats
   const { data: currentSeats, error: fetchError } = await supabase
     .from('seats')
     .select('*')
     .eq('table_id', tableId)
-    .order('label');
+    .order('label')
 
   if (fetchError) {
-    console.error('Error fetching current seats:', fetchError);
-    throw new Error(`Failed to fetch current seats: ${fetchError.message}`);
+    console.error('Error fetching current seats:', fetchError)
+    throw new Error(`Failed to fetch current seats: ${fetchError.message}`)
   }
 
-  const currentSeatCount = currentSeats?.length || 0;
+  const currentSeatCount = currentSeats?.length || 0
 
   if (newSeatCount === currentSeatCount) {
-    return currentSeats as Seat[];
+    return currentSeats as Seat[]
   }
 
   if (newSeatCount > currentSeatCount) {
     // Add new seats
-    const seatsToAdd = newSeatCount - currentSeatCount;
+    const seatsToAdd = newSeatCount - currentSeatCount
     const newSeatData = Array.from({ length: seatsToAdd }, (_, index) => ({
       table_id: tableId,
       label: currentSeatCount + index + 1,
-      status: 'available'
-    }));
+      status: 'available',
+    }))
 
     const { data: newSeats, error: insertError } = await supabase
       .from('seats')
       .insert(newSeatData)
-      .select();
+      .select()
 
     if (insertError) {
-      console.error('Error adding seats:', insertError);
-      throw new Error(`Failed to add seats: ${insertError.message}`);
+      console.error('Error adding seats:', insertError)
+      throw new Error(`Failed to add seats: ${insertError.message}`)
     }
 
-    return [...(currentSeats as Seat[]), ...(newSeats as Seat[])];
+    return [...(currentSeats as Seat[]), ...(newSeats as Seat[])]
   } else {
     // Remove excess seats
-    const seatsToRemove = currentSeats!.slice(newSeatCount);
-    const seatIdsToRemove = seatsToRemove.map(seat => seat.id);
+    const seatsToRemove = currentSeats!.slice(newSeatCount)
+    const seatIdsToRemove = seatsToRemove.map(seat => seat.id)
 
     const { error: deleteError } = await supabase
       .from('seats')
       .delete()
-      .in('id', seatIdsToRemove);
+      .in('id', seatIdsToRemove)
 
     if (deleteError) {
-      console.error('Error removing seats:', deleteError);
-      throw new Error(`Failed to remove seats: ${deleteError.message}`);
+      console.error('Error removing seats:', deleteError)
+      throw new Error(`Failed to remove seats: ${deleteError.message}`)
     }
 
-    return currentSeats!.slice(0, newSeatCount) as Seat[];
+    return currentSeats!.slice(0, newSeatCount) as Seat[]
   }
 }
 
@@ -136,15 +142,15 @@ export async function updateSeatsForTable(tableId: string, newSeatCount: number)
  * @param tableId Table ID to delete seats for
  */
 export async function deleteSeatsForTable(tableId: string): Promise<void> {
-  const supabase = createClient();
-  
+  const supabase = createClient()
+
   const { error } = await supabase
     .from('seats')
     .delete()
-    .eq('table_id', tableId);
+    .eq('table_id', tableId)
 
   if (error) {
-    console.error('Error deleting seats:', error);
-    throw new Error(`Failed to delete seats: ${error.message}`);
+    console.error('Error deleting seats:', error)
+    throw new Error(`Failed to delete seats: ${error.message}`)
   }
-} 
+}

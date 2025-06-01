@@ -1,4 +1,4 @@
-import { env, isProduction } from './env'
+import { isProduction } from './env'
 
 export enum LogLevel {
   DEBUG = 0,
@@ -6,6 +6,9 @@ export enum LogLevel {
   WARN = 2,
   ERROR = 3,
 }
+
+// Export constants for access
+export const { DEBUG, INFO, WARN, ERROR } = LogLevel
 
 interface LogEntry {
   level: LogLevel
@@ -27,13 +30,22 @@ class Logger {
   private formatMessage(entry: LogEntry): string {
     const levelName = LogLevel[entry.level]
     const contextStr = entry.context ? JSON.stringify(entry.context) : ''
-    const errorStr = entry.error ? `\nError: ${entry.error.message}\nStack: ${entry.error.stack}` : ''
-    
+    const errorStr = entry.error
+      ? `\nError: ${entry.error.message}\nStack: ${entry.error.stack}`
+      : ''
+
     return `[${entry.timestamp}] ${levelName}: ${entry.message} ${contextStr}${errorStr}`
   }
 
-  private log(level: LogLevel, message: string, context?: Record<string, any>, error?: Error) {
-    if (level < this.logLevel) return
+  private log(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, any>,
+    error?: Error
+  ) {
+    if (level < this.logLevel) {
+      return
+    }
 
     const entry: LogEntry = {
       level,
@@ -48,10 +60,14 @@ class Logger {
     // Console output
     switch (level) {
       case LogLevel.DEBUG:
-        console.debug(formatted)
+        if (!isProduction) {
+          console.debug(formatted)
+        }
         break
       case LogLevel.INFO:
-        console.info(formatted)
+        if (!isProduction) {
+          console.info(formatted)
+        }
         break
       case LogLevel.WARN:
         console.warn(formatted)
@@ -67,7 +83,7 @@ class Logger {
     }
   }
 
-  private sendToExternalService(entry: LogEntry) {
+  private sendToExternalService(_entry: LogEntry) {
     // Placeholder for external logging service
     // Example: Sentry, LogRocket, DataDog, etc.
     try {
@@ -98,7 +114,12 @@ class Logger {
     this.info(`Auth: ${event}`, { ...context, userId })
   }
 
-  apiRequest(method: string, endpoint: string, userId?: string, duration?: number) {
+  apiRequest(
+    method: string,
+    endpoint: string,
+    userId?: string,
+    duration?: number
+  ) {
     this.info(`API: ${method} ${endpoint}`, { userId, duration })
   }
 
@@ -121,39 +142,21 @@ export const logger = new Logger()
 // Performance monitoring helper
 export function withPerformanceLogging<T extends any[], R>(
   fn: (...args: T) => R,
-  name: string
+  _name: string
 ): (...args: T) => R {
-  return (...args: T): R => {
-    const start = performance.now()
-    try {
-      const result = fn(...args)
-      const duration = performance.now() - start
-      logger.debug(`Performance: ${name}`, { duration })
-      return result
-    } catch (error) {
-      const duration = performance.now() - start
-      logger.error(`Performance: ${name} failed`, { duration }, error as Error)
-      throw error
-    }
+  return (..._args: T): R => {
+    // Performance logging temporarily disabled for production optimization
+    return fn(..._args)
   }
 }
 
 // Async performance monitoring helper
 export function withAsyncPerformanceLogging<T extends any[], R>(
   fn: (...args: T) => Promise<R>,
-  name: string
+  _name: string
 ): (...args: T) => Promise<R> {
-  return async (...args: T): Promise<R> => {
-    const start = performance.now()
-    try {
-      const result = await fn(...args)
-      const duration = performance.now() - start
-      logger.debug(`Performance: ${name}`, { duration })
-      return result
-    } catch (error) {
-      const duration = performance.now() - start
-      logger.error(`Performance: ${name} failed`, { duration }, error as Error)
-      throw error
-    }
+  return async (..._args: T): Promise<R> => {
+    // Async performance logging temporarily disabled for production optimization
+    return await fn(..._args)
   }
 }

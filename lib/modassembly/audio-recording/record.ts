@@ -4,158 +4,160 @@
  */
 
 export interface AudioRecorderOptions {
-    maxDurationMs?: number;
-    mimeType?: string;
+  maxDurationMs?: number
+  mimeType?: string
 }
 
 export interface AudioRecorderResult {
-    audioBlob: Blob;
-    durationMs: number;
+  audioBlob: Blob
+  durationMs: number
 }
 
 export class AudioRecorder {
-    private mediaRecorder: MediaRecorder | null = null;
-    private audioChunks: Blob[] = [];
-    private stream: MediaStream | null = null;
-    private startTime: number = 0;
+  private mediaRecorder: MediaRecorder | null = null
+  private audioChunks: Blob[] = []
+  private stream: MediaStream | null = null
+  private startTime: number = 0
 
-    async requestPermission(): Promise<boolean> {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(track => track.stop());
-            return true;
-        } catch (error) {
-            console.error('Microphone permission denied:', error);
-            return false;
-        }
+  async requestPermission(): Promise<boolean> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+      return true
+    } catch (error) {
+      console.error('Microphone permission denied:', error)
+      return false
+    }
+  }
+
+  async startRecording(options: AudioRecorderOptions = {}): Promise<void> {
+    const { maxDurationMs = 30000, mimeType } = options
+
+    // Get audio stream
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    })
+
+    // Determine best supported MIME type
+    let selectedMimeType = mimeType
+    const supportedTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+    ]
+
+    if (!selectedMimeType) {
+      // Find first supported type
+      selectedMimeType = supportedTypes.find(type =>
+        MediaRecorder.isTypeSupported(type)
+      )
+
+      // If none supported, let browser choose default
+      if (!selectedMimeType) {
+        console.warn('No specific MIME type supported, using browser default')
+        selectedMimeType = undefined
+      }
     }
 
-    async startRecording(options: AudioRecorderOptions = {}): Promise<void> {
-        const { maxDurationMs = 30000, mimeType } = options;
-
-        // Get audio stream
-        this.stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            }
-        });
-
-        // Determine best supported MIME type
-        let selectedMimeType = mimeType;
-        const supportedTypes = [
-            'audio/webm;codecs=opus',
-            'audio/webm',
-            'audio/mp4',
-            'audio/mpeg',
-            'audio/wav'
-        ];
-        
-        if (!selectedMimeType) {
-            // Find first supported type
-            selectedMimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type));
-            
-            // If none supported, let browser choose default
-            if (!selectedMimeType) {
-                console.warn('No specific MIME type supported, using browser default');
-                selectedMimeType = undefined;
-            }
-        }
-
-        // Create MediaRecorder
-        const recorderOptions: MediaRecorderOptions = {};
-        if (selectedMimeType) {
-            recorderOptions.mimeType = selectedMimeType;
-        }
-        
-        try {
-            this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions);
-        } catch (error) {
-            // If specific mimeType fails, try without any options
-            console.warn('Failed with mimeType, trying default:', error);
-            this.mediaRecorder = new MediaRecorder(this.stream);
-        }
-        this.audioChunks = [];
-        this.startTime = Date.now();
-
-        // Collect audio chunks
-        this.mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                this.audioChunks.push(event.data);
-            }
-        };
-
-        // Start recording
-        this.mediaRecorder.start(1000); // Collect chunks every second
-
-        // Auto-stop after max duration
-        setTimeout(() => {
-            if (this.mediaRecorder?.state === 'recording') {
-                this.stopRecording();
-            }
-        }, maxDurationMs);
+    // Create MediaRecorder
+    const recorderOptions: MediaRecorderOptions = {}
+    if (selectedMimeType) {
+      recorderOptions.mimeType = selectedMimeType
     }
 
-    async stopRecording(): Promise<AudioRecorderResult> {
-        return new Promise((resolve, reject) => {
-            if (!this.mediaRecorder || this.mediaRecorder.state !== 'recording') {
-                reject(new Error('Not currently recording'));
-                return;
-            }
+    try {
+      this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions)
+    } catch (error) {
+      // If specific mimeType fails, try without any options
+      console.warn('Failed with mimeType, trying default:', error)
+      this.mediaRecorder = new MediaRecorder(this.stream)
+    }
+    this.audioChunks = []
+    this.startTime = Date.now()
 
-            this.mediaRecorder.onstop = () => {
-                // Clean up stream
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                    this.stream = null;
-                }
-
-                // Create audio blob
-                const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
-                const audioBlob = new Blob(this.audioChunks, { type: mimeType });
-                const durationMs = Date.now() - this.startTime;
-
-                resolve({
-                    audioBlob,
-                    durationMs
-                });
-            };
-
-            this.mediaRecorder.stop();
-        });
+    // Collect audio chunks
+    this.mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) {
+        this.audioChunks.push(event.data)
+      }
     }
 
-    isRecording(): boolean {
-        return this.mediaRecorder?.state === 'recording';
-    }
+    // Start recording
+    this.mediaRecorder.start(1000) // Collect chunks every second
 
-    cleanup(): void {
-        if (this.mediaRecorder?.state === 'recording') {
-            this.mediaRecorder.stop();
-        }
+    // Auto-stop after max duration
+    setTimeout(() => {
+      if (this.mediaRecorder?.state === 'recording') {
+        this.stopRecording()
+      }
+    }, maxDurationMs)
+  }
+
+  async stopRecording(): Promise<AudioRecorderResult> {
+    return new Promise((resolve, reject) => {
+      if (!this.mediaRecorder || this.mediaRecorder.state !== 'recording') {
+        reject(new Error('Not currently recording'))
+        return
+      }
+
+      this.mediaRecorder.onstop = () => {
+        // Clean up stream
         if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.stream = null;
+          this.stream.getTracks().forEach(track => track.stop())
+          this.stream = null
         }
-        this.audioChunks = [];
+
+        // Create audio blob
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm'
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType })
+        const durationMs = Date.now() - this.startTime
+
+        resolve({
+          audioBlob,
+          durationMs,
+        })
+      }
+
+      this.mediaRecorder.stop()
+    })
+  }
+
+  isRecording(): boolean {
+    return this.mediaRecorder?.state === 'recording'
+  }
+
+  cleanup(): void {
+    if (this.mediaRecorder?.state === 'recording') {
+      this.mediaRecorder.stop()
     }
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop())
+      this.stream = null
+    }
+    this.audioChunks = []
+  }
 }
 
 // Simple function-based API for basic usage
 export async function recordAudio(durationMs: number = 5000): Promise<Blob> {
-    const recorder = new AudioRecorder();
+  const recorder = new AudioRecorder()
 
-    const hasPermission = await recorder.requestPermission();
-    if (!hasPermission) {
-        throw new Error('Microphone permission required');
-    }
+  const hasPermission = await recorder.requestPermission()
+  if (!hasPermission) {
+    throw new Error('Microphone permission required')
+  }
 
-    await recorder.startRecording({ maxDurationMs: durationMs });
+  await recorder.startRecording({ maxDurationMs: durationMs })
 
-    // Wait for the specified duration
-    await new Promise(resolve => setTimeout(resolve, durationMs));
+  // Wait for the specified duration
+  await new Promise(resolve => setTimeout(resolve, durationMs))
 
-    const result = await recorder.stopRecording();
-    return result.audioBlob;
+  const result = await recorder.stopRecording()
+  return result.audioBlob
 }

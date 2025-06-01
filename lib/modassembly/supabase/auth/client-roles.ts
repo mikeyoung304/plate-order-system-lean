@@ -9,8 +9,10 @@ import type { AppRole } from './roles'
  */
 export async function getClientUserRole(): Promise<AppRole | null> {
   const supabase = createClient()
-  
-  const { data: { session } } = await supabase.auth.getSession()
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   if (!session?.user) {
     return null
   }
@@ -28,7 +30,7 @@ export async function getClientUserRole(): Promise<AppRole | null> {
       .select('role')
       .eq('id', session.user.id)
       .single()
-    
+
     return profileById?.role || null
   }
 
@@ -40,14 +42,18 @@ export async function getClientUserRole(): Promise<AppRole | null> {
  * @param roles Single role or array of roles to check
  * @returns True if user has any of the specified roles
  */
-export async function hasClientRole(roles: AppRole | AppRole[]): Promise<boolean> {
+export async function hasClientRole(
+  roles: AppRole | AppRole[]
+): Promise<boolean> {
   // BETA TESTER OVERRIDE: All users have all permissions during beta
   if (process.env.NEXT_PUBLIC_BETA_MODE === 'true') {
     return true
   }
-  
+
   const userRole = await getClientUserRole()
-  if (!userRole) return false
+  if (!userRole) {
+    return false
+  }
 
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
   return allowedRoles.includes(userRole as AppRole)

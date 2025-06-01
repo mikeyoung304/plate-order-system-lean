@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { 
-  fetchStationOrders, 
+import {
+  fetchStationOrders,
   fetchAllActiveOrders,
-  type KDSOrderRouting 
+  type KDSOrderRouting,
 } from '@/lib/modassembly/supabase/database/kds'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
@@ -21,7 +21,10 @@ interface UseKDSOrdersReturn {
   error: string | null
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting'
   refetch: () => Promise<void>
-  optimisticUpdate: (routingId: string, updates: Partial<KDSOrderRouting>) => void
+  optimisticUpdate: (
+    routingId: string,
+    updates: Partial<KDSOrderRouting>
+  ) => void
   revertOptimisticUpdate: (routingId: string) => void
 }
 
@@ -29,22 +32,24 @@ const MAX_RETRY_ATTEMPTS = 5
 const INITIAL_RETRY_DELAY = 1000
 const MAX_RETRY_DELAY = 30000
 
-export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersReturn {
-  const { 
-    stationId, 
-    autoRefresh = true, 
-    refreshInterval = 5000 
-  } = options
+export function useKDSOrders(
+  options: UseKDSOrdersOptions = {}
+): UseKDSOrdersReturn {
+  const { stationId, autoRefresh = true, refreshInterval = 5000 } = options
 
   const [orders, setOrders] = useState<KDSOrderRouting[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('disconnected')
-  
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connected' | 'disconnected' | 'reconnecting'
+  >('disconnected')
+
   const supabaseRef = useRef<SupabaseClient | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(new Map())
+  const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(
+    new Map()
+  )
   const retryAttemptsRef = useRef(0)
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isMountedRef = useRef(true)
@@ -72,27 +77,28 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
 
     try {
       setError(null)
-      
-      const data = stationId 
+
+      const data = stationId
         ? await fetchStationOrders(stationId)
         : await fetchAllActiveOrders()
-      
+
       if (!isMountedRef.current) return
-      
+
       const updatedData = data.map(order => {
         const optimisticUpdate = optimisticUpdatesRef.current.get(order.id)
         return optimisticUpdate ? { ...order, ...optimisticUpdate } : order
       })
-      
+
       setOrders(updatedData)
       setConnectionStatus('connected')
       retryAttemptsRef.current = 0
     } catch (err) {
       console.error('Error fetching KDS orders:', err)
-      
+
       if (!isMountedRef.current) return
-      
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch orders'
+
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch orders'
       setError(errorMessage)
       setConnectionStatus('disconnected')
     } finally {
@@ -102,22 +108,30 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     }
   }, [stationId])
 
-  const optimisticUpdate = useCallback((routingId: string, updates: Partial<KDSOrderRouting>) => {
-    if (!routingId || typeof routingId !== 'string') {
-      console.error('Invalid routing ID for optimistic update')
-      return
-    }
-    
-    optimisticUpdatesRef.current.set(routingId, updates)
-    setOrders(prev => prev.map(order => 
-      order.id === routingId ? { ...order, ...updates } : order
-    ))
-  }, [])
+  const optimisticUpdate = useCallback(
+    (routingId: string, updates: Partial<KDSOrderRouting>) => {
+      if (!routingId || typeof routingId !== 'string') {
+        console.error('Invalid routing ID for optimistic update')
+        return
+      }
 
-  const revertOptimisticUpdate = useCallback((routingId: string) => {
-    optimisticUpdatesRef.current.delete(routingId)
-    fetchOrders()
-  }, [fetchOrders])
+      optimisticUpdatesRef.current.set(routingId, updates)
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === routingId ? { ...order, ...updates } : order
+        )
+      )
+    },
+    []
+  )
+
+  const revertOptimisticUpdate = useCallback(
+    (routingId: string) => {
+      optimisticUpdatesRef.current.delete(routingId)
+      fetchOrders()
+    },
+    [fetchOrders]
+  )
 
   const setupRealtimeSubscription = useCallback(async () => {
     if (!supabaseRef.current || !autoRefresh || !isMountedRef.current) return
@@ -138,11 +152,11 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
             event: '*',
             schema: 'public',
             table: 'kds_order_routing',
-            ...(stationId ? { filter: `station_id=eq.${stationId}` } : {})
+            ...(stationId ? { filter: `station_id=eq.${stationId}` } : {}),
           },
           (payload: any) => {
             console.log('KDS order routing update:', payload)
-            
+
             if (payload.new?.id) {
               optimisticUpdatesRef.current.delete(payload.new.id)
             }
@@ -156,21 +170,24 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
           {
             event: '*',
             schema: 'public',
-            table: 'orders'
+            table: 'orders',
           },
           (payload: any) => {
             console.log('Order update:', payload)
-            
-            if (payload.new?.status !== payload.old?.status && isMountedRef.current) {
+
+            if (
+              payload.new?.status !== payload.old?.status &&
+              isMountedRef.current
+            ) {
               fetchOrders()
             }
           }
         )
         .subscribe((status: string) => {
           console.log('KDS subscription status:', status)
-          
+
           if (!isMountedRef.current) return
-          
+
           if (status === 'SUBSCRIBED') {
             setConnectionStatus('connected')
             retryAttemptsRef.current = 0
@@ -183,9 +200,9 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
       channelRef.current = channel
     } catch (err) {
       console.error('Error setting up real-time subscription:', err)
-      
+
       if (!isMountedRef.current) return
-      
+
       setConnectionStatus('disconnected')
       handleRetry()
     }
@@ -193,7 +210,7 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
 
   const handleRetry = useCallback(() => {
     if (!isMountedRef.current) return
-    
+
     if (retryAttemptsRef.current >= MAX_RETRY_ATTEMPTS) {
       console.error('Max retry attempts reached, stopping reconnection')
       setError('Connection lost. Please refresh the page.')
@@ -205,7 +222,9 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
       MAX_RETRY_DELAY
     )
 
-    console.log(`Retrying connection in ${delay}ms (attempt ${retryAttemptsRef.current + 1}/${MAX_RETRY_ATTEMPTS})`)
+    console.log(
+      `Retrying connection in ${delay}ms (attempt ${retryAttemptsRef.current + 1}/${MAX_RETRY_ATTEMPTS})`
+    )
 
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current)
@@ -233,13 +252,18 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
   }, [setupRealtimeSubscription])
 
   useEffect(() => {
-    if (!autoRefresh || connectionStatus === 'connected' || !isMountedRef.current) return
+    if (
+      !autoRefresh ||
+      connectionStatus === 'connected' ||
+      !isMountedRef.current
+    )
+      return
 
     const startAutoRefresh = () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
       }
-      
+
       if (isMountedRef.current) {
         refreshTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) {
@@ -265,10 +289,10 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
 
   useEffect(() => {
     isMountedRef.current = true
-    
+
     return () => {
       isMountedRef.current = false
-      
+
       if (channelRef.current && supabaseRef.current) {
         supabaseRef.current.removeChannel(channelRef.current)
       }
@@ -288,25 +312,27 @@ export function useKDSOrders(options: UseKDSOrdersOptions = {}): UseKDSOrdersRet
     connectionStatus,
     refetch: fetchOrders,
     optimisticUpdate,
-    revertOptimisticUpdate
+    revertOptimisticUpdate,
   }
 }
 
 export function useOrderTiming(order: KDSOrderRouting) {
   const [timeElapsed, setTimeElapsed] = useState(0)
-  const [colorStatus, setColorStatus] = useState<'green' | 'yellow' | 'red'>('green')
+  const [colorStatus, setColorStatus] = useState<'green' | 'yellow' | 'red'>(
+    'green'
+  )
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const updateTiming = () => {
       const now = Date.now()
-      const startTime = order.started_at 
-        ? new Date(order.started_at).getTime() 
+      const startTime = order.started_at
+        ? new Date(order.started_at).getTime()
         : new Date(order.routed_at).getTime()
       const elapsed = Math.floor((now - startTime) / 1000)
-      
+
       setTimeElapsed(elapsed)
-      
+
       if (elapsed <= 300) {
         setColorStatus('green')
       } else if (elapsed <= 600) {
@@ -332,12 +358,15 @@ export function useOrderTiming(order: KDSOrderRouting) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }, [])
 
-  return useMemo(() => ({
-    timeElapsed,
-    colorStatus,
-    formattedTime: formatTime(timeElapsed),
-    isOverdue: timeElapsed > 600
-  }), [timeElapsed, colorStatus, formatTime])
+  return useMemo(
+    () => ({
+      timeElapsed,
+      colorStatus,
+      formattedTime: formatTime(timeElapsed),
+      isOverdue: timeElapsed > 600,
+    }),
+    [timeElapsed, colorStatus, formatTime]
+  )
 }
 
 interface KDSStation {
@@ -365,16 +394,18 @@ export function useKDSStations() {
         .order('position', { ascending: true })
 
       if (fetchError) throw fetchError
-      
+
       if (isMountedRef.current) {
         setStations(data || [])
         setError(null)
       }
     } catch (err) {
       console.error('Error fetching KDS stations:', err)
-      
+
       if (isMountedRef.current) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch stations')
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch stations'
+        )
       }
     } finally {
       if (isMountedRef.current) {
@@ -398,6 +429,6 @@ export function useKDSStations() {
     stations,
     loading,
     error,
-    refetch: fetchStations
+    refetch: fetchStations,
   }
 }

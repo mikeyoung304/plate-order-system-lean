@@ -5,17 +5,17 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/modassembly/supabase/server'
 
 type ActionResult = {
-  error?: string;
-  success?: boolean;
+  error?: string
+  success?: boolean
 }
 
 async function cleanGuestData(userId: string) {
   const supabase = await createClient()
-  
+
   try {
     // Clean orders older than 2 hours for guest account
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    
+
     await supabase
       .from('orders')
       .delete()
@@ -26,7 +26,10 @@ async function cleanGuestData(userId: string) {
   }
 }
 
-export async function signIn(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
+export async function signIn(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const supabase = await createClient()
 
   const data = {
@@ -41,7 +44,11 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
   }
 
   // Clean guest data if this is a guest login
-  if ((data.email === 'guest@demo.plate' || data.email === 'guest@restaurant.plate') && authData.user) {
+  if (
+    (data.email === 'guest@demo.plate' ||
+      data.email === 'guest@restaurant.plate') &&
+    authData.user
+  ) {
     await cleanGuestData(authData.user.id)
   }
 
@@ -49,18 +56,23 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
   if (process.env.NODE_ENV === 'production') {
     await new Promise(resolve => setTimeout(resolve, 500))
     // Double-check session exists
-    const { data: { session: finalSession } } = await supabase.auth.getSession()
+    const {
+      data: { session: finalSession },
+    } = await supabase.auth.getSession()
     if (!finalSession) {
       return { error: 'Session not ready. Please try again.' }
     }
   }
-  
+
   revalidatePath('/', 'layout')
   revalidatePath('/server')
   redirect('/server')
 }
 
-export async function signUp(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
+export async function signUp(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -74,9 +86,9 @@ export async function signUp(prevState: ActionResult | null, formData: FormData)
     options: {
       data: {
         name,
-        role
-      }
-    }
+        role,
+      },
+    },
   })
 
   if (error) {

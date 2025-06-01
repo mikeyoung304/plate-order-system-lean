@@ -1,11 +1,11 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 // Accessibility utilities and hooks
 export class AccessibilityManager {
   private static instance: AccessibilityManager
   private focusHistory: HTMLElement[] = []
   private announcements = new Set<string>()
-  
+
   static getInstance(): AccessibilityManager {
     if (!AccessibilityManager.instance) {
       AccessibilityManager.instance = new AccessibilityManager()
@@ -16,8 +16,10 @@ export class AccessibilityManager {
   // Announce to screen readers
   announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
     // Prevent duplicate announcements
-    if (this.announcements.has(message)) return
-    
+    if (this.announcements.has(message)) {
+      return
+    }
+
     this.announcements.add(message)
     setTimeout(() => this.announcements.delete(message), 1000)
 
@@ -26,9 +28,9 @@ export class AccessibilityManager {
     announcer.setAttribute('aria-atomic', 'true')
     announcer.className = 'sr-only'
     announcer.textContent = message
-    
+
     document.body.appendChild(announcer)
-    
+
     // Clean up after announcement
     setTimeout(() => {
       if (announcer.parentNode) {
