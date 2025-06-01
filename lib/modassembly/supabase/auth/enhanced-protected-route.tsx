@@ -78,9 +78,18 @@ export function EnhancedProtectedRoute({
         if (session && !isLoading) {
           // Calculate role check inside the effect to avoid dependency issues
           let hasRequiredRole = true
-          if (roles && profile) {
+          if (roles) {
             const allowedRoles = Array.isArray(roles) ? roles : [roles]
-            hasRequiredRole = allowedRoles.includes(profile.role as AppRole)
+            
+            // Check if this is a demo user (special case)
+            if (session.user.email === 'guest@demo.plate') {
+              hasRequiredRole = allowedRoles.includes('demo')
+            } else if (profile) {
+              hasRequiredRole = allowedRoles.includes(profile.role as AppRole)
+            } else {
+              // No profile found and not demo user
+              hasRequiredRole = false
+            }
           }
           
           // If role required but user doesn't have it

@@ -42,14 +42,14 @@ import { createOrder } from "@/lib/modassembly/supabase/database/orders"
 import { fetchSeatId } from "@/lib/modassembly/supabase/database/seats"
 import { useServerPageData } from "@/lib/hooks/use-server-page-data"
 import { useFloorPlanDemo } from "@/hooks/use-floor-plan-demo"
-import { isDemo } from "@/lib/modassembly/supabase/auth/roles"
+import { useAuth } from "@/lib/modassembly/supabase/auth/auth-context"
 
 export default function MinimalServerPage() {
   const { toast } = useToast()
   const data = useServerPageData("default")
+  const { user } = useAuth()
   
   // Demo mode detection and floor plan management
-  const [isDemoMode, setIsDemoMode] = useState(false)
   const [demoFloorPlan] = useFloorPlanDemo("demo")
   
   // Quick Order Modal state (minimal)
@@ -58,14 +58,8 @@ export default function MinimalServerPage() {
   
   const showOrderModal = selectedTable && selectedSeat
 
-  // Check demo mode on mount
-  useEffect(() => {
-    const checkDemo = async () => {
-      const demo = await isDemo()
-      setIsDemoMode(demo)
-    }
-    checkDemo()
-  }, [])
+  // Check demo mode based on user email (client-side)
+  const isDemoMode = user?.email === 'guest@demo.plate'
 
   // Get the right tables based on mode
   const tables = isDemoMode ? demoFloorPlan.tables : data.tables
@@ -169,7 +163,7 @@ export default function MinimalServerPage() {
   }, [])
 
   return (
-    <ProtectedRoute roles={["server", "demo"]}>
+    <ProtectedRoute roles={["server", "demo"]} redirectTo="/">
       {/* Full Screen Floor Plan - Nothing else */}
       <div className="fixed inset-0 bg-gray-900">
         
