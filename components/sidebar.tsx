@@ -24,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { optimizedVariants } from "@/lib/performance-utils"
 import { useToast } from "@/components/ui/use-toast"
 import { signOut } from "@/app/auth/actions"
-import { getUser } from "@/lib/modassembly/supabase/database/users"
+import { useAuth } from "@/lib/modassembly/supabase/auth"
 
 // Animation variants
 const container = {
@@ -57,34 +57,14 @@ export function Sidebar() {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { toast } = useToast()
-  const [userData, setUserData] = useState<{ name: string | null, role: string | null }>({
-    name: null,
-    role: null
-  })
-
-  // Fetch user data on mount and auth state changes
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  async function fetchUserData() {
-    try {
-      const userData = await getUser();
-      
-      if (!userData.user) {
-        setUserData({ name: null, role: null });
-        return;
-      }
-      
-      setUserData({
-        name: userData.profile?.name || null,
-        role: userData.profile?.role || null
-      });
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      setUserData({ name: null, role: null });
-    }
+  const { user, profile } = useAuth()
+  
+  // Derive user data from auth context
+  const userData = {
+    name: user?.email === 'guest@demo.plate' ? 'Demo User' : (profile?.name || user?.email?.split('@')[0] || 'User'),
+    role: user?.email === 'guest@demo.plate' ? 'demo' : (profile?.role || 'loading')
   }
+
 
   const handleSignOut = async () => {
     try {
@@ -180,7 +160,14 @@ export function Sidebar() {
           </Avatar>
           <div>
             <p className="text-sm font-medium sf-pro-text">{userData.name || 'User'}</p>
-            <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
+              {userData.role === 'demo' && (
+                <Badge variant="secondary" className="text-xs bg-blue-600/20 text-blue-300 border-blue-500/30">
+                  Demo
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         <Button 
@@ -206,7 +193,14 @@ export function Sidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-medium sf-pro-text truncate">{userData.name || 'User'}</p>
-              <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
+              <div className="flex items-center gap-1">
+                <p className="text-xs text-gray-400 sf-pro-text capitalize">{userData.role || 'Loading...'}</p>
+                {userData.role === 'demo' && (
+                  <Badge variant="secondary" className="text-xs bg-blue-600/20 text-blue-300 border-blue-500/30">
+                    Demo
+                  </Badge>
+                )}
+              </div>
             </div>
           )}
         </div>

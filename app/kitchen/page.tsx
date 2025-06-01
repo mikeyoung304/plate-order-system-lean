@@ -257,7 +257,7 @@ export default function KitchenPage() {
   }
 
   return (
-    <ProtectedRoute roles="cook">
+    <ProtectedRoute roles={["cook", "demo"]}>
       <Shell className="bg-gray-900 min-h-screen">
         <div className="container py-6">
           {/* Header */}

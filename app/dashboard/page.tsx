@@ -18,9 +18,10 @@ import { Card, CardContent } from "@/components/ui/card"
 function DashboardContent() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const userRole = useRole()
-  const isServer = useHasRole('server')
-  const isCook = useHasRole('cook')
-  const isAdmin = useHasRole('admin')
+  const isServer = useHasRole(['server', 'demo'])
+  const isCook = useHasRole(['cook', 'demo'])
+  const isAdmin = useHasRole(['admin', 'demo'])
+  const isDemo = useHasRole('demo')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,9 +65,16 @@ function DashboardContent() {
         >
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm">
-              Welcome to Plate
+              Welcome to Plate{isDemo ? " Demo" : ""}
             </h1>
-            <p className="mt-2 text-gray-400 sf-pro-text font-light">What would you like to do today?</p>
+            <p className="mt-2 text-gray-400 sf-pro-text font-light">
+              {isDemo ? "Explore all features with temporary demo data" : "What would you like to do today?"}
+            </p>
+            {isDemo && (
+              <div className="mt-2 inline-flex items-center bg-blue-600/20 backdrop-blur-sm px-3 py-1 rounded-full text-blue-300 text-sm font-medium border border-blue-500/30">
+                🎯 Demo Mode Active - All changes are temporary
+              </div>
+            )}
           </div>
 
           <div className="mt-4 md:mt-0 flex items-center bg-gray-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-800/50 shadow-inner">
@@ -192,7 +200,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute roles={["admin", "server", "cook", "demo"]}>
       <DashboardContent />
     </ProtectedRoute>
   )

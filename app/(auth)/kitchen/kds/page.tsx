@@ -91,7 +91,7 @@ export default function KDSPage() {
 
   if (stationsLoading) {
     return (
-      <ProtectedRoute roles="cook">
+      <ProtectedRoute roles={["cook", "demo"]}>
         <PageLoadingState 
           message="Loading Kitchen Display System..."
           showProgress={false}
@@ -101,7 +101,7 @@ export default function KDSPage() {
   }
 
   return (
-    <ProtectedRoute roles="cook">
+    <ProtectedRoute roles={["cook", "demo"]}>
       <div className={cn(
         'h-screen flex flex-col bg-gray-100 dark:bg-gray-900',
         isFullscreen && 'fixed inset-0 z-50'

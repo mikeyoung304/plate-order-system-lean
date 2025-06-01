@@ -32,7 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = createClient()
 
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const fetchUserProfile = async (userId: string, userEmail?: string): Promise<UserProfile | null> => {
+    // Special case for demo user - don't query database
+    if (userEmail === 'guest@demo.plate') {
+      return {
+        user_id: userId,
+        role: 'demo',
+        name: 'Demo User'
+      }
+    }
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, user_id, role, name')
@@ -73,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user || null)
 
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id)
+        const userProfile = await fetchUserProfile(session.user.id, session.user.email)
         setProfile(userProfile)
       } else {
         setProfile(null)
@@ -106,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user || null)
 
         if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id)
+          const userProfile = await fetchUserProfile(session.user.id, session.user.email)
           setProfile(userProfile)
         } else {
           setProfile(null)
@@ -154,7 +163,13 @@ export function useProfile(): UserProfile | null {
 }
 
 export function useRole(): AppRole | null {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
+  
+  // Handle demo user case
+  if (user?.email === 'guest@demo.plate') {
+    return 'demo'
+  }
+  
   return profile?.role || null
 }
 

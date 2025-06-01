@@ -144,7 +144,7 @@ export default function KitchenMetricsPage() {
   }
 
   return (
-    <ProtectedRoute roles={['cook', 'admin']}>
+    <ProtectedRoute roles={['cook', 'admin', 'demo']}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 border-b shadow-sm">

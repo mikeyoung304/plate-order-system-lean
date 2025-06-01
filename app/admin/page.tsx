@@ -81,7 +81,7 @@ export default function AdminPage() {
   }, [])
 
   return (
-    <ProtectedRoute roles="admin">
+    <ProtectedRoute roles={["admin", "demo"]}>
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 overflow-auto">

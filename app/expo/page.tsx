@@ -102,7 +102,7 @@ export default function ExpoPage() {
   const inProgressOrders = orders.filter((order) => order.status === "in_progress")
 
   return (
-    <ProtectedRoute roles={["server", "cook"]}>
+    <ProtectedRoute roles={["server", "cook", "demo"]}>
       <Shell>
         <div className="container py-6">
         <PageHeaderWithTime title="Expo View" description="Manage order delivery to tables" />
