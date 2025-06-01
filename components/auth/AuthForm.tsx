@@ -16,9 +16,11 @@ import {
 import { signIn, signUp } from '@/app/auth/actions'
 import { AboutTrigger } from '@/components/about-dialog'
 import { useAuthFormState } from '@/lib/hooks/use-auth-form-state'
+import { useDemoRevolution } from '@/hooks/use-demo-revolution'
 
 export function AuthForm() {
   const { state, actions } = useAuthFormState()
+  const { startDemo, enableDemoMode } = useDemoRevolution()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -243,11 +245,14 @@ export function AuthForm() {
 
         <Button
           variant='secondary'
-          onClick={handleGuestDemo}
-          className='w-full bg-blue-600 text-white hover:bg-blue-700'
+          onClick={() => {
+            enableDemoMode()
+            handleGuestDemo()
+          }}
+          className='w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white'
           disabled={state.isRateLimited || isLoading}
         >
-          {isLoading ? 'Processing...' : '🚀 Try Demo (Auto-Fill & Login)'}
+          {isLoading ? 'Processing...' : '🚀 Restaurant Revolution Demo'}
         </Button>
 
         <div className='flex items-center justify-center pt-4'>

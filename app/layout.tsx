@@ -6,14 +6,12 @@ import { AuthProvider } from '@/lib/modassembly/supabase/auth'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { WelcomeModal } from '@/components/welcome-modal'
 import { FooterAttribution } from '@/components/footer-attribution'
 import { AuthStatusPanel } from '@/components/debug/auth-status-panel'
 import { SecurityPerformanceInit } from '@/components/security-performance-init'
 import { BetaFeedbackButton } from '@/components/beta-feedback-button'
-import { OnboardingTooltips } from '@/components/onboarding-tooltips'
 import { BetaNavigation } from '@/components/beta-navigation'
-import { QuickStartGuide } from '@/components/quick-start-guide'
+import { DemoRevolution } from '@/components/demo-revolution'
 // Temporarily removed emergency error boundary
 import './globals.css'
 
@@ -58,11 +56,9 @@ export default async function RootLayout({
               <main className='flex-grow pb-10'>{children}</main>
               <FooterAttribution />
             </div>
-            <WelcomeModal />
+            <DemoRevolution />
             <BetaFeedbackButton />
-            <OnboardingTooltips />
             <BetaNavigation />
-            <QuickStartGuide />
             <Toaster />
             <AuthStatusPanel />
             <SecurityPerformanceInit />
