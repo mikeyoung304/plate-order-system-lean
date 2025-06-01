@@ -1,12 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FloorPlanEditor } from "@/components/floor-plan-editor"
-import { TableList } from "@/components/table-list"
-import { PrinterSettings } from "@/components/printer-settings"
+import { LoadingSpinner } from "@/components/loading-states"
+
+// PERFORMANCE_OPTIMIZATION: Lazy load admin components
+// Impact: Admin features only loaded when needed, reducing initial bundle size
+const FloorPlanEditor = lazy(() => 
+  import("@/components/floor-plan-editor").then(module => ({
+    default: module.FloorPlanEditor
+  }))
+)
+const TableList = lazy(() => 
+  import("@/components/table-list").then(module => ({
+    default: module.TableList
+  }))
+)
+const PrinterSettings = lazy(() => 
+  import("@/components/printer-settings").then(module => ({
+    default: module.PrinterSettings
+  }))
+)
 
 export default function AdminPage() {
   const [floorPlanId, setFloorPlanId] = useState("default")
@@ -230,20 +246,17 @@ export default function AdminPage() {
 
             <TabsContent value="floor-plan">
               <div className="bg-card p-6 rounded-lg border border-border">
-                <FloorPlanEditor floorPlanId={floorPlanId} />
+                <Suspense fallback={<div className="flex items-center justify-center p-12"><LoadingSpinner /> <span className="ml-2">Loading floor plan editor...</span></div>}>
+                  <FloorPlanEditor floorPlanId={floorPlanId} />
+                </Suspense>
               </div>
             </TabsContent>
 
             <TabsContent value="printer">
               <div className="bg-card p-6 rounded-lg border border-border">
-                {isLoading ? (
-                  <div className="flex items-center justify-center p-12">
-                    <div className="h-8 w-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
-                    <span className="ml-2">Loading printer settings...</span>
-                  </div>
-                ) : (
+                <Suspense fallback={<div className="flex items-center justify-center p-12"><LoadingSpinner /> <span className="ml-2">Loading printer settings...</span></div>}>
                   <PrinterSettings />
-                )}
+                </Suspense>
               </div>
             </TabsContent>
 
