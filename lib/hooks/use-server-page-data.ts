@@ -57,7 +57,7 @@ export function useServerPageData(floorPlanId: string = "default") {
       
       // Load all data in parallel
       const [tablesResult, residentsResult, ordersResult] = await Promise.all([
-        supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId),
+        supabase.from('tables').select('*').order('label'),
         supabase.from('profiles').select('*').eq('role', 'resident'),
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
       ])
@@ -69,14 +69,14 @@ export function useServerPageData(floorPlanId: string = "default") {
       // Transform tables data to frontend format
       const tables = (tablesResult.data || []).map((table: any): Table => ({
         id: table.id,
-        label: table.name || `Table ${table.id}`,
+        label: table.label?.toString() || `Table ${table.id}`,
         status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
-        seats: table.seat_count || 4,
+        seats: 4, // Default seat count, will be calculated from seats table
         x: table.position_x || 0,
         y: table.position_y || 0,
         width: table.width || 100,
         height: table.height || 100,
-        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        type: (table.type || 'circle') as 'circle' | 'rectangle' | 'square',
         rotation: table.rotation || 0,
         zIndex: 1
       }))
@@ -134,18 +134,18 @@ export function useServerPageData(floorPlanId: string = "default") {
   // Refresh specific data
   const refreshTables = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('tables').select('*').eq('floor_plan_id', floorPlanId)
+      const { data, error } = await supabase.from('tables').select('*').order('label')
       if (error) throw error
       const tables = (data || []).map((table: any): Table => ({
         id: table.id,
-        label: table.name || `Table ${table.id}`,
+        label: table.label?.toString() || `Table ${table.id}`,
         status: (table.status || 'available') as 'available' | 'occupied' | 'reserved',
-        seats: table.seat_count || 4,
+        seats: 4, // Default seat count, will be calculated from seats table
         x: table.position_x || 0,
         y: table.position_y || 0,
         width: table.width || 100,
         height: table.height || 100,
-        type: (table.shape || 'circle') as 'circle' | 'rectangle' | 'square',
+        type: (table.type || 'circle') as 'circle' | 'rectangle' | 'square',
         rotation: table.rotation || 0,
         zIndex: 1
       }))
@@ -153,7 +153,7 @@ export function useServerPageData(floorPlanId: string = "default") {
     } catch (error) {
       console.error('Error refreshing tables:', error)
     }
-  }, [floorPlanId])
+  }, [])
 
   const refreshRecentOrders = useCallback(async () => {
     try {
