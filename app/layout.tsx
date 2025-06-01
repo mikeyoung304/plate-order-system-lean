@@ -10,6 +10,10 @@ import { WelcomeModal } from "@/components/welcome-modal"
 import { FooterAttribution } from "@/components/footer-attribution"
 import { AuthStatusPanel } from "@/components/debug/auth-status-panel"
 import { SecurityPerformanceInit } from "@/components/security-performance-init"
+import { BetaFeedbackButton } from "@/components/beta-feedback-button"
+import { OnboardingTooltips } from "@/components/onboarding-tooltips"
+import { BetaNavigation } from "@/components/beta-navigation"
+import { QuickStartGuide } from "@/components/quick-start-guide"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -53,6 +57,10 @@ export default async function RootLayout({
               <FooterAttribution />
             </div>
             <WelcomeModal />
+            <BetaFeedbackButton />
+            <OnboardingTooltips />
+            <BetaNavigation />
+            <QuickStartGuide />
             <Toaster />
             <AuthStatusPanel />
             <SecurityPerformanceInit />

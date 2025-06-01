@@ -317,11 +317,13 @@ export default function ServerPage() {
                           />
                         ) : (
                           <FloorPlanErrorBoundary>
-                            <FloorPlanView 
-                              floorPlanId={floorPlanId} 
-                              onSelectTable={handleSelectTable}
-                              tables={data.tables} // Pass the fetched tables
-                            />
+                            <div className="floor-plan-container">
+                              <FloorPlanView 
+                                floorPlanId={floorPlanId} 
+                                onSelectTable={handleSelectTable}
+                                tables={data.tables} // Pass the fetched tables
+                              />
+                            </div>
                           </FloorPlanErrorBoundary>
                         )}
                       </div>
@@ -555,14 +557,16 @@ export default function ServerPage() {
                       </div>
                       <div className="p-6">
                         <VoiceErrorBoundary>
-                          <VoiceOrderPanel
-                            tableId={orderFlow.selectedTable.id}
-                            tableName={orderFlow.selectedTable.label}
-                            seatNumber={orderFlow.selectedSeat}
-                            orderType={orderFlow.orderType}
-                            onOrderSubmitted={handleOrderSubmitted}
-                            onCancel={handleBackFromVoiceOrder}
-                          />
+                          <div className="voice-order-container">
+                            <VoiceOrderPanel
+                              tableId={orderFlow.selectedTable.id}
+                              tableName={orderFlow.selectedTable.label}
+                              seatNumber={orderFlow.selectedSeat}
+                              orderType={orderFlow.orderType}
+                              onOrderSubmitted={handleOrderSubmitted}
+                              onCancel={handleBackFromVoiceOrder}
+                            />
+                          </div>
                         </VoiceErrorBoundary>
                       </div>
                     </CardContent>

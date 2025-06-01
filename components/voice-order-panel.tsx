@@ -192,7 +192,7 @@ export function VoiceOrderPanel({
             <motion.div className="relative" whileTap={{ scale: isButtonDisabled ? 1 : 0.95 }} whileHover={{ scale: isButtonDisabled ? 1 : 1.05 }}>
               <Button
                 size="lg"
-                className={`w-20 h-20 rounded-full shadow-lg ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
+                className={`w-20 h-20 rounded-full shadow-lg voice-order-button ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
                 onClick={voiceState.isRecording ? handleStopRecording : handleStartRecording}
                 disabled={isButtonDisabled}
                 aria-label={voiceState.isRecording ? "Stop Recording" : "Start Recording"}

@@ -12,7 +12,8 @@ import { Shell } from "@/components/shell"
 import { useRole, useHasRole, ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
-import { Utensils, ChefHat, Shield, Settings, Clock } from "lucide-react"
+import { Utensils, ChefHat, Shield, Settings, Clock, Sparkles, ArrowRight, Mic, Users } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 function DashboardContent() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -62,10 +63,16 @@ function DashboardContent() {
           className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12"
         >
           <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm">
-              Welcome to Plate
-            </h1>
-            <p className="mt-2 text-gray-400 sf-pro-text font-light">What would you like to do today?</p>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm">
+                Welcome to Plate
+              </h1>
+              <Badge variant="secondary" className="bg-blue-600 text-white border-blue-500 animate-pulse">
+                <Sparkles className="w-3 h-3 mr-1" />
+                BETA
+              </Badge>
+            </div>
+            <p className="mt-2 text-gray-400 sf-pro-text font-light">Ready to experience the future of restaurant management?</p>
           </div>
 
           <div className="mt-4 md:mt-0 flex items-center bg-gray-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-800/50 shadow-inner">
@@ -89,14 +96,24 @@ function DashboardContent() {
                     {/* Subtle glow effect */}
                     <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors duration-300 shadow-inner">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors duration-300 shadow-inner relative">
                       <Utensils className="w-6 h-6 text-blue-400 drop-shadow" />
+                      <Badge className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 py-0 h-auto min-h-0 scale-75">
+                        NEW
+                      </Badge>
                     </div>
                     <h2 className="text-xl font-medium sf-pro-display mb-2 text-white drop-shadow-sm">Server View</h2>
-                    <p className="text-gray-400 sf-pro-text font-light text-sm">Take orders and manage tables</p>
+                    <p className="text-gray-400 sf-pro-text font-light text-sm">Take orders with voice recognition</p>
+                    <div className="mt-2 flex items-center gap-1 text-xs text-blue-400">
+                      <Mic className="w-3 h-3" />
+                      <span>Voice-powered ordering</span>
+                    </div>
                     <div className="mt-auto pt-6">
-                      <div className="text-blue-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300">
-                        Get started →
+                      <div className="flex items-center justify-between">
+                        <div className="text-blue-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300">
+                          Start here →
+                        </div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                       </div>
                     </div>
                   </div>

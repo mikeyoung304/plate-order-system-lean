@@ -264,7 +264,7 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
             handleCanvasClick(mockEvent);
           }}
           onTouchEnd={(e) => e.preventDefault()}
-          className="absolute inset-0 transition-opacity duration-300 touch-manipulation"
+          className="absolute inset-0 transition-opacity duration-300 touch-manipulation floor-plan-table"
           aria-label="Floor plan"
         />
 
