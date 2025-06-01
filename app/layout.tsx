@@ -14,6 +14,7 @@ import { BetaFeedbackButton } from '@/components/beta-feedback-button'
 import { OnboardingTooltips } from '@/components/onboarding-tooltips'
 import { BetaNavigation } from '@/components/beta-navigation'
 import { QuickStartGuide } from '@/components/quick-start-guide'
+// Temporarily removed emergency error boundary
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })

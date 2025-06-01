@@ -1,32 +1,25 @@
 {
   "mcpServers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-      "description": "Enhanced reasoning and planning capabilities"
-    },
     "filesystem": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/mike/Plate-Restaurant-System-App"
-      ],
-      "description": "Enhanced file system operations"
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "WORKSPACE_DIR": "/Users/mike/Plate-Restaurant-System-App"
+      }
     },
-    "desktop-commander": {
+    "github": {
       "command": "npx",
-      "args": ["-y", "@wonderwhy-er/desktop-commander"],
-      "description": "Terminal control, process management, and advanced file operations"
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
     },
-    "postgres": {
+    "vercel": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgres://postgres.eiipozoogrrfudhjoqms:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
-      ],
-      "description": "Direct PostgreSQL database access for advanced queries"
+      "args": ["-y", "@modelcontextprotocol/server-vercel"],
+      "env": {
+        "VERCEL_TOKEN": "${VERCEL_TOKEN}"
+      }
     }
   }
 }

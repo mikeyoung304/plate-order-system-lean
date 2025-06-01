@@ -71,7 +71,7 @@ export function SeatPickerOverlay({
           <Button
             variant='ghost'
             size='icon'
-            className='absolute top-3 right-3 text-gray-400 hover:text-white hover:bg-gray-700/50 h-9 w-9' // Corrected size
+            className='absolute top-3 right-3 text-gray-400 hover:text-white hover:bg-gray-700/50 min-w-[44px] min-h-[44px]'
             onClick={onClose}
             aria-label='Close seat selection'
           >
