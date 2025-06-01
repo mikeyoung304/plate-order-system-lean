@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 // Types for different error severities and categories
 interface ErrorInfo {
@@ -328,7 +329,11 @@ export function VoiceErrorBoundary({ children }: { children: ReactNode }) {
         </div>
       )}
       onError={(error, errorInfo) => {
-        console.error('Voice Error Boundary caught an error:', error, errorInfo)
+        logger.error('Voice Error Boundary caught an error', { 
+          error: error.message, 
+          stack: error.stack,
+          component: 'VoiceErrorBoundary'
+        }, error)
       }}
     >
       {children}
