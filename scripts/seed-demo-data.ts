@@ -369,14 +369,6 @@ async function createDemoTables() {
           label: table.label,
           type: table.type,
           status: table.status,
-          position_x: table.position_x,
-          position_y: table.position_y,
-          width:
-            table.type === 'circle' ? 80 : table.type === 'square' ? 100 : 120,
-          height:
-            table.type === 'circle' ? 80 : table.type === 'square' ? 100 : 80,
-          rotation: 0,
-          z_index: 1,
         },
       ])
       .select()
@@ -416,12 +408,12 @@ async function createSampleOrders() {
   // Get residents and servers
   const { data: residents } = await supabase
     .from('profiles')
-    .select('id, name, metadata')
+    .select('user_id, name')
     .eq('role', 'resident')
 
   const { data: servers } = await supabase
     .from('profiles')
-    .select('id, name')
+    .select('user_id, name')
     .eq('role', 'server')
 
   const { data: tables } = await supabase.from('tables').select('id, label')
@@ -432,13 +424,20 @@ async function createSampleOrders() {
 
   if (!residents || !servers || !tables || !seats) {
     console.log('Missing data for creating orders, skipping...')
+    console.log('Debug info:')
+    console.log('- Residents:', residents?.length || 0)
+    console.log('- Servers:', servers?.length || 0)  
+    console.log('- Tables:', tables?.length || 0)
+    console.log('- Seats:', seats?.length || 0)
     return
   }
 
-  // Create order history for each resident
+  // Create order history for each resident with sample favorite items
   for (const resident of residents) {
-    const favoriteItems = resident.metadata?.favorite_items || []
-    if (favoriteItems.length === 0) continue
+    // Use sample favorite items since metadata doesn't exist yet
+    const favoriteItems = [
+      'Grilled chicken', 'Meatloaf', 'Soup', 'Salad', 'Coffee', 'Tea'
+    ]
 
     // Create 10-15 historical orders
     const orderCount = Math.floor(Math.random() * 6) + 10
@@ -479,12 +478,12 @@ async function createSampleOrders() {
         {
           table_id: randomTable.id,
           seat_id: randomSeat.id,
-          resident_id: resident.id,
-          server_id: randomServer.id,
+          resident_id: resident.user_id,
+          server_id: randomServer.user_id,
           items: orderItems,
           transcript: `Order for ${resident.name}: ${orderItems.join(', ')}`,
           status: 'delivered',
-          type: Math.random() > 0.2 ? 'food' : 'beverage',
+          type: Math.random() > 0.2 ? 'food' : 'drink',
           created_at: orderDate.toISOString(),
         },
       ])
@@ -533,6 +532,5 @@ async function seedDemo() {
   }
 }
 
-if (require.main === module) {
-  seedDemo().then(() => process.exit(0))
-}
+// Run if called directly
+seedDemo().then(() => process.exit(0))

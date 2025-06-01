@@ -65,8 +65,8 @@ export async function signIn(
   }
 
   revalidatePath('/', 'layout')
-  revalidatePath('/server')
-  redirect('/server')
+  revalidatePath('/dashboard')
+  redirect('/dashboard')
 }
 
 export async function signUp(
