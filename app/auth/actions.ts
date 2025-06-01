@@ -41,7 +41,7 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
   }
 
   // Clean guest data if this is a guest login
-  if (data.email === 'guest@demo.plate' && authData.user) {
+  if ((data.email === 'guest@demo.plate' || data.email === 'guest@restaurant.plate') && authData.user) {
     await cleanGuestData(authData.user.id)
   }
 

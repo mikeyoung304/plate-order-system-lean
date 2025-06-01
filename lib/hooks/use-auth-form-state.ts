@@ -151,7 +151,7 @@ export function useAuthFormState() {
     const sanitizedRole = ['server', 'cook', 'admin'].includes(state.role) ? state.role : 'server'
 
     // Validate email format (unless it's the special 'guest' case)
-    if (sanitizedEmail !== 'guest' && sanitizedEmail !== 'guest@demo.plate') {
+    if (sanitizedEmail !== 'guest' && sanitizedEmail !== 'guest@demo.plate' && sanitizedEmail !== 'guest@restaurant.plate') {
       if (!sanitizedEmail || sanitizedEmail.length < 3) {
         throw new Error('Please enter a valid email address')
       }

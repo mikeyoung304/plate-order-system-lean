@@ -99,6 +99,9 @@ export function AuthForm() {
       // Set working guest credentials that auto-fill the form
       actions.setEmail('guest@restaurant.plate')
       actions.setPassword('guest123')
+      
+      // Add a small delay to let user see the auto-fill happen
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Validate (includes rate limiting check)
       actions.validateAndPrepareData()
@@ -163,7 +166,7 @@ export function AuthForm() {
             id="password"
             name="password"
             type="password"
-            placeholder="Enter your password"
+            placeholder="guest123 (or click Try Demo)"
             value={state.password}
             onChange={(e) => actions.setPassword(e.target.value)}
             disabled={state.isRateLimited || isLoading}
