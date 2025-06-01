@@ -42,7 +42,7 @@ async function setupGuestAccount() {
   try {
     // Check for existing guest user by looking up the auth user first
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const existingGuestAuth = authUsers?.users?.find(u => u.email === 'guest@demo.plate')
+    const existingGuestAuth = authUsers?.users?.find(u => u.email === 'guest@restaurant.plate')
     
     if (existingGuestAuth) {
       console.log('🧹 Removing existing guest account...')
@@ -52,12 +52,12 @@ async function setupGuestAccount() {
     // Create fresh guest user
     console.log('👤 Creating guest user...')
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: 'guest@demo.plate',
-      password: 'Temp1',
+      email: 'guest@restaurant.plate',
+      password: 'guest123',
       email_confirm: true,
       user_metadata: {
-        name: 'Guest Demo User',
-        role: 'server'
+        name: 'Guest User',
+        role: 'admin'
       }
     })
     
@@ -82,8 +82,8 @@ async function setupGuestAccount() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          name: 'Guest Demo User',
-          role: 'server'
+          name: 'Guest User',
+          role: 'admin'
         })
         .eq('user_id', authData.user.id)
       
@@ -97,8 +97,8 @@ async function setupGuestAccount() {
         .from('profiles')
         .insert({
           user_id: authData.user.id,
-          name: 'Guest Demo User',
-          role: 'server'
+          name: 'Guest User',
+          role: 'admin'
         })
       
       if (profileError) {
@@ -113,8 +113,8 @@ async function setupGuestAccount() {
     console.log('✅ Guest account successfully created!')
     console.log('')
     console.log('🎯 Demo Login Credentials:')
-    console.log('   Username: Guest')
-    console.log('   Password: Temp1')
+    console.log('   Email: guest@restaurant.plate')
+    console.log('   Password: guest123')
     console.log('')
     console.log('🚀 Ready for professional demos!')
     
@@ -133,7 +133,7 @@ async function cleanupOldGuestData() {
     
     // Find guest user by auth email first
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const guestAuth = authUsers?.users?.find(u => u.email === 'guest@demo.plate')
+    const guestAuth = authUsers?.users?.find(u => u.email === 'guest@restaurant.plate')
     
     const { data: guestProfile } = guestAuth ? await supabase
       .from('profiles')

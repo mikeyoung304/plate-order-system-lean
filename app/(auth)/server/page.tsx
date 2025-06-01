@@ -280,7 +280,7 @@ export default function ServerPage() {
   const resolvedView = orderFlow.currentStep;
 
   return (
-    <ProtectedRoute roles="server">
+    <ProtectedRoute roles={["server", "admin"]}>
       <Shell className="bg-gradient-to-br from-gray-900/95 via-gray-900/98 to-gray-900/95">
         <div className="container py-6">
         {/* Header */}
