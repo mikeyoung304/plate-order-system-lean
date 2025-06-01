@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Mic, Square, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+// Removed framer-motion import - using CSS animations
 import { VoiceProcessingLoader } from "@/components/loading-states";
 import { sanitizeText } from "@/lib/utils/security";
 import { useVoiceRecordingState } from "@/lib/hooks/use-voice-recording-state";
@@ -146,25 +146,17 @@ export function VoiceOrderPanel({
         ) : voiceState.showConfirmation && voiceState.transcriptionItems.length > 0 ? (
           <div className="w-full p-4 border rounded-md bg-muted text-center">
             <p className="text-sm font-medium mb-3 text-muted-foreground">Your Order:</p>
-            <motion.ul 
-              className="space-y-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ staggerChildren: 0.1 }}
-            >
+            <ul className="space-y-2 voice-order-list">
               {voiceState.transcriptionItems.map((item: string, index: number) => (
-                <motion.li 
+                <li 
                   key={index} 
-                  className="text-base flex items-center justify-center bg-white p-2 rounded shadow-sm"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  className={`text-base flex items-center justify-center bg-white p-2 rounded shadow-sm voice-order-item-${Math.min(index + 1, 10)}`}
                 >
                   <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
                   {item}
-                </motion.li>
+                </li>
               ))}
-            </motion.ul>
+            </ul>
           </div>
         ) : (
           <div className="w-full p-4 border rounded-md bg-muted text-muted-foreground text-center">
@@ -189,26 +181,17 @@ export function VoiceOrderPanel({
         {!voiceState.showConfirmation ? (
           <div className="flex flex-col items-center space-y-3">
             {/* Recording Button */}
-            <motion.div className="relative" whileTap={{ scale: isButtonDisabled ? 1 : 0.95 }} whileHover={{ scale: isButtonDisabled ? 1 : 1.05 }}>
+            <div className={`relative ${voiceState.isRecording ? 'voice-recording-indicator' : ''}`}>
               <Button
                 size="lg"
-                className={`w-20 h-20 rounded-full shadow-lg voice-order-button ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
+                className={`w-20 h-20 rounded-full shadow-lg voice-order-button voice-button-hover voice-button-tap ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600 voice-button-recording' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
                 onClick={voiceState.isRecording ? handleStopRecording : handleStartRecording}
                 disabled={isButtonDisabled}
                 aria-label={voiceState.isRecording ? "Stop Recording" : "Start Recording"}
               >
                 {getButtonIcon()}
               </Button>
-              {/* Recording pulse animation */}
-              {voiceState.isRecording && (
-                <motion.div
-                  className="absolute inset-0 rounded-full border-4 border-primary opacity-75"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.75, 0, 0.75] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  style={{ pointerEvents: 'none' }}
-                />
-              )}
-            </motion.div>
+            </div>
             
             {/* Cancel Button */}
             <Button variant="outline" onClick={handleCancel} className="w-full">
@@ -217,7 +200,7 @@ export function VoiceOrderPanel({
           </div>
         ) : (
           // Confirmation Buttons
-          <div className="confirmation-buttons w-full flex justify-center space-x-4">
+          <div className="confirmation-buttons w-full flex justify-center space-x-4 voice-confirm-buttons">
             <Button 
               variant="outline" 
               size="lg" 
@@ -249,7 +232,7 @@ export function VoiceOrderPanel({
 
        {/* Dietary Alerts */}
        {voiceState.dietaryAlerts.length > 0 && (
-            <div className="dietary-alerts w-full p-3 border border-yellow-300 bg-yellow-50 rounded-md text-yellow-800">
+            <div className="dietary-alerts w-full p-3 border border-yellow-300 bg-yellow-50 rounded-md text-yellow-800 voice-dietary-alert">
                 <h4 className="font-semibold mb-1"><AlertCircle className="inline-block h-4 w-4 mr-1" /> Potential Dietary Alert:</h4>
                 <ul className="list-disc list-inside text-sm">
                     {voiceState.dietaryAlerts.map((alert: string) => <li key={alert}>{alert.charAt(0).toUpperCase() + alert.slice(1)}</li>)}

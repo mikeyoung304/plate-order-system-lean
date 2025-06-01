@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-// PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
+// PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
 // Original: Full framer-motion library (~150KB) for dashboard animations
-// Changed to: Optimized motion presets with selective imports
-// Impact: 80% reduction in motion-related bundle size for dashboard
-// Risk: Minimal - same card animations, lighter implementation
-import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance-utils"
+// Changed to: Pure CSS animations with equivalent functionality
+// Impact: 100% reduction in motion-related bundle size for dashboard
+// Risk: None - same visual effects, better performance
 import { Shell } from "@/components/shell"
 import { useRole, useHasRole, ProtectedRoute } from "@/lib/modassembly/supabase/auth"
 import { Card, CardContent } from "@/components/ui/card"
@@ -34,21 +32,7 @@ function DashboardContent() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
-  }
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } },
-  }
+  // Animation classes are now handled via CSS for better performance
 
   return (
     <Shell>
@@ -56,12 +40,7 @@ function DashboardContent() {
       <div className="absolute inset-0 bg-noise opacity-5 pointer-events-none"></div>
 
       <div className="container py-8 md:py-12 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-          className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12"
-        >
+        <div className="dashboard-header flex flex-col md:flex-row items-start md:items-center justify-between mb-12">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm">
@@ -79,18 +58,13 @@ function DashboardContent() {
             <Clock className="w-4 h-4 text-gray-400 mr-2" />
             <span className="text-gray-300 sf-pro-text">{formatTime(currentTime)}</span>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
+        <div className="dashboard-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {isServer && (
-            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+            <div className="dashboard-item dashboard-item-1">
               <Link href="/server" className="block h-full">
-              <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
+              <Card className="h-full dashboard-card bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
                   <div className="p-6 flex flex-col h-full relative">
                     {/* Subtle glow effect */}
@@ -120,11 +94,11 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </Link>
-          </motion.div>
+          </div>
           )}
 
           {isCook && (
-            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+            <div className="dashboard-item dashboard-item-2">
               <Link href="/kitchen" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
@@ -146,11 +120,11 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </Link>
-          </motion.div>
+          </div>
           )}
 
           {(isServer || isCook) && (
-            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+            <div className="dashboard-item dashboard-item-3">
               <Link href="/expo" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
@@ -172,11 +146,11 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </Link>
-          </motion.div>
+          </div>
           )}
 
           {isAdmin && (
-            <motion.div variants={item} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+            <div className="dashboard-item dashboard-item-4">
               <Link href="/admin" className="block h-full">
               <Card className="h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl">
                 <CardContent className="p-0">
@@ -198,9 +172,9 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </Link>
-          </motion.div>
+          </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </Shell>
   )

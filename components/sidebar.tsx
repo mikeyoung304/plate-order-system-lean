@@ -12,32 +12,16 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-// PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
+// PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
 // Original: Full framer-motion library (~150KB) for sidebar animations
-// Changed to: Optimized motion presets with selective imports
-// Impact: 80% reduction in motion-related bundle size for navigation
-// Risk: Minimal - same navigation animations, lighter implementation
-import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance-utils"
+// Changed to: Pure CSS animations with equivalent functionality
+// Impact: 100% reduction in motion-related bundle size for navigation
+// Risk: None - same visual effects, better performance
 import { useToast } from "@/components/ui/use-toast"
 import { signOut } from "@/app/auth/actions"
 import { getUser } from "@/lib/modassembly/supabase/database/users"
 
-// Animation variants
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-}
-
-const item = {
-  hidden: { opacity: 0, x: -20 },
-  show: { opacity: 1, x: 0 }
-}
+// Animation classes are now handled via CSS for better performance
 
 type NavItem = {
   name: string
@@ -127,9 +111,9 @@ export function Sidebar() {
   ]
 
   const renderNavItems = () => (
-    <motion.ul variants={container} initial="hidden" animate="show" className="space-y-1 px-2">
-      {navItems.map((navItem) => (
-        <motion.li key={navItem.href} variants={item}>
+    <ul className="sidebar-nav-container space-y-1 px-2">
+      {navItems.map((navItem, index) => (
+        <li key={navItem.href} className={`sidebar-nav-item sidebar-nav-item-${index + 1}`}>
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -162,9 +146,9 @@ export function Sidebar() {
               )}
             </Tooltip>
           </TooltipProvider>
-        </motion.li>
+        </li>
       ))}
-    </motion.ul>
+    </ul>
   )
 
   // In the mobile view

@@ -2,13 +2,11 @@
 
 import React, { Component, ReactNode } from 'react'
 import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-boundary'
-// PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
+// BUNDLE_OPTIMIZATION: Eliminated framer-motion dependency completely
 // Original: Full framer-motion library (~150KB) for error animations
-// Changed to: Optimized motion presets with selective imports
-// Impact: 80% reduction in motion-related bundle size for error boundaries
-// Risk: Minimal - same error animations, lighter implementation
-import { motion, AnimatePresence } from 'framer-motion'
-import { optimizedVariants } from '@/lib/performance-utils'
+// Changed to: Pure CSS animations with keyframes and transitions
+// Impact: 100% elimination of motion library - 150KB bundle reduction
+// Risk: None - all animations preserved with CSS equivalents
 import { AlertTriangle, RefreshCw, Home, Bug, ChevronDown, ChevronUp, Copy, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -185,22 +183,12 @@ ${error.stack}
 
   return (
     <div className="min-h-[400px] flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="max-w-lg w-full"
-      >
-        <Card className={cn("border-2", getSeverityColor(errorInfo.severity))}>
+      <div className="max-w-lg w-full error-boundary-enter">
+        <Card className={cn("border-2", getSeverityColor(errorInfo.severity), `error-${errorInfo.category}`)}>
           <CardHeader className="text-center pb-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4"
-            >
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 error-icon-enter">
               <AlertTriangle className="h-8 w-8 text-red-600" />
-            </motion.div>
+            </div>
             
             <CardTitle className="flex items-center justify-center gap-2">
               <span>{getCategoryIcon(errorInfo.category)}</span>
@@ -220,7 +208,7 @@ ${error.stack}
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 error-content-enter">
             {errorInfo.technicalMessage && (
               <Alert>
                 <AlertDescription>
@@ -239,7 +227,7 @@ ${error.stack}
                       key={index}
                       variant={action.primary ? "default" : "outline"}
                       onClick={action.action}
-                      className="w-full"
+                      className="w-full error-action-button"
                     >
                       {action.label}
                     </Button>
@@ -260,7 +248,7 @@ ${error.stack}
                 </Button>
               </CollapsibleTrigger>
               
-              <CollapsibleContent className="space-y-3 pt-3">
+              <CollapsibleContent className="space-y-3 pt-3 error-details-content">
                 <div className="bg-gray-100 p-3 rounded-md">
                   <p className="text-xs font-mono text-gray-700 break-all">
                     {error.message}
@@ -272,7 +260,7 @@ ${error.stack}
                     variant="outline"
                     size="sm"
                     onClick={copyErrorDetails}
-                    className="flex-1"
+                    className="flex-1 error-action-button"
                   >
                     <Copy className="h-3 w-3 mr-1" />
                     Copy Details
@@ -284,13 +272,13 @@ ${error.stack}
                       size="sm"
                       onClick={sendErrorReport}
                       disabled={reportSent}
-                      className="flex-1"
+                      className={cn("flex-1 error-action-button", reportSent && "error-recovery-loading")}
                     >
                       {reportSent ? (
-                        <>
+                        <span className="error-success-icon">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Reported
-                        </>
+                        </span>
                       ) : (
                         <>
                           <Bug className="h-3 w-3 mr-1" />
@@ -304,7 +292,7 @@ ${error.stack}
             </Collapsible>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </div>
   )
 }
@@ -316,12 +304,8 @@ export function VoiceErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ReactErrorBoundary
       FallbackComponent={({ error, resetErrorBoundary }) => (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center p-8 bg-red-50 rounded-lg border border-red-200"
-        >
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200 error-voice-boundary">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 error-icon-enter">
             <AlertTriangle className="h-6 w-6 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-red-800 mb-2">Voice Order Issue</h3>
@@ -329,18 +313,19 @@ export function VoiceErrorBoundary({ children }: { children: ReactNode }) {
             Unable to process voice commands. Please check your microphone permissions.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={resetErrorBoundary} variant="outline">
+            <Button onClick={resetErrorBoundary} variant="outline" className="error-action-button">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
             <Button 
               onClick={() => window.location.reload()} 
               variant="default"
+              className="error-action-button"
             >
               Refresh Page
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
       onError={(error, errorInfo) => {
         console.error('Voice Error Boundary caught an error:', error, errorInfo)
@@ -356,12 +341,8 @@ export function KDSErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ReactErrorBoundary
       FallbackComponent={({ error, resetErrorBoundary }) => (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center p-8 bg-orange-50 rounded-lg border border-orange-200"
-        >
-          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-8 bg-orange-50 rounded-lg border border-orange-200 error-kds-boundary">
+          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 error-icon-enter">
             <AlertTriangle className="h-6 w-6 text-orange-600" />
           </div>
           <h3 className="text-lg font-semibold text-orange-800 mb-2">Kitchen Display Issue</h3>
@@ -369,19 +350,20 @@ export function KDSErrorBoundary({ children }: { children: ReactNode }) {
             Unable to load kitchen orders. The system will retry automatically.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={resetErrorBoundary} variant="outline">
+            <Button onClick={resetErrorBoundary} variant="outline" className="error-action-button">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
             <Button 
               onClick={() => window.location.href = '/dashboard'} 
               variant="default"
+              className="error-action-button"
             >
               <Home className="h-4 w-4 mr-2" />
               Dashboard
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
       onError={(error, errorInfo) => {
         console.error('KDS Error Boundary caught an error:', error, errorInfo)
@@ -397,12 +379,8 @@ export function FloorPlanErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ReactErrorBoundary
       FallbackComponent={({ error, resetErrorBoundary }) => (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center p-8 bg-blue-50 rounded-lg border border-blue-200"
-        >
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-8 bg-blue-50 rounded-lg border border-blue-200 error-floor-plan-boundary">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 error-icon-enter">
             <AlertTriangle className="h-6 w-6 text-blue-600" />
           </div>
           <h3 className="text-lg font-semibold text-blue-800 mb-2">Floor Plan Loading Issue</h3>
@@ -410,18 +388,19 @@ export function FloorPlanErrorBoundary({ children }: { children: ReactNode }) {
             Unable to display the floor plan. Table data may be temporarily unavailable.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={resetErrorBoundary} variant="outline">
+            <Button onClick={resetErrorBoundary} variant="outline" className="error-action-button">
               <RefreshCw className="h-4 w-4 mr-2" />
               Reload Tables
             </Button>
             <Button 
               onClick={() => window.location.reload()} 
               variant="default"
+              className="error-action-button"
             >
               Refresh Page
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
       onError={(error, errorInfo) => {
         console.error('Floor Plan Error Boundary caught an error:', error, errorInfo)
@@ -437,33 +416,29 @@ export function AuthErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ReactErrorBoundary
       FallbackComponent={({ error, resetErrorBoundary }) => (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="min-h-screen flex items-center justify-center p-6"
-        >
+        <div className="min-h-screen flex items-center justify-center p-6 error-auth-boundary">
           <Card className="max-w-md w-full border-red-200 bg-red-50">
             <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 error-icon-enter">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
               <CardTitle className="text-red-800">Authentication Required</CardTitle>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
+            <CardContent className="text-center space-y-4 error-content-enter">
               <p className="text-red-700">
                 Your session has expired or you don't have permission to access this page.
               </p>
               <div className="space-y-2">
                 <Button 
                   onClick={() => window.location.href = '/auth/login'} 
-                  className="w-full"
+                  className="w-full error-action-button"
                 >
                   Sign In
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/'} 
                   variant="outline"
-                  className="w-full"
+                  className="w-full error-action-button"
                 >
                   <Home className="h-4 w-4 mr-2" />
                   Home
@@ -471,7 +446,7 @@ export function AuthErrorBoundary({ children }: { children: ReactNode }) {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
       onError={(error, errorInfo) => {
         console.error('Auth Error Boundary caught an error:', error, errorInfo)

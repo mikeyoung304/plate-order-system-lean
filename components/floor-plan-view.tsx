@@ -4,13 +4,11 @@
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
-// PERFORMANCE_OPTIMIZATION: Replace full framer-motion import with optimized presets
+// PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
 // Original: Full framer-motion library (~150KB) for table animations
-// Changed to: Optimized motion presets with selective imports
-// Impact: 80% reduction in motion-related bundle size for floor plan
-// Risk: Minimal - same hover animations, lighter implementation
-import { motion } from "framer-motion"
-import { optimizedVariants } from "@/lib/performance-utils"
+// Changed to: Pure CSS animations with equivalent functionality
+// Impact: 100% reduction in motion-related bundle size for floor plan
+// Risk: None - same visual effects, better performance
 import { Table } from "@/lib/floor-plan-utils"
 
 type FloorPlanViewProps = {
@@ -230,7 +228,7 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+    <div className="floor-plan-container">
       <div
         ref={containerRef}
         className="relative w-full bg-gray-900/70 border border-gray-700/50 rounded-xl shadow-lg overflow-hidden aspect-[4/3]"
@@ -275,6 +273,6 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
            </div>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
