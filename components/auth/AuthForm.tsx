@@ -92,19 +92,21 @@ export function AuthForm() {
 
   const handleGuestDemo = async () => {
     try {
+      // Clear any rate limiting for demo access
+      actions.resetRateLimit()
       actions.setStatus('loading')
       
-      // Set guest credentials
-      actions.setEmail('Guest')
-      actions.setPassword('Temp1')
+      // Set working guest credentials that auto-fill the form
+      actions.setEmail('guest@restaurant.plate')
+      actions.setPassword('guest123')
 
       // Validate (includes rate limiting check)
       actions.validateAndPrepareData()
       
-      // Create guest form data
+      // Create guest form data with working credentials
       const secureFormData = new FormData()
-      secureFormData.append('email', 'guest@demo.plate')
-      secureFormData.append('password', 'Temp1')
+      secureFormData.append('email', 'guest@restaurant.plate')
+      secureFormData.append('password', 'guest123')
       
       startTransition(() => {
         signInAction(secureFormData)
@@ -145,7 +147,7 @@ export function AuthForm() {
             id="email"
             name="email"
             type="text"
-            placeholder="Enter 'Guest' for demo"
+            placeholder="guest@restaurant.plate (or click Try Demo)"
             value={state.email}
             onChange={(e) => actions.setEmail(e.target.value)}
             disabled={state.isRateLimited || isLoading}
@@ -221,10 +223,10 @@ export function AuthForm() {
         <Button 
           variant="secondary" 
           onClick={handleGuestDemo}
-          className="w-full"
+          className="w-full bg-blue-600 text-white hover:bg-blue-700"
           disabled={state.isRateLimited || isLoading}
         >
-          {isLoading ? "Processing..." : "Try Demo (Guest)"}
+          {isLoading ? "Processing..." : "🚀 Try Demo (Auto-Fill & Login)"}
         </Button>
 
         <div className="flex items-center justify-center pt-4">
