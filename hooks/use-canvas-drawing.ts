@@ -26,7 +26,6 @@ export function useCanvasDrawing(
   panOffset: { x: number; y: number },
   drawingOptions: DrawingOptions
 ): CanvasDrawing {
-  const animationFrameRef = useRef<number | null>(null)
 
   const calculateSeatPositions = useCallback((
     type: string, 
@@ -93,8 +92,11 @@ export function useCanvasDrawing(
     const drawFrame = () => {
       if (!canvasRef.current) return
       
-      canvas.width = canvasSize.width
-      canvas.height = canvasSize.height
+      // Only resize if canvas size changed
+      if (canvas.width !== canvasSize.width || canvas.height !== canvasSize.height) {
+        canvas.width = canvasSize.width
+        canvas.height = canvasSize.height
+      }
       
       ctx.save()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -297,21 +299,10 @@ export function useCanvasDrawing(
       }
       
       ctx.restore()
-
-      // Request next frame
-      animationFrameRef.current = requestAnimationFrame(drawFrame)
     }
 
-    // Start animation loop
-    animationFrameRef.current = requestAnimationFrame(drawFrame)
-
-    // Cleanup
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-        animationFrameRef.current = null
-      }
-    }
+    // Draw once when dependencies change
+    drawFrame()
   }, [
     tables,
     selectedTable,

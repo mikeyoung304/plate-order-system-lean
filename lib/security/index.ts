@@ -139,18 +139,25 @@ export class RequestValidator {
       }
     }
     
-    // Check for suspicious headers
-    const suspiciousHeaders = ['x-forwarded-host', 'x-original-url', 'x-rewrite-url']
+    // Check for suspicious headers (but be less restrictive for legitimate proxy headers)
+    const suspiciousHeaders = ['x-original-url', 'x-rewrite-url']
     for (const header of suspiciousHeaders) {
       if (req.headers.get(header)) {
         errors.push(`Suspicious header detected: ${header}`)
       }
     }
     
-    // Check User-Agent (basic bot detection)
+    // Check User-Agent (basic bot detection) - be more lenient for local development
     const userAgent = req.headers.get('user-agent')
-    if (!userAgent || userAgent.length < 10) {
-      errors.push('Invalid or missing User-Agent')
+    if (!userAgent) {
+      // Only warn in development, don't block
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Missing User-Agent header in development')
+      } else {
+        errors.push('Invalid or missing User-Agent')
+      }
+    } else if (userAgent.length < 5 && process.env.NODE_ENV !== 'development') {
+      errors.push('Invalid User-Agent')
     }
     
     return {

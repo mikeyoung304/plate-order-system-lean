@@ -80,6 +80,9 @@ export type FloorPlanAction =
   | { type: 'SELECT_TABLE'; payload: string | null }
   | { type: 'SET_HOVERED_TABLE'; payload: string | null }
   | { type: 'SET_UI_STATE'; payload: Partial<FloorPlanState['ui']> }
+  | { type: 'SET_PANEL_STATE'; payload: { panel: 'tables' | 'controls'; open: boolean } }
+  | { type: 'SET_GRID_OPTION'; payload: { option: 'visible' | 'size' | 'snap'; value: any } }
+  | { type: 'SET_DISPLAY_OPTION'; payload: { option: keyof FloorPlanState['ui']['display']; value: boolean } }
   | { type: 'SET_INTERACTION_STATE'; payload: Partial<FloorPlanState['interaction']> }
   | { type: 'SET_CANVAS_SIZE'; payload: { width: number; height: number } }
   | { type: 'SET_ZOOM'; payload: number }
@@ -266,6 +269,54 @@ function floorPlanReducer(state: FloorPlanState, action: FloorPlanAction): Floor
           ...action.payload
         }
       }
+      
+    case 'SET_PANEL_STATE': {
+      const { panel, open } = action.payload
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          panels: {
+            ...state.ui.panels,
+            [panel === 'tables' ? 'isTablesPanelOpen' : 'isControlsPanelOpen']: open
+          }
+        }
+      }
+    }
+    
+    case 'SET_GRID_OPTION': {
+      const { option, value } = action.payload
+      const gridUpdate = {
+        visible: () => ({ isVisible: value }),
+        size: () => ({ size: value }),
+        snap: () => ({ snapToGrid: value })
+      }[option]()
+      
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          grid: {
+            ...state.ui.grid,
+            ...gridUpdate
+          }
+        }
+      }
+    }
+    
+    case 'SET_DISPLAY_OPTION': {
+      const { option, value } = action.payload
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          display: {
+            ...state.ui.display,
+            [option]: value
+          }
+        }
+      }
+    }
       
     case 'SET_INTERACTION_STATE':
       return {
@@ -487,7 +538,7 @@ export function useFloorPlanReducer(floorPlanId: string) {
     })
   }, [toast])
 
-  // Actions
+  // Stable actions without state dependencies
   const actions = useMemo(() => ({
     // Table actions
     setTables: (tables: Table[]) => dispatch({ type: 'SET_TABLES', payload: tables }),
@@ -509,31 +560,31 @@ export function useFloorPlanReducer(floorPlanId: string) {
       dispatch({ type: 'SET_PAN_OFFSET', payload: offset }),
     resetView: () => dispatch({ type: 'RESET_VIEW' }),
     
-    // Panel actions
+    // Panel actions - now using stable dispatch calls
     setIsTablesPanelOpen: (open: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { panels: { ...state.ui.panels, isTablesPanelOpen: open } } }),
+      dispatch({ type: 'SET_PANEL_STATE', payload: { panel: 'tables', open } }),
     setIsControlsPanelOpen: (open: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { panels: { ...state.ui.panels, isControlsPanelOpen: open } } }),
+      dispatch({ type: 'SET_PANEL_STATE', payload: { panel: 'controls', open } }),
     
-    // Grid actions
+    // Grid actions - now using stable dispatch calls
     setIsGridVisible: (visible: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { grid: { ...state.ui.grid, isVisible: visible } } }),
+      dispatch({ type: 'SET_GRID_OPTION', payload: { option: 'visible', value: visible } }),
     setGridSize: (size: number) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { grid: { ...state.ui.grid, size } } }),
+      dispatch({ type: 'SET_GRID_OPTION', payload: { option: 'size', value: size } }),
     setSnapToGrid: (snap: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { grid: { ...state.ui.grid, snapToGrid: snap } } }),
+      dispatch({ type: 'SET_GRID_OPTION', payload: { option: 'snap', value: snap } }),
     
-    // Display actions
+    // Display actions - now using stable dispatch calls
     setShowTooltips: (show: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { display: { ...state.ui.display, showTooltips: show } } }),
+      dispatch({ type: 'SET_DISPLAY_OPTION', payload: { option: 'showTooltips', value: show } }),
     setShowTableLabels: (show: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { display: { ...state.ui.display, showTableLabels: show } } }),
+      dispatch({ type: 'SET_DISPLAY_OPTION', payload: { option: 'showTableLabels', value: show } }),
     setShowTableSeats: (show: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { display: { ...state.ui.display, showTableSeats: show } } }),
+      dispatch({ type: 'SET_DISPLAY_OPTION', payload: { option: 'showTableSeats', value: show } }),
     setShowTableDimensions: (show: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { display: { ...state.ui.display, showTableDimensions: show } } }),
+      dispatch({ type: 'SET_DISPLAY_OPTION', payload: { option: 'showTableDimensions', value: show } }),
     setShowTableStatus: (show: boolean) => 
-      dispatch({ type: 'SET_UI_STATE', payload: { display: { ...state.ui.display, showTableStatus: show } } }),
+      dispatch({ type: 'SET_DISPLAY_OPTION', payload: { option: 'showTableStatus', value: show } }),
     
     // Interaction actions
     setInteractionMode: (mode: FloorPlanState['interaction']['mode']) => 
@@ -553,23 +604,26 @@ export function useFloorPlanReducer(floorPlanId: string) {
     
     // History actions
     addToUndoStack: (tables: Table[]) => dispatch({ type: 'ADD_TO_HISTORY', payload: tables }),
-    undo: () => {
-      if (state.history.undoStack.length <= 1) {
-        showInternalToast("Nothing to undo", "default")
-        return
-      }
-      dispatch({ type: 'UNDO' })
-      showInternalToast("Action undone", "default")
-    },
-    redo: () => {
-      if (state.history.redoStack.length === 0) {
-        showInternalToast("Nothing to redo", "default")
-        return
-      }
-      dispatch({ type: 'REDO' })
-      showInternalToast("Action redone", "default")
-    },
-  }), [state.ui.panels, state.ui.grid, state.ui.display, state.history.undoStack.length, state.history.redoStack.length, showInternalToast])
+  }), []) // No state dependencies!
+
+  // Separate actions that need state access
+  const undo = useCallback(() => {
+    if (state.history.undoStack.length <= 1) {
+      showInternalToast("Nothing to undo", "default")
+      return
+    }
+    dispatch({ type: 'UNDO' })
+    showInternalToast("Action undone", "default")
+  }, [state.history.undoStack.length, showInternalToast])
+
+  const redo = useCallback(() => {
+    if (state.history.redoStack.length === 0) {
+      showInternalToast("Nothing to redo", "default")
+      return
+    }
+    dispatch({ type: 'REDO' })
+    showInternalToast("Action redone", "default")
+  }, [state.history.redoStack.length, showInternalToast])
 
   // Data operations
   const loadTables = useCallback(async () => {
@@ -670,6 +724,8 @@ export function useFloorPlanReducer(floorPlanId: string) {
     selectors,
     actions: {
       ...actions,
+      undo,
+      redo,
       loadTables,
       saveTables
     },

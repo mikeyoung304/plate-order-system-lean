@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useRef } from 'react'
+import { useReducer, useCallback, useRef, useEffect } from 'react'
 
 // Voice recording state machine types
 export type VoiceRecordingStep = 'idle' | 'recording' | 'processing' | 'confirming' | 'submitting' | 'success' | 'error'
@@ -149,6 +149,12 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
         audioRecorderRef.current = new AudioRecorder()
       }
       
+      // Check microphone permissions first
+      const hasPermission = await audioRecorderRef.current.requestPermission()
+      if (!hasPermission) {
+        throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.')
+      }
+      
       await audioRecorderRef.current.startRecording()
     } catch (error) {
       dispatch({ 
@@ -167,11 +173,11 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
         throw new Error('No audio recorder available')
       }
       
-      const audioFile = await audioRecorderRef.current.stopRecording()
+      const recordingResult = await audioRecorderRef.current.stopRecording()
       
       // Send to transcription service
       const formData = new FormData()
-      formData.append('audio', audioFile)
+      formData.append('audio', recordingResult.audioBlob)
       
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -179,18 +185,20 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
       })
       
       if (!response.ok) {
-        throw new Error('Transcription failed')
+        const errorText = await response.text()
+        throw new Error(`Transcription failed: ${response.status} - ${errorText}`)
       }
       
       const result = await response.json()
       
-      // Parse transcription into items
-      const items = parseTranscriptionToItems(result.transcription)
+      // The API returns both transcription and items
+      const transcription = result.transcription || ''
+      const items = result.items && Array.isArray(result.items) ? result.items : parseTranscriptionToItems(transcription)
       const alerts = checkDietaryAlerts(items) // Simple keyword check
       
       dispatch({
         type: 'TRANSCRIPTION_SUCCESS',
-        transcription: result.transcription,
+        transcription,
         items,
         alerts
       })
@@ -237,7 +245,20 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
   }, [])
 
   const cancel = useCallback(() => {
+    // Clean up audio recorder if recording
+    if (audioRecorderRef.current && audioRecorderRef.current.isRecording()) {
+      audioRecorderRef.current.cleanup()
+    }
     dispatch({ type: 'CANCEL' })
+  }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.cleanup()
+      }
+    }
   }, [])
 
   // Computed properties
