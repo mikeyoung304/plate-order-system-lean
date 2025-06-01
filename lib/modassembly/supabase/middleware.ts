@@ -99,10 +99,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users from login page to server page
+  // Redirect authenticated users from login page to dashboard
   if (user && request.nextUrl.pathname === '/') {
     const url = request.nextUrl.clone()
-    url.pathname = '/server'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
