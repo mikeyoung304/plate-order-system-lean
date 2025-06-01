@@ -62,6 +62,7 @@ export function useServerPageData(floorPlanId: string = "default") {
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
       ])
 
+
       if (tablesResult.error) throw tablesResult.error
       if (residentsResult.error) throw residentsResult.error  
       if (ordersResult.error) throw ordersResult.error

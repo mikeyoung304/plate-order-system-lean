@@ -26,6 +26,7 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null);
 
+
   // Create random spotlight positions
   useEffect(() => {
     const spots = Array.from({ length: 5 }, (_, i) => ({
@@ -271,6 +272,24 @@ export function FloorPlanView({ floorPlanId, onSelectTable, tables }: FloorPlanV
            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 bg-gray-900/60 px-2 py-1 rounded pointer-events-none">
                Tap a table to select it
            </div>
+        )}
+
+        {/* No Tables Fallback */}
+        {tables.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-300 mb-2">No Tables Available</h3>
+              <p className="text-sm text-gray-400 mb-4">Please sign in or check your authentication.</p>
+              <div className="text-xs text-gray-500">
+                <p>Make sure you're logged in as a server or admin</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

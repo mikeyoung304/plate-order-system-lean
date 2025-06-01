@@ -7,6 +7,7 @@ import { useCanvasInteractionsOptimized } from "@/hooks/use-canvas-interactions-
 import { Toolbar } from "./floor-plan/toolbar"
 import { CanvasOptimized as Canvas } from "./floor-plan/canvas-optimized"
 import { SidePanel } from "./floor-plan/side-panel"
+import { FloorPlanErrorBoundary } from "./error-boundaries"
 
 type FloorPlanEditorProps = {
   floorPlanId: string
@@ -161,110 +162,112 @@ export function FloorPlanEditor({ floorPlanId }: FloorPlanEditorProps) {
   ])
 
   return (
-    <div className="grid grid-cols-1 gap-6">
-      {/* Toolbar */}
-      <Toolbar
-        undoStack={selectors.undoStack}
-        redoStack={selectors.redoStack}
-        onUndo={actions.undo}
-        onRedo={actions.redo}
-        isGridVisible={selectors.isGridVisible}
-        snapToGrid={selectors.snapToGrid}
-        onToggleGrid={() => actions.setIsGridVisible(!selectors.isGridVisible)}
-        onToggleSnap={() => actions.setSnapToGrid(!selectors.snapToGrid)}
-        onAddTable={handleAddTable}
-        onResetView={actions.resetView}
-        onSave={actions.saveTables}
-        isSaving={selectors.isSaving}
-        showTooltips={selectors.showTooltips}
-      />
+    <FloorPlanErrorBoundary>
+      <div className="grid grid-cols-1 gap-6">
+        {/* Toolbar */}
+        <Toolbar
+          undoStack={selectors.undoStack}
+          redoStack={selectors.redoStack}
+          onUndo={actions.undo}
+          onRedo={actions.redo}
+          isGridVisible={selectors.isGridVisible}
+          snapToGrid={selectors.snapToGrid}
+          onToggleGrid={() => actions.setIsGridVisible(!selectors.isGridVisible)}
+          onToggleSnap={() => actions.setSnapToGrid(!selectors.snapToGrid)}
+          onAddTable={handleAddTable}
+          onResetView={actions.resetView}
+          onSave={actions.saveTables}
+          isSaving={selectors.isSaving}
+          showTooltips={selectors.showTooltips}
+        />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Canvas Area */}
-        <div ref={containerRef} className="flex-1">
-          <Canvas
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Canvas Area */}
+          <div ref={containerRef} className="flex-1">
+            <Canvas
+              tables={selectors.tables}
+              canvasSize={selectors.canvasSize}
+              isLoading={selectors.isLoading}
+              selectedTable={selectors.selectedTable}
+              hoveredTableId={selectors.hoveredTableId}
+              zoomLevel={selectors.zoomLevel}
+              panOffset={selectors.panOffset}
+              
+              // Drawing options
+              isGridVisible={selectors.isGridVisible}
+              gridSize={selectors.gridSize}
+              snapToGrid={selectors.snapToGrid}
+              showTableLabels={selectors.showTableLabels}
+              showTableSeats={selectors.showTableSeats}
+              showTableDimensions={selectors.showTableDimensions}
+              showTableStatus={selectors.showTableStatus}
+              
+              // Interaction state
+              interactionMode={selectors.interactionMode}
+              
+              // Interactions
+              interactions={interactions}
+              
+              // Event handlers
+              onTableUpdate={actions.updateTable}
+              onSelectTable={actions.selectTable}
+              onSetHoveredTable={actions.setHoveredTable}
+              onSetInteractionMode={actions.setInteractionMode}
+              onSetDragOffset={actions.setDragOffset}
+              onSetResizeDirection={actions.setResizeDirection}
+              onSetResizeStart={actions.setResizeStart}
+              onSetRotateStart={actions.setRotateStart}
+              onSetInitialRotation={actions.setInitialRotation}
+              onSetPanStart={actions.setPanStart}
+              onSetZoom={actions.setZoom}
+              onSetPanOffset={actions.setPanOffset}
+              onAddToUndoStack={actions.addToUndoStack}
+              canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>}
+            />
+          </div>
+
+          {/* Side Panel */}
+          <SidePanel
+            // Table state
             tables={selectors.tables}
-            canvasSize={selectors.canvasSize}
-            isLoading={selectors.isLoading}
             selectedTable={selectors.selectedTable}
-            hoveredTableId={selectors.hoveredTableId}
-            zoomLevel={selectors.zoomLevel}
-            panOffset={selectors.panOffset}
+            onSelectTable={(table: Table) => actions.selectTable(table.id)}
+            onUpdateTable={handleUpdateTableProperty}
             
-            // Drawing options
+            // Table actions
+            onDeleteTable={handleDeleteTable}
+            onDuplicateTable={handleDuplicateTable}
+            onBringToFront={handleBringToFront}
+            onSendToBack={handleSendToBack}
+            
+            // Panel states
+            isTablesPanelOpen={selectors.isTablesPanelOpen}
+            isControlsPanelOpen={selectors.isControlsPanelOpen}
+            onToggleTablesPanel={actions.setIsTablesPanelOpen}
+            onToggleControlsPanel={actions.setIsControlsPanelOpen}
+            
+            // Grid settings
             isGridVisible={selectors.isGridVisible}
             gridSize={selectors.gridSize}
             snapToGrid={selectors.snapToGrid}
+            onToggleGrid={() => actions.setIsGridVisible(!selectors.isGridVisible)}
+            onToggleSnap={() => actions.setSnapToGrid(!selectors.snapToGrid)}
+            onGridSizeChange={actions.setGridSize}
+            
+            // Display settings
+            showTooltips={selectors.showTooltips}
             showTableLabels={selectors.showTableLabels}
             showTableSeats={selectors.showTableSeats}
             showTableDimensions={selectors.showTableDimensions}
             showTableStatus={selectors.showTableStatus}
-            
-            // Interaction state
-            interactionMode={selectors.interactionMode}
-            
-            // Interactions
-            interactions={interactions}
-            
-            // Event handlers
-            onTableUpdate={actions.updateTable}
-            onSelectTable={actions.selectTable}
-            onSetHoveredTable={actions.setHoveredTable}
-            onSetInteractionMode={actions.setInteractionMode}
-            onSetDragOffset={actions.setDragOffset}
-            onSetResizeDirection={actions.setResizeDirection}
-            onSetResizeStart={actions.setResizeStart}
-            onSetRotateStart={actions.setRotateStart}
-            onSetInitialRotation={actions.setInitialRotation}
-            onSetPanStart={actions.setPanStart}
-            onSetZoom={actions.setZoom}
-            onSetPanOffset={actions.setPanOffset}
-            onAddToUndoStack={actions.addToUndoStack}
-            canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>}
+            onToggleTooltips={() => actions.setShowTooltips(!selectors.showTooltips)}
+            onToggleLabels={() => actions.setShowTableLabels(!selectors.showTableLabels)}
+            onToggleSeats={() => actions.setShowTableSeats(!selectors.showTableSeats)}
+            onToggleDimensions={() => actions.setShowTableDimensions(!selectors.showTableDimensions)}
+            onToggleStatus={() => actions.setShowTableStatus(!selectors.showTableStatus)}
           />
         </div>
-
-        {/* Side Panel */}
-        <SidePanel
-          // Table state
-          tables={selectors.tables}
-          selectedTable={selectors.selectedTable}
-          onSelectTable={(table: Table) => actions.selectTable(table.id)}
-          onUpdateTable={handleUpdateTableProperty}
-          
-          // Table actions
-          onDeleteTable={handleDeleteTable}
-          onDuplicateTable={handleDuplicateTable}
-          onBringToFront={handleBringToFront}
-          onSendToBack={handleSendToBack}
-          
-          // Panel states
-          isTablesPanelOpen={selectors.isTablesPanelOpen}
-          isControlsPanelOpen={selectors.isControlsPanelOpen}
-          onToggleTablesPanel={actions.setIsTablesPanelOpen}
-          onToggleControlsPanel={actions.setIsControlsPanelOpen}
-          
-          // Grid settings
-          isGridVisible={selectors.isGridVisible}
-          gridSize={selectors.gridSize}
-          snapToGrid={selectors.snapToGrid}
-          onToggleGrid={() => actions.setIsGridVisible(!selectors.isGridVisible)}
-          onToggleSnap={() => actions.setSnapToGrid(!selectors.snapToGrid)}
-          onGridSizeChange={actions.setGridSize}
-          
-          // Display settings
-          showTooltips={selectors.showTooltips}
-          showTableLabels={selectors.showTableLabels}
-          showTableSeats={selectors.showTableSeats}
-          showTableDimensions={selectors.showTableDimensions}
-          showTableStatus={selectors.showTableStatus}
-          onToggleTooltips={() => actions.setShowTooltips(!selectors.showTooltips)}
-          onToggleLabels={() => actions.setShowTableLabels(!selectors.showTableLabels)}
-          onToggleSeats={() => actions.setShowTableSeats(!selectors.showTableSeats)}
-          onToggleDimensions={() => actions.setShowTableDimensions(!selectors.showTableDimensions)}
-          onToggleStatus={() => actions.setShowTableStatus(!selectors.showTableStatus)}
-        />
       </div>
-    </div>
+    </FloorPlanErrorBoundary>
   )
 }
