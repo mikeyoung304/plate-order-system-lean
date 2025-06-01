@@ -150,7 +150,9 @@ function printerSettingsReducer(
           hasUnsavedChanges: hasChanges,
           validationErrors: validationError 
             ? { ...state.form.validationErrors, printerIP: validationError }
-            : { ...state.form.validationErrors, printerIP: undefined }
+            : Object.fromEntries(
+                Object.entries({ ...state.form.validationErrors }).filter(([key]) => key !== 'printerIP')
+              )
         }
       }
     }
