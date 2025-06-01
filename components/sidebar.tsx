@@ -129,7 +129,7 @@ export function Sidebar() {
   ]
 
   const renderNavItems = () => (
-    <ul className='sidebar-nav-container space-y-1 px-2'>
+    <ul className='sidebar-nav-container space-y-2 px-4 py-4'>
       {navItems.map((navItem, index) => (
         <li
           key={navItem.href}
@@ -141,10 +141,10 @@ export function Sidebar() {
                 <Link
                   href={navItem.href}
                   className={cn(
-                    'flex items-center px-3 py-2 rounded-md transition-colors relative group sf-pro-text',
+                    'flex items-center px-4 py-3 rounded-2xl transition-all duration-300 relative group font-display font-medium backdrop-blur-sm',
                     pathname === navItem.href
-                      ? 'bg-white/10 text-white'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-gradient-to-r from-apple-blue/20 to-apple-blue/10 text-white border border-apple-blue/30 shadow-lg'
+                      : 'text-apple-gray-5 hover:bg-white/10 hover:text-white hover:scale-105 hover:shadow-lg'
                   )}
                   onClick={() => isMobile && setIsMobileOpen(false)}
                 >
@@ -153,7 +153,7 @@ export function Sidebar() {
                   {navItem.badge && (
                     <Badge
                       variant='default'
-                      className='ml-auto bg-blue-600 hover:bg-blue-600'
+                      className='ml-auto bg-gradient-to-r from-apple-red to-apple-orange text-white border-0 shadow-lg animate-pulse'
                     >
                       {navItem.badge}
                     </Badge>
@@ -174,17 +174,17 @@ export function Sidebar() {
 
   // In the mobile view
   const userInfoSection = (
-    <div className='p-4 border-t border-gray-800 mt-auto'>
+    <div className='p-6 border-t border-white/10 mt-auto bg-gradient-to-t from-black/20 to-transparent backdrop-blur-sm'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center'>
-          <Avatar className='h-8 w-8 mr-2'>
+          <Avatar className='h-10 w-10 mr-3 ring-2 ring-apple-blue/30 shadow-lg'>
             <AvatarFallback>{userData.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <p className='text-sm font-medium sf-pro-text'>
+            <p className='text-sm font-display font-semibold text-white'>
               {userData.name || 'User'}
             </p>
-            <p className='text-xs text-gray-400 sf-pro-text capitalize'>
+            <p className='text-xs text-apple-gray-5 font-sans capitalize'>
               {userData.role || 'Loading...'}
             </p>
           </div>
@@ -203,10 +203,10 @@ export function Sidebar() {
 
   // In the desktop view
   const desktopUserInfoSection = (
-    <div className='p-4 border-t border-gray-800'>
+    <div className='p-6 border-t border-white/10 bg-gradient-to-t from-black/20 to-transparent backdrop-blur-sm'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center min-w-0'>
-          <Avatar className='h-8 w-8 mr-2 flex-shrink-0'>
+          <Avatar className='h-10 w-10 mr-3 flex-shrink-0 ring-2 ring-apple-blue/30 shadow-lg'>
             <AvatarFallback>{userData.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           {!collapsed && (
@@ -281,26 +281,27 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        'bg-[#1a1a24] border-r border-gray-800 flex flex-col transition-all duration-300',
+        'bg-black/20 backdrop-blur-2xl border-r border-white/10 flex flex-col transition-all duration-500 ease-out shadow-2xl',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
-      <div className='p-4 flex items-center justify-between'>
+      <div className='p-6 flex items-center justify-between border-b border-white/10'>
         <Image
           src='/images/plate-logo-white.png'
           alt='Logo'
-          width={32}
-          height={32}
+          width={36}
+          height={36}
+          className='drop-shadow-lg'
         />
         <Button
           variant='ghost'
           size='icon'
           onClick={() => setCollapsed(!collapsed)}
-          className='text-gray-400 hover:text-white'
+          className='text-apple-gray-5 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300'
         >
           <ChevronLeft
             className={cn(
-              'h-5 w-5 transition-transform',
+              'h-5 w-5 transition-transform duration-300',
               collapsed && 'rotate-180'
             )}
           />

@@ -3,15 +3,11 @@ import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/lib/modassembly/supabase/auth'
+import { RestaurantStateProvider } from '@/lib/state/restaurant-state-context'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { FooterAttribution } from '@/components/footer-attribution'
-import { AuthStatusPanel } from '@/components/debug/auth-status-panel'
 import { SecurityPerformanceInit } from '@/components/security-performance-init'
-import { BetaFeedbackButton } from '@/components/beta-feedback-button'
-import { BetaNavigation } from '@/components/beta-navigation'
-import { DemoRevolution } from '@/components/demo-revolution'
 // Temporarily removed emergency error boundary
 import './globals.css'
 
@@ -39,29 +35,27 @@ export default async function RootLayout({
   // Server-side auth check
   const supabase = await createClient()
   const {
-    data: { session },
+    data: { session: _session },
   } = await supabase.auth.getSession()
 
   // Get current path using headers
   const headersList = await headers()
   const url = headersList.get('x-url') || 'http://localhost'
-  const pathname = new URL(url).pathname
+  const _pathname = new URL(url).pathname
 
   return (
     <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider defaultTheme='dark'>
           <AuthProvider>
-            <div className='min-h-screen flex flex-col'>
-              <main className='flex-grow pb-10'>{children}</main>
-              <FooterAttribution />
-            </div>
-            <DemoRevolution />
-            <BetaFeedbackButton />
-            <BetaNavigation />
-            <Toaster />
-            <AuthStatusPanel />
-            <SecurityPerformanceInit />
+            <RestaurantStateProvider>
+              <div className='min-h-screen flex flex-col'>
+                <main className='flex-grow pb-10'>{children}</main>
+                <FooterAttribution />
+              </div>
+              <Toaster />
+              <SecurityPerformanceInit />
+            </RestaurantStateProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

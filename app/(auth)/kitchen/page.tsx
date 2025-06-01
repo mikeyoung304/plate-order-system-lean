@@ -34,10 +34,9 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import {
   type Order,
-  fetchRecentOrders,
   updateOrderStatus,
 } from '@/lib/modassembly/supabase/database/orders'
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { useKitchenState } from '@/lib/state/restaurant-state-context'
 
 interface TableGroup {
   tableId: string
@@ -56,58 +55,39 @@ type ViewMode = 'table' | 'grid' | 'list'
 type FilterBy = 'all' | 'new' | 'preparing' | 'ready'
 
 export default function KitchenPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  // INTELLIGENT STATE MANAGEMENT - Full integration
+  const {
+    orders,
+    selectedStation,
+    filterStatus,
+    sortBy,
+    connectionStatus,
+    loading,
+    errors,
+    actions,
+  } = useKitchenState()
+  
+  // Local UI state
   const [viewMode, setViewMode] = useState<ViewMode>('table')
-  const [filterBy, setFilterBy] = useState<FilterBy>('all')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { toast } = useToast()
 
-  // Load orders
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await fetchRecentOrders(50) // Get recent orders
-      setOrders(data.filter(order => order.status !== 'delivered')) // Hide completed orders
-    } catch (err) {
-      console.error('Failed to fetch orders:', err)
-      toast({
-        title: 'Error',
-        description: 'Could not load orders. Please refresh.',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [toast])
+  // Filter mapping to intelligent state
+  const filterBy = filterStatus as FilterBy || 'all'
+  const setFilterBy = (filter: FilterBy) => {
+    actions.setFilter(filter === 'all' ? null : filter)
+  }
 
-  // Initial load and real-time subscription
-  useEffect(() => {
-    loadOrders()
-
-    const supabase = createClient()
-    const channel = supabase
-      .channel('kitchen-orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => loadOrders()
-      )
-      .subscribe()
-
-    const interval = setInterval(loadOrders, 10000) // Refresh every 10 seconds
-
-    return () => {
-      supabase.removeChannel(channel)
-      clearInterval(interval)
-    }
-  }, [loadOrders])
+  // Get filtered orders (remove delivered orders)
+  const activeOrders = useMemo(() => {
+    return orders.filter(order => order.status !== 'delivered')
+  }, [orders])
 
   // Group orders by table
   const tableGroups = useMemo(() => {
     const groups = new Map<string, Order[]>()
 
-    orders.forEach(order => {
+    activeOrders.forEach(order => {
       if (!order.table) {
         return
       }
@@ -183,7 +163,7 @@ export default function KitchenPage() {
     return tableGroups.sort(
       (a, b) => a.earliestTime.getTime() - b.earliestTime.getTime()
     )
-  }, [orders])
+  }, [activeOrders])
 
   // Filter orders/tables
   const filteredItems = useMemo(() => {
@@ -201,7 +181,7 @@ export default function KitchenPage() {
         }
       })
     } else {
-      return orders.filter(order => {
+      return activeOrders.filter(order => {
         switch (filterBy) {
           case 'new':
             return order.status === 'new'
@@ -214,7 +194,7 @@ export default function KitchenPage() {
         }
       })
     }
-  }, [viewMode, filterBy, tableGroups, orders])
+  }, [viewMode, filterBy, tableGroups, activeOrders])
 
   // Update order status
   const handleStatusUpdate = async (
@@ -223,7 +203,7 @@ export default function KitchenPage() {
   ) => {
     try {
       await updateOrderStatus(orderId, newStatus)
-      await loadOrders() // Refresh
+      // Intelligent state will auto-refresh via real-time subscriptions
 
       if (soundEnabled) {
         // Simple beep sound
@@ -266,7 +246,7 @@ export default function KitchenPage() {
           .filter(order => order.status !== 'ready')
           .map(order => updateOrderStatus(order.id, 'ready'))
       )
-      await loadOrders()
+      // Real-time state updates automatically
       toast({
         title: 'Table Complete',
         description: `All ${tableOrders.length} orders marked as ready`,
@@ -395,12 +375,12 @@ export default function KitchenPage() {
               <Button
                 variant='outline'
                 size='sm'
-                onClick={loadOrders}
-                disabled={loading}
+                onClick={actions.refresh}
+                disabled={loading.orders}
                 title='Refresh orders'
               >
                 <RefreshCw
-                  className={cn('h-4 w-4', loading && 'animate-spin')}
+                  className={cn('h-4 w-4', loading.orders && 'animate-spin')}
                 />
               </Button>
             </div>
@@ -408,7 +388,7 @@ export default function KitchenPage() {
 
           {/* Content */}
           <ScrollArea className='h-[calc(100vh-250px)]'>
-            {loading && orders.length === 0 ? (
+            {loading.orders && activeOrders.length === 0 ? (
               <div className='grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i} className='animate-pulse'>

@@ -131,19 +131,6 @@ export function PrinterSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-6'>
-        <div className='bg-blue-900/20 border border-blue-800/30 rounded-lg p-4 mb-4'>
-          <div className='flex items-start gap-2'>
-            <Info className='h-5 w-5 text-blue-400 mt-0.5' />
-            <div>
-              <h4 className='text-sm font-medium text-blue-400'>Demo Mode</h4>
-              <p className='text-xs text-blue-300/80 mt-1'>
-                This is a simulation of printer functionality. In a production
-                environment, this would connect to a real Epson Star SP 700
-                printer via a backend service.
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div className='space-y-2'>
           <Label htmlFor='printer-ip'>Printer IP Address</Label>

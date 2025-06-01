@@ -75,6 +75,7 @@ import { SeatNavigation } from '@/components/server/seat-navigation'
 import { useSeatNavigation } from '@/hooks/use-seat-navigation'
 import { useOrderFlowState } from '@/lib/hooks/use-order-flow-state'
 import { useServerPageData } from '@/lib/hooks/use-server-page-data'
+import { useServerState } from '@/lib/state/restaurant-state-context'
 
 type Order = {
   id: string
@@ -86,7 +87,23 @@ type Order = {
 }
 
 export default function ServerPage() {
-  // Consolidated state management
+  // INTELLIGENT STATE MANAGEMENT - Complete integration
+  const {
+    tables,
+    orders,
+    residents,
+    servers,
+    selectedTable,
+    selectedSeat,
+    orderType,
+    currentView,
+    connectionStatus,
+    loading,
+    errors,
+    actions,
+  } = useServerState()
+  
+  // Legacy state hooks (minimal usage for compatibility)
   const orderFlow = useOrderFlowState()
   const data = useServerPageData('default')
   const { toast } = useToast()
@@ -124,7 +141,12 @@ export default function ServerPage() {
   // --- Navigation and Selection Handlers ---
 
   const handleSelectTable = (table: any) => {
+    // Use intelligent state management
+    actions.selectTable(table)
+    
+    // Legacy compatibility
     orderFlow.selectTable(table)
+    
     if (navigator.vibrate) {
       navigator.vibrate(50)
     }
@@ -145,6 +167,7 @@ export default function ServerPage() {
 
   // Reset selection fully when going back
   const handleBackToFloorPlan = () => {
+    actions.reset()
     orderFlow.resetFlow()
     seatNav.resetTable()
   }
@@ -382,7 +405,7 @@ export default function ServerPage() {
                         </p>
                       </div>
                       <div className='p-6'>
-                        {data.loading ? (
+                        {loading.tables ? (
                           <PageLoadingState
                             message='Loading floor plan...'
                             showProgress={false}
@@ -393,7 +416,7 @@ export default function ServerPage() {
                               <FloorPlanView
                                 floorPlanId={_floorPlanId}
                                 onSelectTable={handleSelectTable}
-                                tables={data.tables} // Pass the fetched tables
+                                tables={tables} // Use intelligent state tables
                               />
                             </div>
                           </FloorPlanErrorBoundary>
@@ -583,7 +606,7 @@ export default function ServerPage() {
                                 <SelectValue placeholder='Choose a resident' />
                               </SelectTrigger>
                               <SelectContent>
-                                {data.residents.map((resident: any) => (
+                                {residents.map((resident: any) => (
                                   <SelectItem
                                     key={resident.id}
                                     value={resident.id}
@@ -770,7 +793,7 @@ export default function ServerPage() {
                     </div>
                   </div>
                   <ScrollArea className='flex-1 p-6'>
-                    {data.recentOrders.length === 0 ? (
+                    {orders.length === 0 ? (
                       <div className='flex flex-col items-center justify-center h-full text-center p-4'>
                         <div className='w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center mb-3'>
                           {' '}
@@ -786,7 +809,7 @@ export default function ServerPage() {
                     ) : (
                       <div className='space-y-4'>
                         {/* PERFORMANCE: Replaced AnimatePresence with conditional rendering + CSS transitions */}
-                        {data.recentOrders.map((order: any, index: number) => (
+                        {orders.slice(0, 10).map((order: any, index: number) => (
                           <div
                             key={order.id}
                             className={`order-card-enter stagger-item-${Math.min(index + 1, 5)}`}

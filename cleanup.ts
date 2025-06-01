@@ -8,5 +8,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 )
 
-await supabase.from('tables').delete().eq('label', 999)
-console.log('✅ Cleaned up test table')
+async function cleanup() {
+  await supabase.from('tables').delete().eq('label', 999)
+  console.log('✅ Cleaned up test table')
+}
+
+cleanup().catch(console.error)

@@ -1,38 +1,34 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-// PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
-// Original: Full framer-motion library (~150KB) for dashboard animations
-// Changed to: Pure CSS animations with equivalent functionality
-// Impact: 100% reduction in motion-related bundle size for dashboard
-// Risk: None - same visual effects, better performance
 import { Shell } from '@/components/shell'
 import {
   ProtectedRoute,
-  useHasRole,
   useRole,
+  useIsRole,
 } from '@/lib/modassembly/supabase/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import {
   ArrowRight,
+  BarChart3,
   ChefHat,
   Clock,
+  LayoutGrid,
   Mic,
   Settings,
   Shield,
-  Sparkles,
-  Users,
+  TrendingUp,
+  User,
   Utensils,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 
 function DashboardContent() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const userRole = useRole()
-  const isServer = useHasRole('server')
-  const isCook = useHasRole('cook')
-  const isAdmin = useHasRole('admin')
+  const isServer = useIsRole('server')
+  const isCook = useIsRole('cook')
+  const isAdmin = useIsRole('admin')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,20 +52,11 @@ function DashboardContent() {
       <div className='container py-8 md:py-12 relative z-10'>
         <div className='dashboard-header flex flex-col md:flex-row items-start md:items-center justify-between mb-12'>
           <div>
-            <div className='flex items-center gap-3 mb-2'>
-              <h1 className='text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm'>
-                Welcome to Plate
-              </h1>
-              <Badge
-                variant='secondary'
-                className='bg-blue-600 text-white border-blue-500 animate-pulse'
-              >
-                <Sparkles className='w-3 h-3 mr-1' />
-                BETA
-              </Badge>
-            </div>
+            <h1 className='text-3xl md:text-4xl font-semibold tracking-tight sf-pro-display text-white drop-shadow-sm mb-2'>
+              Plate
+            </h1>
             <p className='mt-2 text-gray-400 sf-pro-text font-light'>
-              Ready to experience the future of restaurant management?
+              Restaurant operations dashboard
             </p>
           </div>
 
@@ -81,136 +68,258 @@ function DashboardContent() {
           </div>
         </div>
 
-        <div className='dashboard-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
-          {isServer && (
-            <div className='dashboard-item dashboard-item-1'>
-              <Link href='/server' className='block h-full'>
-                <Card className='h-full dashboard-card bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl'>
-                  <CardContent className='p-0'>
-                    <div className='p-6 flex flex-col h-full relative'>
-                      {/* Subtle glow effect */}
-                      <div className='absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+        <div className='dashboard-container grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8'>
+          {/* Server Station - Orders & Tables */}
+          <div className='dashboard-item dashboard-item-1'>
+            <Link href='/server' className='block h-full'>
+              <Card className='h-full dashboard-card bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-700 border-blue-500/50 hover:border-blue-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-cyan-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
 
-                      <div className='w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors duration-300 shadow-inner relative'>
-                        <Utensils className='w-6 h-6 text-blue-400 drop-shadow' />
-                        <Badge className='absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 py-0 h-auto min-h-0 scale-75'>
-                          NEW
-                        </Badge>
-                      </div>
-                      <h2 className='text-xl font-medium sf-pro-display mb-2 text-white drop-shadow-sm'>
-                        Server View
-                      </h2>
-                      <p className='text-gray-400 sf-pro-text font-light text-sm'>
-                        Take orders with voice recognition
-                      </p>
-                      <div className='mt-2 flex items-center gap-1 text-xs text-blue-400'>
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <Utensils className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Server Station
+                    </h2>
+                    <p className='text-blue-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Orders & Tables Management
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-blue-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
                         <Mic className='w-3 h-3' />
-                        <span>Voice-powered ordering</span>
+                        <span>Voice Orders</span>
                       </div>
-                      <div className='mt-auto pt-6'>
-                        <div className='flex items-center justify-between'>
-                          <div className='text-blue-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300'>
-                            Start here →
-                          </div>
-                          <div className='w-2 h-2 bg-blue-400 rounded-full animate-pulse'></div>
-                        </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <User className='w-3 h-3' />
+                        <span>Table Management</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          )}
-
-          {isCook && (
-            <div className='dashboard-item dashboard-item-2'>
-              <Link href='/kitchen' className='block h-full'>
-                <Card className='h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl'>
-                  <CardContent className='p-0'>
-                    <div className='p-6 flex flex-col h-full relative'>
-                      {/* Subtle glow effect */}
-                      <div className='absolute -top-20 -right-20 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
-
-                      <div className='w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 group-hover:bg-amber-500/20 transition-colors duration-300 shadow-inner'>
-                        <ChefHat className='w-6 h-6 text-amber-400 drop-shadow' />
-                      </div>
-                      <h2 className='text-xl font-medium sf-pro-display mb-2 text-white drop-shadow-sm'>
-                        Kitchen View
-                      </h2>
-                      <p className='text-gray-400 sf-pro-text font-light text-sm'>
-                        Manage food preparation
-                      </p>
-                      <div className='mt-auto pt-6'>
-                        <div className='text-amber-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300'>
-                          Get started →
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          Access Station →
                         </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
 
-          {(isServer || isCook) && (
-            <div className='dashboard-item dashboard-item-3'>
-              <Link href='/expo' className='block h-full'>
-                <Card className='h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl'>
-                  <CardContent className='p-0'>
-                    <div className='p-6 flex flex-col h-full relative'>
-                      {/* Subtle glow effect */}
-                      <div className='absolute -top-20 -right-20 w-40 h-40 bg-green-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+          {/* Kitchen Display - Order Queue & Timing */}
+          <div className='dashboard-item dashboard-item-2'>
+            <Link href='/kitchen' className='block h-full'>
+              <Card className='h-full bg-gradient-to-br from-green-600 via-green-700 to-emerald-700 border-green-500/50 hover:border-green-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-green-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-emerald-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
 
-                      <div className='w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-4 group-hover:bg-green-500/20 transition-colors duration-300 shadow-inner'>
-                        <Shield className='w-6 h-6 text-green-400 drop-shadow' />
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <ChefHat className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Kitchen Display
+                    </h2>
+                    <p className='text-green-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Order Queue & Timing Analytics
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-green-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <Clock className='w-3 h-3' />
+                        <span>Real-time Queue</span>
                       </div>
-                      <h2 className='text-xl font-medium sf-pro-display mb-2 text-white drop-shadow-sm'>
-                        Expo View
-                      </h2>
-                      <p className='text-gray-400 sf-pro-text font-light text-sm'>
-                        Manage order delivery
-                      </p>
-                      <div className='mt-auto pt-6'>
-                        <div className='text-green-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300'>
-                          Get started →
-                        </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <TrendingUp className='w-3 h-3' />
+                        <span>Timing Analytics</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className='dashboard-item dashboard-item-4'>
-              <Link href='/admin' className='block h-full'>
-                <Card className='h-full bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-gray-700 transition-all duration-300 overflow-hidden group shadow-xl hover:shadow-2xl'>
-                  <CardContent className='p-0'>
-                    <div className='p-6 flex flex-col h-full relative'>
-                      {/* Subtle glow effect */}
-                      <div className='absolute -top-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
-
-                      <div className='w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors duration-300 shadow-inner'>
-                        <Settings className='w-6 h-6 text-purple-400 drop-shadow' />
-                      </div>
-                      <h2 className='text-xl font-medium sf-pro-display mb-2 text-white drop-shadow-sm'>
-                        Admin
-                      </h2>
-                      <p className='text-gray-400 sf-pro-text font-light text-sm'>
-                        Configure system settings
-                      </p>
-                      <div className='mt-auto pt-6'>
-                        <div className='text-purple-400 text-sm sf-pro-text group-hover:translate-x-1 transition-transform duration-300'>
-                          Get started →
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          View Kitchen →
                         </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Expo Station - Quality & Dispatch */}
+          <div className='dashboard-item dashboard-item-3'>
+            <Link href='/expo' className='block h-full'>
+              <Card className='h-full bg-gradient-to-br from-orange-600 via-orange-700 to-amber-700 border-orange-500/50 hover:border-orange-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-orange-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-amber-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <Shield className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Expo Station
+                    </h2>
+                    <p className='text-orange-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Quality Control & Dispatch
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-orange-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <Shield className='w-3 h-3' />
+                        <span>Quality Check</span>
+                      </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <User className='w-3 h-3' />
+                        <span>Delivery Coord</span>
+                      </div>
+                    </div>
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          Access Expo →
+                        </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Floor Plan Manager - Layout & Sections */}
+          <div className='dashboard-item dashboard-item-4'>
+            <Link href='/admin' className='block h-full'>
+              <Card className='h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 border-purple-500/50 hover:border-purple-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-indigo-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <LayoutGrid className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Floor Plan Manager
+                    </h2>
+                    <p className='text-purple-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Layout Design & Section Management
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-purple-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <LayoutGrid className='w-3 h-3' />
+                        <span>Edit Layout</span>
+                      </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <User className='w-3 h-3' />
+                        <span>Assign Sections</span>
+                      </div>
+                    </div>
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          Manage Layout →
+                        </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Cook Station - Prep & Recipes */}
+          <div className='dashboard-item dashboard-item-5'>
+            <Link href='/kitchen/kds' className='block h-full'>
+              <Card className='h-full bg-gradient-to-br from-red-600 via-red-700 to-pink-700 border-red-500/50 hover:border-red-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-red-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-pink-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <ChefHat className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Cook Station
+                    </h2>
+                    <p className='text-red-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Kitchen Display System & Prep Lists
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-red-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <ChefHat className='w-3 h-3' />
+                        <span>Prep Lists</span>
+                      </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <Settings className='w-3 h-3' />
+                        <span>KDS View</span>
+                      </div>
+                    </div>
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          Access KDS →
+                        </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Analytics Hub - Performance & Insights */}
+          <div className='dashboard-item dashboard-item-6'>
+            <Link href='/kitchen/metrics' className='block h-full'>
+              <Card className='h-full bg-gradient-to-br from-violet-600 via-violet-700 to-purple-700 border-violet-500/50 hover:border-violet-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-violet-500/20 hover:scale-[1.02]'>
+                <CardContent className='p-0'>
+                  <div className='p-8 flex flex-col h-full relative'>
+                    {/* Enhanced glow effect */}
+                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+
+                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                      <Shield className='w-8 h-8 text-white drop-shadow-lg' />
+                    </div>
+                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                      Analytics Hub
+                    </h2>
+                    <p className='text-violet-100 sf-pro-text font-light text-sm leading-relaxed'>
+                      Performance Metrics & Business Insights
+                    </p>
+                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-violet-100'>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <Shield className='w-3 h-3' />
+                        <span>Sales Reports</span>
+                      </div>
+                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                        <TrendingUp className='w-3 h-3' />
+                        <span>Forecasting</span>
+                      </div>
+                    </div>
+                    <div className='mt-auto pt-8'>
+                      <div className='flex items-center justify-between'>
+                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                          View Analytics →
+                        </div>
+                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
         </div>
       </div>
     </Shell>

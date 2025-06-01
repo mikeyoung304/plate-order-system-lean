@@ -14,14 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { signIn, signUp } from '@/app/auth/actions'
-import { AboutTrigger } from '@/components/about-dialog'
 import { useAuthFormState } from '@/lib/hooks/use-auth-form-state'
-import { useDemoRevolution } from '@/hooks/use-demo-revolution'
 
 export function AuthForm() {
   const { state, actions } = useAuthFormState()
-  const { startDemo, enableDemoMode } = useDemoRevolution()
-  const router = useRouter()
+  const _router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   // Initialize with the server actions
@@ -61,11 +58,7 @@ export function AuthForm() {
       // Validate and prepare data (includes rate limiting check)
       const validatedInputs = actions.validateAndPrepareData()
 
-      // Handle Guest username -> email conversion
-      let finalEmail = validatedInputs.email
-      if (validatedInputs.email.toLowerCase() === 'guest') {
-        finalEmail = 'guest@demo.plate'
-      }
+      const finalEmail = validatedInputs.email
 
       // Create secure form data
       const secureFormData = new FormData()
@@ -98,39 +91,6 @@ export function AuthForm() {
     }
   }
 
-  const handleGuestDemo = async () => {
-    try {
-      // Clear any rate limiting for demo access
-      actions.resetRateLimit()
-      actions.setStatus('loading')
-
-      // Set working guest credentials that auto-fill the form
-      actions.setEmail('guest@restaurant.plate')
-      actions.setPassword('guest123')
-
-      // Add a small delay to let user see the auto-fill happen
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Validate (includes rate limiting check)
-      actions.validateAndPrepareData()
-
-      // Create guest form data with working credentials
-      const secureFormData = new FormData()
-      secureFormData.append('email', 'guest@restaurant.plate')
-      secureFormData.append('password', 'guest123')
-
-      startTransition(() => {
-        signInAction(secureFormData)
-      })
-    } catch (error) {
-      actions.incrementAttempts()
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to access demo. Please try again.'
-      actions.setStatus('error', errorMessage)
-    }
-  }
 
   const isLoading = state.status === 'loading' || isPending
 
@@ -160,7 +120,7 @@ export function AuthForm() {
             id='email'
             name='email'
             type='text'
-            placeholder='guest@restaurant.plate (or click Try Demo)'
+            placeholder='Enter your email address'
             value={state.email}
             onChange={e => actions.setEmail(e.target.value)}
             disabled={state.isRateLimited || isLoading}
@@ -176,7 +136,7 @@ export function AuthForm() {
             id='password'
             name='password'
             type='password'
-            placeholder='guest123 (or click Try Demo)'
+            placeholder='Enter your password'
             value={state.password}
             onChange={e => actions.setPassword(e.target.value)}
             disabled={state.isRateLimited || isLoading}
@@ -243,21 +203,6 @@ export function AuthForm() {
             : 'Need an account? Sign Up'}
         </Button>
 
-        <Button
-          variant='secondary'
-          onClick={() => {
-            enableDemoMode()
-            handleGuestDemo()
-          }}
-          className='w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white'
-          disabled={state.isRateLimited || isLoading}
-        >
-          {isLoading ? 'Processing...' : '🚀 Restaurant Revolution Demo'}
-        </Button>
-
-        <div className='flex items-center justify-center pt-4'>
-          <AboutTrigger />
-        </div>
       </div>
 
       {state.isRateLimited && (
