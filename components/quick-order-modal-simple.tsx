@@ -51,7 +51,7 @@ type SeatSuggestion = {
 // QUICK ORDER STATE - all related state in one place
 interface QuickOrderState {
   // Modal workflow phases
-  phase: 'loading' | 'resident_selection' | 'order_selection' | 'processing' | 'error'
+  phase: 'loading' | 'seat_selection' | 'resident_selection' | 'order_selection' | 'processing' | 'error'
   
   // Data state
   seatSuggestions: SeatSuggestion[]
@@ -82,6 +82,7 @@ type QuickOrderAction =
   | { type: 'SUGGESTIONS_FAILED'; error: string }
   | { type: 'SPECIAL_LOADED'; special: AvailableSpecial | null }
   | { type: 'SPECIAL_FAILED'; error: string }
+  | { type: 'SELECT_SEAT'; seatNumber: number }
   | { type: 'SELECT_RESIDENT'; resident: SeatSuggestion }
   | { type: 'CLEAR_RESIDENT_SELECTION' }
   | { type: 'SHOW_RESIDENT_SEARCH' }
@@ -161,7 +162,7 @@ function quickOrderReducer(state: QuickOrderState, action: QuickOrderAction): Qu
       
       return {
         ...state,
-        phase: hasSuggestionsCompleted ? 'resident_selection' : state.phase,
+        phase: hasSuggestionsCompleted ? 'resident_selection' : 'seat_selection',
         todaysSpecial: action.special,
         loading: {
           ...state.loading,
@@ -169,6 +170,12 @@ function quickOrderReducer(state: QuickOrderState, action: QuickOrderAction): Qu
         }
       }
     }
+    
+    case 'SELECT_SEAT':
+      return {
+        ...state,
+        phase: 'resident_selection'
+      }
     
     case 'SPECIAL_FAILED':
       return {
@@ -279,6 +286,7 @@ type QuickOrderModalProps = {
     specialId?: string
   }) => void
   onShowVoicePanel: () => void
+  onSeatSelect?: (seatNumber: number) => void
 }
 
 /**
@@ -292,7 +300,8 @@ export function QuickOrderModalSimple({
   seatNumber, 
   onClose, 
   onOrderPlaced, 
-  onShowVoicePanel 
+  onShowVoicePanel,
+  onSeatSelect
 }: QuickOrderModalProps) {
   const [state, dispatch] = useReducer(quickOrderReducer, initialState)
 
@@ -376,16 +385,40 @@ export function QuickOrderModalSimple({
     })
   }, [table, seatNumber, state.selectedResident, onOrderPlaced])
 
+  // Handle seat selection when provided
+  const handleSeatSelect = useCallback((selectedSeat: number) => {
+    if (onSeatSelect) {
+      onSeatSelect(selectedSeat)
+    }
+    dispatch({ type: 'SELECT_SEAT', seatNumber: selectedSeat })
+    if (table) {
+      loadSeatSuggestions(table.id, selectedSeat)
+    }
+  }, [onSeatSelect, table, loadSeatSuggestions])
+
   // Initial data loading
   useEffect(() => {
-    if (table && seatNumber) {
-      dispatch({ type: 'START_LOADING' })
-      loadSeatSuggestions(table.id, seatNumber)
-      loadTodaysSpecial()
+    if (table) {
+      if (seatNumber) {
+        // Seat already selected, go straight to loading
+        dispatch({ type: 'START_LOADING' })
+        loadSeatSuggestions(table.id, seatNumber)
+        loadTodaysSpecial()
+      } else if (table.seats === 1) {
+        // Single seat table, auto-select seat 1
+        dispatch({ type: 'START_LOADING' })
+        loadSeatSuggestions(table.id, 1)
+        loadTodaysSpecial()
+        if (onSeatSelect) onSeatSelect(1)
+      } else {
+        // Multi-seat table, need seat selection
+        dispatch({ type: 'START_LOADING' })
+        loadTodaysSpecial()
+      }
     }
-  }, [table, seatNumber, loadSeatSuggestions, loadTodaysSpecial])
+  }, [table, seatNumber, onSeatSelect, loadSeatSuggestions, loadTodaysSpecial])
 
-  if (!table || !seatNumber) return null
+  if (!table) return null
 
   return (
     <AnimatePresence>
@@ -441,6 +474,27 @@ export function QuickOrderModalSimple({
               <Button onClick={() => dispatch({ type: 'RESET_ERROR' })}>
                 Try Again
               </Button>
+            </div>
+          )}
+
+          {/* Seat Selection Phase */}
+          {state.phase === 'seat_selection' && !seatNumber && table.seats > 1 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Select a Seat</h3>
+              <p className="text-gray-600 mb-4">Table {table.label} - Choose which seat</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: table.seats }, (_, i) => i + 1).map((seat) => (
+                  <Button
+                    key={seat}
+                    variant="outline"
+                    className="h-16 text-lg font-semibold hover:bg-blue-50 hover:border-blue-300"
+                    onClick={() => handleSeatSelect(seat)}
+                  >
+                    Seat {seat}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
 

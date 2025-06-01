@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/server'
 
-export type AppRole = 'admin' | 'server' | 'cook' | 'resident'
+export type AppRole = 'admin' | 'server' | 'cook' | 'resident' | 'demo'
 
 /**
  * Gets the current user's role from their profile
@@ -14,6 +14,11 @@ export async function getUserRole(): Promise<AppRole | null> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) {
     return null
+  }
+
+  // Check if this is the demo user
+  if (session.user.email === 'guest@demo.plate') {
+    return 'demo'
   }
 
   const { data: profile } = await supabase
@@ -77,4 +82,18 @@ export async function isCook(): Promise<boolean> {
  */
 export async function isResident(): Promise<boolean> {
   return await hasRole('resident')
+}
+
+/**
+ * Convenience function to check if user is demo
+ */
+export async function isDemo(): Promise<boolean> {
+  return await hasRole('demo')
+}
+
+/**
+ * Convenience function to check if user is admin or demo (for floor plan access)
+ */
+export async function canEditFloorPlan(): Promise<boolean> {
+  return await hasRole(['admin', 'demo'])
 }
