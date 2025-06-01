@@ -8,12 +8,17 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
   // Check if required environment variables are present
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
     console.error(
-      'Missing required Supabase environment variables in middleware'
+      'Missing required Supabase environment variables in middleware:',
+      {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseAnonKey,
+        nodeEnv: process.env.NODE_ENV,
+      }
     )
     // Allow access to test-env endpoint for debugging
     if (request.nextUrl.pathname === '/api/test-env') {
@@ -37,10 +42,10 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.set = function (
       name: string,
       value: string,
-      options?: any
+      _options?: any
     ) {
       return originalSetAll.call(this, name, value, {
-        ...options,
+        ..._options,
         sameSite: 'lax',
         secure: true,
         httpOnly: true,
@@ -51,28 +56,24 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
       },
-    }
-  )
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        )
+        supabaseResponse = NextResponse.next({
+          request,
+        })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        )
+      },
+    },
+  })
 
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
@@ -82,7 +83,18 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser()
+
+  // Debug logging for Vercel production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('Middleware auth check:', {
+      path: request.nextUrl.pathname,
+      hasUser: !!user,
+      authError: authError?.message,
+      timestamp: new Date().toISOString(),
+    })
+  }
 
   // Define protected routes
   const isProtectedRoute =

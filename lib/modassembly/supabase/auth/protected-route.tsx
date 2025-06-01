@@ -15,7 +15,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({
   children,
   roles,
-  redirectTo = '/dashboard',
+  redirectTo = '/',
   fallback,
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth()

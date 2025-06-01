@@ -3,8 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { Session, User } from '@supabase/supabase-js'
-import type { AppRole } from './roles'
-import { Profile, UserRole } from '@/types/database'
+import { UserRole } from '@/types/database'
 
 export type UserProfile = {
   user_id: string
@@ -108,6 +107,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Auth state change:', {
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+        })
+      }
+
       setSession(session)
       setUser(session?.user || null)
 
@@ -122,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const value: AuthContextType = {
