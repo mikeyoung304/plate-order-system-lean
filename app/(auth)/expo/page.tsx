@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Shell } from '@/components/shell'
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth'
 import { PageHeaderWithTime } from '@/components/page-header'
@@ -21,6 +21,11 @@ import {
   ChefHat,
   Clock,
   Utensils,
+  Timer,
+  Users,
+  Package,
+  TrendingUp,
+  RefreshCw,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -112,27 +117,150 @@ export default function ExpoPage() {
     }
   }
 
-  // Filter orders by status
+  // Mark entire table as delivered for efficiency
+  const markTableAsDelivered = async (tableOrders: Order[]) => {
+    try {
+      // Optimistically update the UI
+      setOrders(prev =>
+        prev.map(order =>
+          tableOrders.find(to => to.id === order.id)
+            ? { ...order, status: 'delivered' as const }
+            : order
+        )
+      )
+
+      await Promise.all(
+        tableOrders.map(order => updateOrderStatus(order.id, 'delivered'))
+      )
+
+      toast({
+        title: 'Table delivered',
+        description: `All ${tableOrders.length} orders from ${tableOrders[0].table} delivered`,
+        duration: 3000,
+      })
+    } catch (error) {
+      console.error('Error marking table as delivered:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to mark table as delivered',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Filter orders by status with enhanced grouping
   const readyOrders = orders.filter(order => order.status === 'ready')
   const inProgressOrders = orders.filter(
     order => order.status === 'in_progress'
   )
 
+  // Group ready orders by table for efficient delivery coordination
+  const readyTableGroups = useMemo(() => {
+    const groups = new Map<string, Order[]>()
+    readyOrders.forEach(order => {
+      if (!order.table) return
+      const key = order.table
+      if (!groups.has(key)) {
+        groups.set(key, [])
+      }
+      groups.get(key)!.push(order)
+    })
+
+    return Array.from(groups.entries()).map(([tableId, tableOrders]) => {
+      const seatCount = new Set(tableOrders.map(o => o.seat)).size
+      const totalItems = tableOrders.reduce((sum, o) => sum + (o.items?.length || 0), 0)
+      const avgWaitTime = tableOrders.reduce((sum, o) => {
+        const elapsed = (Date.now() - new Date(o.created_at).getTime()) / 1000 / 60
+        return sum + elapsed
+      }, 0) / tableOrders.length
+
+      return {
+        tableId,
+        tableLabel: tableId,
+        orders: tableOrders.sort((a, b) => (a.seat || 0) - (b.seat || 0)),
+        seatCount,
+        totalItems,
+        avgWaitTime: Math.round(avgWaitTime),
+        isUrgent: avgWaitTime > 20, // Over 20 minutes is urgent
+      }
+    }).sort((a, b) => b.avgWaitTime - a.avgWaitTime) // Prioritize by wait time
+  }, [readyOrders])
+
+  // Delivery efficiency metrics
+  const deliveryMetrics = useMemo(() => {
+    const totalReadyOrders = readyOrders.length
+    const urgentOrders = readyOrders.filter(order => {
+      const elapsed = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
+      return elapsed > 20
+    }).length
+    const avgWaitTime = readyOrders.length > 0 ? readyOrders.reduce((sum, order) => {
+      const elapsed = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
+      return sum + elapsed
+    }, 0) / readyOrders.length : 0
+
+    return {
+      totalReady: totalReadyOrders,
+      urgent: urgentOrders,
+      avgWaitTime: Math.round(avgWaitTime),
+      tablesReady: readyTableGroups.length,
+    }
+  }, [readyOrders, readyTableGroups])
+
   return (
-    <ProtectedRoute roles={['server', 'cook']}>
+    <ProtectedRoute roles={['admin', 'server', 'cook']}>
       <Shell>
         <div className='container py-6'>
           <PageHeaderWithTime
-            title='Expo View'
-            description='Manage order delivery to tables'
+            title='Expo Station'
+            description='Quality Control & Delivery Coordination'
           />
+
+          {/* Delivery Metrics Dashboard */}
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-6'>
+            <Card className='shadow-sm'>
+              <CardContent className='flex items-center justify-between p-4'>
+                <div>
+                  <p className='text-sm font-medium text-muted-foreground'>Tables Ready</p>
+                  <p className='text-2xl font-bold'>{deliveryMetrics.tablesReady}</p>
+                </div>
+                <Package className='h-8 w-8 text-emerald-500' />
+              </CardContent>
+            </Card>
+            <Card className='shadow-sm'>
+              <CardContent className='flex items-center justify-between p-4'>
+                <div>
+                  <p className='text-sm font-medium text-muted-foreground'>Orders Ready</p>
+                  <p className='text-2xl font-bold'>{deliveryMetrics.totalReady}</p>
+                </div>
+                <CheckCircle className='h-8 w-8 text-emerald-500' />
+              </CardContent>
+            </Card>
+            <Card className='shadow-sm'>
+              <CardContent className='flex items-center justify-between p-4'>
+                <div>
+                  <p className='text-sm font-medium text-muted-foreground'>Urgent</p>
+                  <p className='text-2xl font-bold text-red-600'>{deliveryMetrics.urgent}</p>
+                </div>
+                <AlertCircle className='h-8 w-8 text-red-500' />
+              </CardContent>
+            </Card>
+            <Card className='shadow-sm'>
+              <CardContent className='flex items-center justify-between p-4'>
+                <div>
+                  <p className='text-sm font-medium text-muted-foreground'>Avg Wait</p>
+                  <p className='text-2xl font-bold'>{deliveryMetrics.avgWaitTime}m</p>
+                </div>
+                <Timer className='h-8 w-8 text-amber-500' />
+              </CardContent>
+            </Card>
+          </div>
 
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             <div>
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-3 h-3 bg-emerald-500 rounded-full'></div>
                 <h2 className='text-xl font-semibold'>
-                  Ready for Service ({readyOrders.length})
+                  Ready for Service ({readyTableGroups.length} tables, {readyOrders.length} orders)
                 </h2>
               </div>
 
@@ -146,7 +274,7 @@ export default function ExpoPage() {
                     </Card>
                   ))}
                 </div>
-              ) : readyOrders.length === 0 ? (
+              ) : readyTableGroups.length === 0 ? (
                 <Card className='shadow-sm'>
                   <CardContent className='flex flex-col items-center justify-center p-12 text-center'>
                     <div className='rounded-full bg-secondary/50 p-4 mb-4'>
@@ -160,58 +288,98 @@ export default function ExpoPage() {
                 </Card>
               ) : (
                 <div className='space-y-4'>
-                  {readyOrders.map((order, index) => (
+                  {readyTableGroups.map((tableGroup, index) => (
                     <Card
-                      key={order.id}
-                      className={`expo-order expo-order-ready shadow-sm hover:shadow-md transition-shadow border-2 border-emerald-500 stagger-item-${Math.min(index + 1, 10)}`}
+                      key={tableGroup.tableId}
+                      className={`expo-order expo-order-ready shadow-sm hover:shadow-md transition-shadow border-2 ${
+                        tableGroup.isUrgent ? 'border-red-500 bg-red-50' : 'border-emerald-500'
+                      } stagger-item-${Math.min(index + 1, 10)}`}
                       style={{
-                        animation: 'pulse-green 2s infinite',
+                        animation: tableGroup.isUrgent ? 'pulse-red 2s infinite' : 'pulse-green 2s infinite',
                       }}
                     >
                       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                         <div className='space-y-1'>
                           <div className='flex items-center gap-2'>
-                            <CardTitle>{order.table}</CardTitle>
+                            <CardTitle className='text-xl'>{tableGroup.tableLabel}</CardTitle>
                             <Badge variant='outline' className='text-xs'>
-                              Seat {order.seat}
+                              <Users className='h-3 w-3 mr-1' />
+                              {tableGroup.seatCount} seats
                             </Badge>
+                            <Badge variant='outline' className='text-xs'>
+                              <Package className='h-3 w-3 mr-1' />
+                              {tableGroup.totalItems} items
+                            </Badge>
+                            {tableGroup.isUrgent && (
+                              <Badge variant='destructive' className='text-xs'>
+                                <AlertCircle className='h-3 w-3 mr-1' />
+                                URGENT
+                              </Badge>
+                            )}
                           </div>
-                          <CardDescription>Order {order.id}</CardDescription>
+                          <CardDescription>
+                            {tableGroup.orders.length} orders ready for delivery
+                          </CardDescription>
                         </div>
                         <div className='flex items-center gap-1 text-sm font-medium'>
-                          <Clock className='h-4 w-4 text-muted-foreground' />
-                          {new Date(order.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          <Timer className={`h-4 w-4 ${tableGroup.isUrgent ? 'text-red-500' : 'text-muted-foreground'}`} />
+                          <span className={tableGroup.isUrgent ? 'text-red-600 font-bold' : ''}>
+                            {tableGroup.avgWaitTime}m avg
+                          </span>
                         </div>
                       </CardHeader>
 
                       <CardContent>
-                        <ScrollArea className='h-[180px] pr-4'>
-                          <ul className='space-y-2'>
-                            {order.items.map((item, index) => (
-                              <li key={index} className='space-y-1'>
-                                <div className='flex items-center gap-2'>
-                                  <div className='w-2 h-2 rounded-full bg-emerald-500' />
-                                  <p className='font-medium'>{item}</p>
+                        <ScrollArea className='h-[220px] pr-4'>
+                          <div className='space-y-3'>
+                            {tableGroup.orders.map((order) => (
+                              <div key={order.id} className='p-3 bg-emerald-50 rounded-lg border border-emerald-200'>
+                                <div className='flex items-center justify-between mb-2'>
+                                  <Badge variant='secondary' className='text-xs'>
+                                    Seat {order.seat}
+                                  </Badge>
+                                  <span className='text-xs text-muted-foreground'>
+                                    {new Date(order.created_at).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
                                 </div>
-                                {index < order.items.length - 1 && (
-                                  <Separator className='mt-2' />
-                                )}
-                              </li>
+                                <ul className='space-y-1'>
+                                  {order.items.map((item, idx) => (
+                                    <li key={idx} className='text-sm flex items-center gap-2'>
+                                      <div className='w-1.5 h-1.5 rounded-full bg-emerald-500' />
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </ScrollArea>
                       </CardContent>
 
-                      <CardFooter>
+                      <CardFooter className='flex gap-2'>
                         <Button
-                          onClick={() => markAsDelivered(order.id)}
-                          className='w-full gap-2'
+                          onClick={() => markTableAsDelivered(tableGroup.orders)}
+                          className='flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700'
                         >
                           <CheckCircle className='h-4 w-4' />
-                          Mark as Delivered
+                          Deliver Entire Table
+                        </Button>
+                        <Button
+                          variant='outline'
+                          onClick={() => {
+                            // Individual order management - show details
+                            toast({
+                              title: 'Individual Order Management',
+                              description: 'Click individual orders above to manage separately',
+                            })
+                          }}
+                          className='gap-2'
+                        >
+                          <Package className='h-4 w-4' />
+                          Manage Items
                         </Button>
                       </CardFooter>
                     </Card>
