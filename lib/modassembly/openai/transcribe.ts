@@ -5,6 +5,11 @@
 
 import OpenAI from 'openai'
 
+// Type definitions for OpenAI API responses
+interface OpenAITranscriptionResponse {
+  text: string
+}
+
 // Lazy initialization to avoid build-time errors
 let openai: OpenAI | null = null
 
@@ -22,7 +27,7 @@ function getOpenAIClient(): OpenAI {
 
 export async function transcribeAudioFile(
   audioBlob: Blob,
-  filename: string = 'audio.webm'
+  _filename: string = 'audio.webm'
 ): Promise<{ items: string[]; transcription: string }> {
   try {
     // Determine the correct file extension and type for OpenAI
@@ -63,7 +68,7 @@ export async function transcribeAudioFile(
     const transcriptionText =
       typeof transcription === 'string'
         ? transcription
-        : (transcription as any).text
+        : (transcription as OpenAITranscriptionResponse).text
 
     if (!transcriptionText) {
       console.error('No transcription text received')
