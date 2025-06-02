@@ -1,4 +1,4 @@
-const nextJest = require('next/jest')
+import nextJest from 'next/jest.js'
 
 /** @type {import('jest').Config} */
 const createJestConfig = nextJest({
@@ -31,10 +31,10 @@ const config = {
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(config)
+export default createJestConfig(config)
