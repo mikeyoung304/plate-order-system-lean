@@ -166,37 +166,49 @@ export default function ExpoPage() {
       groups.get(key)!.push(order)
     })
 
-    return Array.from(groups.entries()).map(([tableId, tableOrders]) => {
-      const seatCount = new Set(tableOrders.map(o => o.seat)).size
-      const totalItems = tableOrders.reduce((sum, o) => sum + (o.items?.length || 0), 0)
-      const avgWaitTime = tableOrders.reduce((sum, o) => {
-        const elapsed = (Date.now() - new Date(o.created_at).getTime()) / 1000 / 60
-        return sum + elapsed
-      }, 0) / tableOrders.length
+    return Array.from(groups.entries())
+      .map(([tableId, tableOrders]) => {
+        const seatCount = new Set(tableOrders.map(o => o.seat)).size
+        const totalItems = tableOrders.reduce(
+          (sum, o) => sum + (o.items?.length || 0),
+          0
+        )
+        const avgWaitTime =
+          tableOrders.reduce((sum, o) => {
+            const elapsed =
+              (Date.now() - new Date(o.created_at).getTime()) / 1000 / 60
+            return sum + elapsed
+          }, 0) / tableOrders.length
 
-      return {
-        tableId,
-        tableLabel: tableId,
-        orders: tableOrders.sort((a, b) => (a.seat || 0) - (b.seat || 0)),
-        seatCount,
-        totalItems,
-        avgWaitTime: Math.round(avgWaitTime),
-        isUrgent: avgWaitTime > 20, // Over 20 minutes is urgent
-      }
-    }).sort((a, b) => b.avgWaitTime - a.avgWaitTime) // Prioritize by wait time
+        return {
+          tableId,
+          tableLabel: tableId,
+          orders: tableOrders.sort((a, b) => (a.seat || 0) - (b.seat || 0)),
+          seatCount,
+          totalItems,
+          avgWaitTime: Math.round(avgWaitTime),
+          isUrgent: avgWaitTime > 20, // Over 20 minutes is urgent
+        }
+      })
+      .sort((a, b) => b.avgWaitTime - a.avgWaitTime) // Prioritize by wait time
   }, [readyOrders])
 
   // Delivery efficiency metrics
   const deliveryMetrics = useMemo(() => {
     const totalReadyOrders = readyOrders.length
     const urgentOrders = readyOrders.filter(order => {
-      const elapsed = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
+      const elapsed =
+        (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
       return elapsed > 20
     }).length
-    const avgWaitTime = readyOrders.length > 0 ? readyOrders.reduce((sum, order) => {
-      const elapsed = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
-      return sum + elapsed
-    }, 0) / readyOrders.length : 0
+    const avgWaitTime =
+      readyOrders.length > 0
+        ? readyOrders.reduce((sum, order) => {
+            const elapsed =
+              (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
+            return sum + elapsed
+          }, 0) / readyOrders.length
+        : 0
 
     return {
       totalReady: totalReadyOrders,
@@ -220,8 +232,12 @@ export default function ExpoPage() {
             <Card className='shadow-sm'>
               <CardContent className='flex items-center justify-between p-4'>
                 <div>
-                  <p className='text-sm font-medium text-muted-foreground'>Tables Ready</p>
-                  <p className='text-2xl font-bold'>{deliveryMetrics.tablesReady}</p>
+                  <p className='text-sm font-medium text-muted-foreground'>
+                    Tables Ready
+                  </p>
+                  <p className='text-2xl font-bold'>
+                    {deliveryMetrics.tablesReady}
+                  </p>
                 </div>
                 <Package className='h-8 w-8 text-emerald-500' />
               </CardContent>
@@ -229,8 +245,12 @@ export default function ExpoPage() {
             <Card className='shadow-sm'>
               <CardContent className='flex items-center justify-between p-4'>
                 <div>
-                  <p className='text-sm font-medium text-muted-foreground'>Orders Ready</p>
-                  <p className='text-2xl font-bold'>{deliveryMetrics.totalReady}</p>
+                  <p className='text-sm font-medium text-muted-foreground'>
+                    Orders Ready
+                  </p>
+                  <p className='text-2xl font-bold'>
+                    {deliveryMetrics.totalReady}
+                  </p>
                 </div>
                 <CheckCircle className='h-8 w-8 text-emerald-500' />
               </CardContent>
@@ -238,8 +258,12 @@ export default function ExpoPage() {
             <Card className='shadow-sm'>
               <CardContent className='flex items-center justify-between p-4'>
                 <div>
-                  <p className='text-sm font-medium text-muted-foreground'>Urgent</p>
-                  <p className='text-2xl font-bold text-red-600'>{deliveryMetrics.urgent}</p>
+                  <p className='text-sm font-medium text-muted-foreground'>
+                    Urgent
+                  </p>
+                  <p className='text-2xl font-bold text-red-600'>
+                    {deliveryMetrics.urgent}
+                  </p>
                 </div>
                 <AlertCircle className='h-8 w-8 text-red-500' />
               </CardContent>
@@ -247,8 +271,12 @@ export default function ExpoPage() {
             <Card className='shadow-sm'>
               <CardContent className='flex items-center justify-between p-4'>
                 <div>
-                  <p className='text-sm font-medium text-muted-foreground'>Avg Wait</p>
-                  <p className='text-2xl font-bold'>{deliveryMetrics.avgWaitTime}m</p>
+                  <p className='text-sm font-medium text-muted-foreground'>
+                    Avg Wait
+                  </p>
+                  <p className='text-2xl font-bold'>
+                    {deliveryMetrics.avgWaitTime}m
+                  </p>
                 </div>
                 <Timer className='h-8 w-8 text-amber-500' />
               </CardContent>
@@ -260,7 +288,8 @@ export default function ExpoPage() {
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-3 h-3 bg-emerald-500 rounded-full'></div>
                 <h2 className='text-xl font-semibold'>
-                  Ready for Service ({readyTableGroups.length} tables, {readyOrders.length} orders)
+                  Ready for Service ({readyTableGroups.length} tables,{' '}
+                  {readyOrders.length} orders)
                 </h2>
               </div>
 
@@ -292,16 +321,22 @@ export default function ExpoPage() {
                     <Card
                       key={tableGroup.tableId}
                       className={`expo-order expo-order-ready shadow-sm hover:shadow-md transition-shadow border-2 ${
-                        tableGroup.isUrgent ? 'border-red-500 bg-red-50' : 'border-emerald-500'
+                        tableGroup.isUrgent
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-emerald-500'
                       } stagger-item-${Math.min(index + 1, 10)}`}
                       style={{
-                        animation: tableGroup.isUrgent ? 'pulse-red 2s infinite' : 'pulse-green 2s infinite',
+                        animation: tableGroup.isUrgent
+                          ? 'pulse-red 2s infinite'
+                          : 'pulse-green 2s infinite',
                       }}
                     >
                       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                         <div className='space-y-1'>
                           <div className='flex items-center gap-2'>
-                            <CardTitle className='text-xl'>{tableGroup.tableLabel}</CardTitle>
+                            <CardTitle className='text-xl'>
+                              {tableGroup.tableLabel}
+                            </CardTitle>
                             <Badge variant='outline' className='text-xs'>
                               <Users className='h-3 w-3 mr-1' />
                               {tableGroup.seatCount} seats
@@ -322,8 +357,16 @@ export default function ExpoPage() {
                           </CardDescription>
                         </div>
                         <div className='flex items-center gap-1 text-sm font-medium'>
-                          <Timer className={`h-4 w-4 ${tableGroup.isUrgent ? 'text-red-500' : 'text-muted-foreground'}`} />
-                          <span className={tableGroup.isUrgent ? 'text-red-600 font-bold' : ''}>
+                          <Timer
+                            className={`h-4 w-4 ${tableGroup.isUrgent ? 'text-red-500' : 'text-muted-foreground'}`}
+                          />
+                          <span
+                            className={
+                              tableGroup.isUrgent
+                                ? 'text-red-600 font-bold'
+                                : ''
+                            }
+                          >
                             {tableGroup.avgWaitTime}m avg
                           </span>
                         </div>
@@ -332,14 +375,22 @@ export default function ExpoPage() {
                       <CardContent>
                         <ScrollArea className='h-[220px] pr-4'>
                           <div className='space-y-3'>
-                            {tableGroup.orders.map((order) => (
-                              <div key={order.id} className='p-3 bg-emerald-50 rounded-lg border border-emerald-200'>
+                            {tableGroup.orders.map(order => (
+                              <div
+                                key={order.id}
+                                className='p-3 bg-emerald-50 rounded-lg border border-emerald-200'
+                              >
                                 <div className='flex items-center justify-between mb-2'>
-                                  <Badge variant='secondary' className='text-xs'>
+                                  <Badge
+                                    variant='secondary'
+                                    className='text-xs'
+                                  >
                                     Seat {order.seat}
                                   </Badge>
                                   <span className='text-xs text-muted-foreground'>
-                                    {new Date(order.created_at).toLocaleTimeString([], {
+                                    {new Date(
+                                      order.created_at
+                                    ).toLocaleTimeString([], {
                                       hour: '2-digit',
                                       minute: '2-digit',
                                     })}
@@ -347,7 +398,10 @@ export default function ExpoPage() {
                                 </div>
                                 <ul className='space-y-1'>
                                   {order.items.map((item, idx) => (
-                                    <li key={idx} className='text-sm flex items-center gap-2'>
+                                    <li
+                                      key={idx}
+                                      className='text-sm flex items-center gap-2'
+                                    >
                                       <div className='w-1.5 h-1.5 rounded-full bg-emerald-500' />
                                       {item}
                                     </li>
@@ -361,7 +415,9 @@ export default function ExpoPage() {
 
                       <CardFooter className='flex gap-2'>
                         <Button
-                          onClick={() => markTableAsDelivered(tableGroup.orders)}
+                          onClick={() =>
+                            markTableAsDelivered(tableGroup.orders)
+                          }
                           className='flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700'
                         >
                           <CheckCircle className='h-4 w-4' />
@@ -373,7 +429,8 @@ export default function ExpoPage() {
                             // Individual order management - show details
                             toast({
                               title: 'Individual Order Management',
-                              description: 'Click individual orders above to manage separately',
+                              description:
+                                'Click individual orders above to manage separately',
                             })
                           }}
                           className='gap-2'

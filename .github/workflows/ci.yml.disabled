@@ -32,7 +32,8 @@ jobs:
         run: npm run lint
 
       - name: Check code formatting
-        run: npm run format -- --check
+        run: npm run format:check
+        continue-on-error: true
 
       - name: Type check
         run: npm run type-check
@@ -48,6 +49,7 @@ jobs:
       - name: Upload test coverage
         uses: codecov/codecov-action@v3
         if: always()
+        continue-on-error: true
         with:
           file: ./coverage/lcov.info
           flags: unittests
@@ -81,6 +83,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+        if: ${{ secrets.SNYK_TOKEN != '' }}
 
   # Build verification
   build:

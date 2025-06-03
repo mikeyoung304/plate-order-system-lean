@@ -6,15 +6,15 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
 import { Security } from '@/lib/security'
 import { measureApiCall } from '@/lib/performance-utils'
-import { 
-  Database, 
+import {
+  Database,
   Order as DatabaseOrder,
-  OrderFilters, 
-  OrderInsert, 
-  OrderStatus, 
+  OrderFilters,
+  OrderInsert,
+  OrderStatus,
   OrderType,
   OrderUpdate,
-  OrderWithJoins 
+  OrderWithJoins,
 } from '@/types/database'
 
 interface OrderRow extends DatabaseOrder {
@@ -70,7 +70,9 @@ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
   })
 }
 
-export async function createOrder(orderData: Omit<OrderInsert, 'id' | 'created_at' | 'updated_at' | 'status'>): Promise<Order> {
+export async function createOrder(
+  orderData: Omit<OrderInsert, 'id' | 'created_at' | 'updated_at' | 'status'>
+): Promise<Order> {
   return measureApiCall('create_order', async () => {
     // Security: Comprehensive validation of order data
     const validation = Security.validate.validateOrderData(orderData)

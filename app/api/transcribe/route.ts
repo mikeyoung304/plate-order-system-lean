@@ -151,7 +151,8 @@ export async function POST(request: NextRequest) {
 
       const errorResponse: TranscribeResponse = {
         success: false,
-        error: 'Audio transcription failed. Please try again with a clearer recording.',
+        error:
+          'Audio transcription failed. Please try again with a clearer recording.',
         timestamp: new Date().toISOString(),
       }
 

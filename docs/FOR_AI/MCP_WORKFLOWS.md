@@ -7,6 +7,7 @@ This document outlines sophisticated workflows that leverage the configured MCP 
 ## Available MCP Servers
 
 ### Active MCP Configuration
+
 - **sequential-thinking**: Complex problem solving and multi-step planning
 - **supabase**: Direct database operations and schema management
 - **filesystem**: Advanced file system operations and search
@@ -22,13 +23,13 @@ This document outlines sophisticated workflows that leverage the configured MCP 
 ```mcp
 # Step 1: Use PostgreSQL MCP for direct database analysis
 postgres.query("
-SELECT 
+SELECT
   table_name,
   column_name,
   data_type,
   is_nullable,
   column_default
-FROM information_schema.columns 
+FROM information_schema.columns
 WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position
 ")
@@ -44,7 +45,7 @@ sequential-thinking.analyze({
   task: "Identify mismatches between database schema and TypeScript types",
   steps: [
     "Compare database columns with TypeScript interfaces",
-    "Identify missing foreign key constraints", 
+    "Identify missing foreign key constraints",
     "Find inconsistent naming patterns",
     "Recommend migration scripts"
   ]
@@ -73,22 +74,22 @@ async function generateMigrationPlan() {
   `)
 
   // 2. Analyze TypeScript interfaces via filesystem MCP
-  const typeFiles = await filesystem.glob("types/**/*.ts")
+  const typeFiles = await filesystem.glob('types/**/*.ts')
   const interfaces = await Promise.all(
     typeFiles.map(file => filesystem.extractInterfaces(file))
   )
 
   // 3. Use sequential thinking for comprehensive analysis
   const analysis = await sequentialThinking.process({
-    task: "Generate database migration plan",
+    task: 'Generate database migration plan',
     context: { currentSchema, interfaces },
     steps: [
-      "Identify schema-type mismatches",
-      "Prioritize critical fixes",
-      "Generate migration SQL",
-      "Create rollback procedures",
-      "Estimate migration time"
-    ]
+      'Identify schema-type mismatches',
+      'Prioritize critical fixes',
+      'Generate migration SQL',
+      'Create rollback procedures',
+      'Estimate migration time',
+    ],
   })
 
   return analysis
@@ -102,13 +103,13 @@ async function generateMigrationPlan() {
 ```mcp
 # Step 1: Database performance analysis via PostgreSQL MCP
 postgres.query("
-SELECT 
+SELECT
   query,
   calls,
   total_exec_time,
   mean_exec_time,
   stddev_exec_time
-FROM pg_stat_statements 
+FROM pg_stat_statements
 WHERE calls > 100
 ORDER BY mean_exec_time DESC
 LIMIT 20
@@ -147,7 +148,9 @@ async function setupPerformanceMonitoring() {
   `)
 
   // 2. Use filesystem MCP to create monitoring hooks
-  await filesystem.createFile("hooks/use-performance-monitor.ts", `
+  await filesystem.createFile(
+    'hooks/use-performance-monitor.ts',
+    `
     export function usePerformanceMonitor() {
       useEffect(() => {
         const observer = new PerformanceObserver((list) => {
@@ -159,12 +162,13 @@ async function setupPerformanceMonitoring() {
         return () => observer.disconnect()
       }, [])
     }
-  `)
+  `
+  )
 
   // 3. Use desktop commander to setup automated monitoring
   await desktopCommander.createCronJob({
-    schedule: "*/5 * * * *",
-    command: "node scripts/collect-metrics.js"
+    schedule: '*/5 * * * *',
+    command: 'node scripts/collect-metrics.js',
   })
 }
 ```
@@ -175,8 +179,8 @@ async function setupPerformanceMonitoring() {
 
 ```mcp
 # Step 1: Filesystem analysis for large files
-filesystem.find("**/*.{ts,tsx}", { 
-  filters: ["size > 500 lines"] 
+filesystem.find("**/*.{ts,tsx}", {
+  filters: ["size > 500 lines"]
 })
 
 # Step 2: Complexity analysis via desktop commander
@@ -203,25 +207,25 @@ sequential-thinking.generatePlan({
 async function analyzeRefactoringOpportunities() {
   // 1. Use filesystem MCP for code metrics
   const codeMetrics = await filesystem.analyzeCodebase({
-    paths: ["components", "hooks", "lib"],
-    metrics: ["complexity", "coupling", "cohesion", "size"]
+    paths: ['components', 'hooks', 'lib'],
+    metrics: ['complexity', 'coupling', 'cohesion', 'size'],
   })
 
   // 2. Use desktop commander for dependency analysis
   const dependencies = await desktopCommander.run(
-    "npx madge --json components/ hooks/ lib/"
+    'npx madge --json components/ hooks/ lib/'
   )
 
   // 3. Use sequential thinking for prioritization
   const refactoringPlan = await sequentialThinking.analyze({
-    task: "Prioritize refactoring targets",
+    task: 'Prioritize refactoring targets',
     data: { codeMetrics, dependencies },
     criteria: [
-      "Business impact",
-      "Maintenance burden", 
-      "Risk level",
-      "Development effort"
-    ]
+      'Business impact',
+      'Maintenance burden',
+      'Risk level',
+      'Development effort',
+    ],
   })
 
   return refactoringPlan
@@ -241,16 +245,16 @@ supabase.realtime.analyze({
 
 # Step 2: Connection monitoring via PostgreSQL MCP
 postgres.query("
-SELECT 
+SELECT
   client_addr,
   state,
   query_start,
   state_change
-FROM pg_stat_activity 
+FROM pg_stat_activity
 WHERE application_name LIKE '%supabase%'
 ")
 
-# Step 3: Sequential thinking for optimization strategy  
+# Step 3: Sequential thinking for optimization strategy
 sequential-thinking.optimize({
   system: "Real-time order updates",
   bottlenecks: ["High connection count", "Frequent updates", "Large payloads"],
@@ -265,7 +269,9 @@ sequential-thinking.optimize({
 async function optimizeRealtimeArchitecture() {
   // 1. Analyze current subscription patterns via Supabase MCP
   const subscriptionMetrics = await supabase.realtime.getMetrics([
-    'orders', 'kds_order_routing', 'tables'
+    'orders',
+    'kds_order_routing',
+    'tables',
   ])
 
   // 2. Use PostgreSQL MCP for trigger optimization
@@ -282,16 +288,16 @@ async function optimizeRealtimeArchitecture() {
 
   // 3. Use sequential thinking for architecture recommendations
   const optimization = await sequentialThinking.plan({
-    goal: "Optimize real-time performance",
-    constraints: ["Maintain data consistency", "Sub-second latency"],
-    metrics: { subscriptionMetrics, triggerPerformance }
+    goal: 'Optimize real-time performance',
+    constraints: ['Maintain data consistency', 'Sub-second latency'],
+    metrics: { subscriptionMetrics, triggerPerformance },
   })
 
   // 4. Implement optimizations via Supabase MCP
   if (optimization.recommendations.includes('selective_subscriptions')) {
     await supabase.realtime.createSelectiveFilters({
       table: 'orders',
-      filters: ['status=in.(new,preparing)', 'created_at=gte.today()']
+      filters: ['status=in.(new,preparing)', 'created_at=gte.today()'],
     })
   }
 
@@ -341,25 +347,25 @@ async function implementSecurityHardening() {
         SELECT user_id FROM profiles 
         WHERE role IN ('admin', 'server', 'cook')
       )
-    `
+    `,
   })
 
   // 2. Use filesystem MCP for input validation
   await filesystem.createValidationLayer('lib/validation/', {
     schemas: ['CreateOrderSchema', 'UpdateOrderSchema'],
-    sanitizers: ['sanitizeVoiceInput', 'sanitizeOrderItems']
+    sanitizers: ['sanitizeVoiceInput', 'sanitizeOrderItems'],
   })
 
   // 3. Use PostgreSQL MCP for audit logging
   await postgres.createAuditTrigger('orders', {
     operations: ['INSERT', 'UPDATE', 'DELETE'],
-    logTable: 'audit_log'
+    logTable: 'audit_log',
   })
 
   // 4. Use desktop commander for security monitoring
   await desktopCommander.setupSecurityMonitoring({
     logFiles: ['/var/log/auth.log', '/var/log/supabase.log'],
-    alerts: ['failed_login_attempts', 'unusual_access_patterns']
+    alerts: ['failed_login_attempts', 'unusual_access_patterns'],
   })
 }
 ```
@@ -397,23 +403,23 @@ sequential-thinking.plan({
 async function executeDeployment() {
   // 1. Pre-deployment validation via multiple MCP servers
   const validationResults = await Promise.all([
-    desktopCommander.run("npm run build"),
-    postgres.validateSchema("production"),
-    filesystem.checkSecrets("deployment-files"),
-    supabase.testConnections("production")
+    desktopCommander.run('npm run build'),
+    postgres.validateSchema('production'),
+    filesystem.checkSecrets('deployment-files'),
+    supabase.testConnections('production'),
   ])
 
   // 2. Use sequential thinking for deployment orchestration
   const deploymentPlan = await sequentialThinking.plan({
-    goal: "Deploy safely to production",
+    goal: 'Deploy safely to production',
     prereqs: validationResults,
     steps: [
-      "Create database backup",
-      "Deploy to staging",
-      "Run integration tests", 
-      "Deploy to production",
-      "Verify health checks"
-    ]
+      'Create database backup',
+      'Deploy to staging',
+      'Run integration tests',
+      'Deploy to production',
+      'Verify health checks',
+    ],
   })
 
   // 3. Execute deployment with monitoring
@@ -427,8 +433,8 @@ async function executeDeployment() {
 
   // 4. Post-deployment monitoring via Supabase MCP
   await supabase.monitoring.setup({
-    metrics: ["response_time", "error_rate", "connection_count"],
-    alerts: ["performance_degradation", "error_spike"]
+    metrics: ['response_time', 'error_rate', 'connection_count'],
+    alerts: ['performance_degradation', 'error_spike'],
   })
 }
 ```
@@ -440,11 +446,11 @@ async function executeDeployment() {
 ```mcp
 # Step 1: Performance analysis via PostgreSQL MCP
 postgres.query("
-SELECT 
+SELECT
   AVG(actual_prep_time) as avg_prep_time,
   COUNT(*) as order_count,
   DATE_TRUNC('hour', created_at) as hour
-FROM orders 
+FROM orders
 WHERE transcript IS NOT NULL
 GROUP BY hour
 ORDER BY hour DESC
@@ -486,21 +492,21 @@ async function enhanceVoiceOrdering() {
 
   // 2. Error pattern analysis via filesystem MCP
   const errorPatterns = await filesystem.analyzeErrors({
-    paths: ["components/voice/", "lib/modassembly/openai/"],
-    errorTypes: ["transcription_failed", "low_confidence", "parsing_error"]
+    paths: ['components/voice/', 'lib/modassembly/openai/'],
+    errorTypes: ['transcription_failed', 'low_confidence', 'parsing_error'],
   })
 
   // 3. Use sequential thinking for optimization strategy
   const improvements = await sequentialThinking.optimize({
-    system: "Voice ordering accuracy",
+    system: 'Voice ordering accuracy',
     currentPerformance: voiceMetrics,
     errorPatterns: errorPatterns,
     optimizationTargets: [
-      "Reduce transcription errors",
-      "Improve parsing accuracy", 
-      "Handle background noise",
-      "Support multiple accents"
-    ]
+      'Reduce transcription errors',
+      'Improve parsing accuracy',
+      'Handle background noise',
+      'Support multiple accents',
+    ],
   })
 
   // 4. Implement improvements via Supabase MCP
@@ -516,7 +522,7 @@ async function enhanceVoiceOrdering() {
           RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
-      `
+      `,
     })
   }
 
@@ -533,41 +539,41 @@ async function enhanceVoiceOrdering() {
 async function coordinatedWorkflow() {
   // 1. Sequential thinking plans the approach
   const plan = await sequentialThinking.plan({
-    goal: "Implement new KDS feature",
-    resources: ["Database", "Filesystem", "Desktop tools"],
-    constraints: ["No downtime", "Maintain performance"]
+    goal: 'Implement new KDS feature',
+    resources: ['Database', 'Filesystem', 'Desktop tools'],
+    constraints: ['No downtime', 'Maintain performance'],
   })
 
   // 2. PostgreSQL MCP handles database changes
   const dbChanges = await postgres.transaction([
-    "CREATE TABLE kds_alerts (...)",
-    "CREATE TRIGGER kds_alert_trigger (...)",
-    "CREATE INDEX idx_kds_alerts_priority (...)"
+    'CREATE TABLE kds_alerts (...)',
+    'CREATE TRIGGER kds_alert_trigger (...)',
+    'CREATE INDEX idx_kds_alerts_priority (...)',
   ])
 
   // 3. Filesystem MCP creates supporting files
   const fileChanges = await filesystem.batch([
     {
-      operation: "create",
-      path: "components/kds/AlertPanel.tsx",
-      content: generateAlertComponent(plan.specifications)
+      operation: 'create',
+      path: 'components/kds/AlertPanel.tsx',
+      content: generateAlertComponent(plan.specifications),
     },
     {
-      operation: "create", 
-      path: "hooks/use-kds-alerts.ts",
-      content: generateAlertHook(plan.specifications)
-    }
+      operation: 'create',
+      path: 'hooks/use-kds-alerts.ts',
+      content: generateAlertHook(plan.specifications),
+    },
   ])
 
   // 4. Desktop commander runs validation
   const validation = await desktopCommander.run(
-    "npm run test -- --testPathPattern=kds"
+    'npm run test -- --testPathPattern=kds'
   )
 
   // 5. Supabase MCP configures real-time
   if (validation.success) {
-    await supabase.realtime.addTable("kds_alerts", {
-      filters: ["priority=gte.medium"]
+    await supabase.realtime.addTable('kds_alerts', {
+      filters: ['priority=gte.medium'],
     })
   }
 
@@ -583,8 +589,8 @@ async function debugProductionIssue(errorReport: ErrorReport) {
   // 1. Sequential thinking analyzes the problem
   const analysis = await sequentialThinking.debug({
     error: errorReport,
-    context: "Production environment",
-    urgency: "high"
+    context: 'Production environment',
+    urgency: 'high',
   })
 
   // 2. PostgreSQL MCP investigates database state
@@ -592,36 +598,36 @@ async function debugProductionIssue(errorReport: ErrorReport) {
     timeframe: errorReport.timestamp,
     queries: [
       "SELECT * FROM pg_stat_activity WHERE state = 'active'",
-      "SELECT * FROM pg_stat_statements WHERE calls > 0 ORDER BY mean_exec_time DESC LIMIT 10"
-    ]
+      'SELECT * FROM pg_stat_statements WHERE calls > 0 ORDER BY mean_exec_time DESC LIMIT 10',
+    ],
   })
 
   // 3. Filesystem MCP checks for related code issues
   const codeAnalysis = await filesystem.analyze({
     pattern: errorReport.stackTrace,
-    scope: ["components/", "lib/", "hooks/"],
-    lookFor: ["recent_changes", "similar_patterns", "test_coverage"]
+    scope: ['components/', 'lib/', 'hooks/'],
+    lookFor: ['recent_changes', 'similar_patterns', 'test_coverage'],
   })
 
   // 4. Desktop commander gathers system metrics
   const systemMetrics = await desktopCommander.gather([
-    "memory_usage",
-    "cpu_utilization", 
-    "network_connections",
-    "disk_io"
+    'memory_usage',
+    'cpu_utilization',
+    'network_connections',
+    'disk_io',
   ])
 
   // 5. Supabase MCP checks real-time subscriptions
   const realtimeStatus = await supabase.realtime.diagnose({
     timestamp: errorReport.timestamp,
-    metrics: ["connection_count", "message_rate", "error_rate"]
+    metrics: ['connection_count', 'message_rate', 'error_rate'],
   })
 
   // 6. Sequential thinking provides resolution steps
   const resolution = await sequentialThinking.resolve({
     problem: analysis,
     evidence: { dbDiagnostics, codeAnalysis, systemMetrics, realtimeStatus },
-    priority: "immediate_fix"
+    priority: 'immediate_fix',
   })
 
   return resolution
@@ -644,22 +650,22 @@ interface MCPWorkflow {
 }
 
 const deploymentWorkflow: MCPWorkflow = {
-  name: "production-deployment",
-  description: "Zero-downtime deployment with validation",
-  servers: ["postgres", "supabase", "filesystem", "desktop-commander"],
+  name: 'production-deployment',
+  description: 'Zero-downtime deployment with validation',
+  servers: ['postgres', 'supabase', 'filesystem', 'desktop-commander'],
   steps: [
     {
-      server: "desktop-commander",
-      action: "run",
-      command: "npm run build",
-      validation: "exit_code === 0"
+      server: 'desktop-commander',
+      action: 'run',
+      command: 'npm run build',
+      validation: 'exit_code === 0',
     },
     {
-      server: "postgres", 
-      action: "backup",
-      target: "production",
-      validation: "backup_size > 0"
-    }
+      server: 'postgres',
+      action: 'backup',
+      target: 'production',
+      validation: 'backup_size > 0',
+    },
     // ... more steps
   ],
   rollback: [
@@ -667,7 +673,7 @@ const deploymentWorkflow: MCPWorkflow = {
   ],
   validation: [
     // Post-deployment validation
-  ]
+  ],
 }
 ```
 
@@ -677,29 +683,28 @@ const deploymentWorkflow: MCPWorkflow = {
 // Robust error handling across MCP servers
 async function robustMCPWorkflow() {
   const results = new Map()
-  
+
   try {
     // Step with automatic retry
     const dbResult = await withRetry(
-      () => postgres.query("SELECT * FROM orders"),
+      () => postgres.query('SELECT * FROM orders'),
       { maxRetries: 3, backoff: 'exponential' }
     )
     results.set('database', dbResult)
 
     // Step with timeout
     const fileResult = await withTimeout(
-      () => filesystem.analyze("large-directory/"),
+      () => filesystem.analyze('large-directory/'),
       { timeout: 30000 }
     )
     results.set('filesystem', fileResult)
 
     // Step with validation
     const buildResult = await withValidation(
-      () => desktopCommander.run("npm run build"),
-      (result) => result.exitCode === 0
+      () => desktopCommander.run('npm run build'),
+      result => result.exitCode === 0
     )
     results.set('build', buildResult)
-
   } catch (error) {
     // Comprehensive error handling
     await handleMCPError(error, results)
@@ -722,7 +727,7 @@ class MCPWorkflowMonitor {
     execution: () => Promise<T>
   ): Promise<T> {
     const start = Date.now()
-    
+
     try {
       const result = await execution()
       this.recordSuccess(workflowName, Date.now() - start)
@@ -736,7 +741,7 @@ class MCPWorkflowMonitor {
   private recordSuccess(workflow: string, duration: number) {
     this.metrics.set(`${workflow}.success`, {
       count: (this.metrics.get(`${workflow}.success`)?.count || 0) + 1,
-      avgDuration: this.calculateAverage(workflow, duration)
+      avgDuration: this.calculateAverage(workflow, duration),
     })
   }
 
@@ -744,7 +749,7 @@ class MCPWorkflowMonitor {
     this.metrics.set(`${workflow}.failure`, {
       count: (this.metrics.get(`${workflow}.failure`)?.count || 0) + 1,
       lastError: error.message,
-      duration
+      duration,
     })
   }
 }

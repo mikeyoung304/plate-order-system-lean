@@ -102,7 +102,7 @@ export default function ServerPage() {
     errors,
     actions,
   } = useServerState()
-  
+
   // Legacy state hooks (minimal usage for compatibility)
   const orderFlow = useOrderFlowState()
   const data = useServerPageData('default')
@@ -143,10 +143,10 @@ export default function ServerPage() {
   const handleSelectTable = (table: any) => {
     // Use intelligent state management
     actions.selectTable(table)
-    
+
     // Legacy compatibility
     orderFlow.selectTable(table)
-    
+
     if (navigator.vibrate) {
       navigator.vibrate(50)
     }
@@ -809,73 +809,77 @@ export default function ServerPage() {
                     ) : (
                       <div className='space-y-4'>
                         {/* PERFORMANCE: Replaced AnimatePresence with conditional rendering + CSS transitions */}
-                        {orders.slice(0, 10).map((order: any, index: number) => (
-                          <div
-                            key={order.id}
-                            className={`order-card-enter stagger-item-${Math.min(index + 1, 5)}`}
-                          >
-                            <div className='p-4 rounded-xl bg-gray-800/70 border border-gray-700/30 backdrop-blur-sm hover:bg-gray-800/90 transition-colors'>
-                              <div className='flex justify-between items-center mb-2'>
-                                <div className='font-medium text-white'>
-                                  Table {order.table}{' '}
-                                  {order.seat ? `(Seat ${order.seat})` : ''}
-                                </div>
-                                <Badge
-                                  variant='outline'
-                                  className={`status-badge status-${order.status}`}
-                                >
-                                  {order.status.charAt(0).toUpperCase() +
-                                    order.status.slice(1).replace('_', ' ')}
-                                </Badge>
-                              </div>
-                              <div className='space-y-1 mb-2'>
-                                {order.items.map((item: string, i: number) => (
-                                  <div
-                                    key={i}
-                                    className='text-sm text-gray-300'
+                        {orders
+                          .slice(0, 10)
+                          .map((order: any, index: number) => (
+                            <div
+                              key={order.id}
+                              className={`order-card-enter stagger-item-${Math.min(index + 1, 5)}`}
+                            >
+                              <div className='p-4 rounded-xl bg-gray-800/70 border border-gray-700/30 backdrop-blur-sm hover:bg-gray-800/90 transition-colors'>
+                                <div className='flex justify-between items-center mb-2'>
+                                  <div className='font-medium text-white'>
+                                    Table {order.table}{' '}
+                                    {order.seat ? `(Seat ${order.seat})` : ''}
+                                  </div>
+                                  <Badge
+                                    variant='outline'
+                                    className={`status-badge status-${order.status}`}
                                   >
-                                    • {item}
-                                  </div>
-                                ))}
-                              </div>
-                              <div className='flex items-center justify-between mt-3'>
-                                <div className='text-xs text-gray-500 flex items-center gap-1'>
-                                  <Clock className='h-3 w-3' />
-                                  {new Date(
-                                    order.created_at
-                                  ).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                                    {order.status.charAt(0).toUpperCase() +
+                                      order.status.slice(1).replace('_', ' ')}
+                                  </Badge>
                                 </div>
-                                {/* Only show edit/cancel for pending orders */}
-                                {(order.status === 'in_progress' ||
-                                  order.status === 'new') && (
-                                  <div className='flex gap-2'>
-                                    <Button
-                                      size='sm'
-                                      variant='outline'
-                                      onClick={() => handleEditOrder(order)}
-                                      className='h-7 px-2 text-xs'
-                                    >
-                                      <Edit3 className='h-3 w-3 mr-1' />
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      size='sm'
-                                      variant='destructive'
-                                      onClick={() => handleCancelOrder(order)}
-                                      className='h-7 px-2 text-xs'
-                                    >
-                                      <Trash2 className='h-3 w-3 mr-1' />
-                                      Cancel
-                                    </Button>
+                                <div className='space-y-1 mb-2'>
+                                  {order.items.map(
+                                    (item: string, i: number) => (
+                                      <div
+                                        key={i}
+                                        className='text-sm text-gray-300'
+                                      >
+                                        • {item}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                                <div className='flex items-center justify-between mt-3'>
+                                  <div className='text-xs text-gray-500 flex items-center gap-1'>
+                                    <Clock className='h-3 w-3' />
+                                    {new Date(
+                                      order.created_at
+                                    ).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
                                   </div>
-                                )}
+                                  {/* Only show edit/cancel for pending orders */}
+                                  {(order.status === 'in_progress' ||
+                                    order.status === 'new') && (
+                                    <div className='flex gap-2'>
+                                      <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => handleEditOrder(order)}
+                                        className='h-7 px-2 text-xs'
+                                      >
+                                        <Edit3 className='h-3 w-3 mr-1' />
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size='sm'
+                                        variant='destructive'
+                                        onClick={() => handleCancelOrder(order)}
+                                        className='h-7 px-2 text-xs'
+                                      >
+                                        <Trash2 className='h-3 w-3 mr-1' />
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </ScrollArea>

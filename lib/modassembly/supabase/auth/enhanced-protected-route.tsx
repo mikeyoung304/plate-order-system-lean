@@ -44,9 +44,10 @@ export function EnhancedProtectedRoute({
   const [retryCount, setRetryCount] = useState(0)
 
   // Calculate role check only when we have a profile
-  const hasRoleCheck = profile && roles 
-    ? (Array.isArray(roles) ? roles : [roles]).includes(profile.role)
-    : !roles // If no roles required, allow access
+  const hasRoleCheck =
+    profile && roles
+      ? (Array.isArray(roles) ? roles : [roles]).includes(profile.role)
+      : !roles // If no roles required, allow access
 
   // Enhanced auth checking with retries and session verification
   useEffect(() => {
@@ -59,9 +60,9 @@ export function EnhancedProtectedRoute({
           profileRole: profile?.role,
           requiredRoles: roles,
           hasRoleCheck,
-          retryCount
+          retryCount,
         })
-        
+
         setAuthState(prev => ({ ...prev, status: 'checking' }))
 
         // Double-check session exists at client level
@@ -74,7 +75,7 @@ export function EnhancedProtectedRoute({
         console.log('[EnhancedProtectedRoute] Session check result:', {
           hasSession: !!session,
           sessionUserId: session?.user?.id,
-          error: error?.message
+          error: error?.message,
         })
 
         if (error) {
@@ -90,7 +91,9 @@ export function EnhancedProtectedRoute({
 
         // If no session and not loading, redirect
         if (!session && !isLoading) {
-          console.log('[EnhancedProtectedRoute] No session found, redirecting...')
+          console.log(
+            '[EnhancedProtectedRoute] No session found, redirecting...'
+          )
           setAuthState({ status: 'unauthorized', user: null, hasRole: false })
           redirect(redirectTo)
           return
@@ -98,27 +101,34 @@ export function EnhancedProtectedRoute({
 
         // If we have session but auth context is still loading, wait
         if (session && isLoading) {
-          console.log('[EnhancedProtectedRoute] Session found but auth context still loading, waiting...')
+          console.log(
+            '[EnhancedProtectedRoute] Session found but auth context still loading, waiting...'
+          )
           setAuthState(prev => ({ ...prev, status: 'initializing' }))
           return
         }
 
         // If we have session and auth context loaded
         if (session && !isLoading) {
-          console.log('[EnhancedProtectedRoute] Session and auth context ready, checking roles...', {
-            userRole: profile?.role,
-            requiredRoles: roles,
-            hasRoleCheck,
-            hasProfile: !!profile
-          })
-          
+          console.log(
+            '[EnhancedProtectedRoute] Session and auth context ready, checking roles...',
+            {
+              userRole: profile?.role,
+              requiredRoles: roles,
+              hasRoleCheck,
+              hasProfile: !!profile,
+            }
+          )
+
           // If roles are required but profile is not loaded yet, wait
           if (roles && !profile) {
-            console.log('[EnhancedProtectedRoute] Roles required but profile not loaded yet, waiting...')
+            console.log(
+              '[EnhancedProtectedRoute] Roles required but profile not loaded yet, waiting...'
+            )
             setAuthState(prev => ({ ...prev, status: 'checking' }))
             return
           }
-          
+
           const hasRequiredRole = roles ? hasRoleCheck : true
 
           // If role required but user doesn't have it
@@ -152,7 +162,9 @@ export function EnhancedProtectedRoute({
 
         // Retry logic for network issues
         if (retryCount < maxRetries) {
-          console.log(`[EnhancedProtectedRoute] Retrying (${retryCount + 1}/${maxRetries})...`)
+          console.log(
+            `[EnhancedProtectedRoute] Retrying (${retryCount + 1}/${maxRetries})...`
+          )
           setTimeout(() => {
             setRetryCount(prev => prev + 1)
           }, retryDelay)
@@ -171,14 +183,7 @@ export function EnhancedProtectedRoute({
     }
 
     verifyAuthState()
-  }, [
-    isLoading,
-    user?.id,
-    profile?.role,
-    profile?.user_id,
-    roles,
-    retryCount,
-  ])
+  }, [isLoading, user?.id, profile?.role, profile?.user_id, roles, retryCount])
 
   // Render based on auth state
   switch (authState.status) {

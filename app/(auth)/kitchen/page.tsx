@@ -66,14 +66,14 @@ export default function KitchenPage() {
     errors,
     actions,
   } = useKitchenState()
-  
+
   // Local UI state
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { toast } = useToast()
 
   // Filter mapping to intelligent state
-  const filterBy = filterStatus as FilterBy || 'all'
+  const filterBy = (filterStatus as FilterBy) || 'all'
   const setFilterBy = (filter: FilterBy) => {
     actions.setFilter(filter === 'all' ? null : filter)
   }

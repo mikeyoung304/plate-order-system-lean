@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userId: string
   ): Promise<UserProfile | null> => {
     console.log('[AuthContext] Fetching profile for user ID:', userId)
-    
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, user_id, role, name')
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: profileById.name,
         }
       }
-      
+
       console.error('[AuthContext] No profile found for user:', userId)
       return null
     }
@@ -189,7 +189,7 @@ export function useHasRole(roles: UserRole | UserRole[]): boolean {
   console.log('[useHasRole] Checking roles:', {
     userRole,
     requiredRoles: roles,
-    allowedRoles: Array.isArray(roles) ? roles : [roles]
+    allowedRoles: Array.isArray(roles) ? roles : [roles],
   })
 
   if (!userRole) {
@@ -199,7 +199,7 @@ export function useHasRole(roles: UserRole | UserRole[]): boolean {
 
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
   const hasRole = allowedRoles.includes(userRole)
-  
+
   console.log('[useHasRole] Role check result:', hasRole)
   return hasRole
 }

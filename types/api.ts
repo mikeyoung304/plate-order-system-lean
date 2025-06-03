@@ -1,7 +1,13 @@
 // API and Component Type Definitions
 // Comprehensive type safety for the Plater Restaurant System
 
-import { Database, UserRole, OrderStatus, OrderType, TableStatus } from './database'
+import {
+  Database,
+  UserRole,
+  OrderStatus,
+  OrderType,
+  TableStatus,
+} from './database'
 
 // =============================================
 // API Response Types

@@ -46,7 +46,10 @@ class DemoDataResetManager {
   private backupDir: string
 
   constructor() {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
       throw new Error('Missing required Supabase environment variables')
     }
 
@@ -111,7 +114,7 @@ class DemoDataResetManager {
       dataState: {
         before: null,
         after: null,
-      }
+      },
     }
 
     try {
@@ -127,10 +130,16 @@ class DemoDataResetManager {
       }
 
       // Clear active orders and sessions
-      if (options.level === 'quick' || options.level === 'full' || options.level === 'complete') {
+      if (
+        options.level === 'quick' ||
+        options.level === 'full' ||
+        options.level === 'complete'
+      ) {
         console.log('🗑️ Clearing active orders...')
-        results.operations.clearOrders = await this.clearActiveOrders(options.preserveHistory)
-        
+        results.operations.clearOrders = await this.clearActiveOrders(
+          options.preserveHistory
+        )
+
         console.log('🔐 Clearing sessions...')
         results.operations.clearSessions = await this.clearSessions()
       }
@@ -139,9 +148,11 @@ class DemoDataResetManager {
       if (options.level === 'full' || options.level === 'complete') {
         console.log('🪑 Resetting tables...')
         results.operations.resetTables = await this.resetTableStates()
-        
+
         console.log('💺 Resetting seats...')
-        results.operations.resetSeats = await this.resetSeatStates(options.preserveUsers)
+        results.operations.resetSeats = await this.resetSeatStates(
+          options.preserveUsers
+        )
       }
 
       // Complete user reset
@@ -153,11 +164,11 @@ class DemoDataResetManager {
       // Seed fresh data if requested
       if (options.seedFreshData) {
         console.log('🌱 Seeding fresh demo data...')
-        
+
         if (options.level === 'complete') {
           results.operations.seedUsers = await this.seedDemoUsers()
         }
-        
+
         results.operations.seedTables = await this.seedDemoTables()
         results.operations.seedOrders = await this.seedSampleOrders()
       }
@@ -167,9 +178,10 @@ class DemoDataResetManager {
 
       results.success = true
       console.log(`✅ ${options.level} reset completed successfully`)
-
     } catch (error) {
-      results.errors.push(error instanceof Error ? error.message : String(error))
+      results.errors.push(
+        error instanceof Error ? error.message : String(error)
+      )
       console.error(`❌ Reset failed:`, error)
     }
 
@@ -193,8 +205,10 @@ class DemoDataResetManager {
         return !error
       } else {
         // Clear all orders from last 24 hours
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-        
+        const oneDayAgo = new Date(
+          Date.now() - 24 * 60 * 60 * 1000
+        ).toISOString()
+
         const { error } = await this.supabase
           .from('orders')
           .delete()
@@ -236,7 +250,7 @@ class DemoDataResetManager {
   private async resetSeatStates(preserveUsers: boolean): Promise<boolean> {
     try {
       const updateData: any = { status: 'available' }
-      
+
       if (!preserveUsers) {
         updateData.resident_id = null
       }
@@ -257,14 +271,17 @@ class DemoDataResetManager {
     try {
       // Get all non-admin users
       const { data: authUsers } = await this.supabase.auth.admin.listUsers()
-      
+
       if (authUsers?.users) {
         for (const user of authUsers.users) {
           // Skip the current admin user
-          if (user.email?.includes('admin') || user.email?.includes('guest@restaurant.plate')) {
+          if (
+            user.email?.includes('admin') ||
+            user.email?.includes('guest@restaurant.plate')
+          ) {
             continue
           }
-          
+
           await this.supabase.auth.admin.deleteUser(user.id)
         }
       }
@@ -304,30 +321,90 @@ class DemoDataResetManager {
 
       // Create demo tables
       const tables = [
-        { label: 1, type: 'circle', seats: 4, position_x: 100, position_y: 100 },
-        { label: 2, type: 'rectangle', seats: 6, position_x: 250, position_y: 100 },
-        { label: 3, type: 'square', seats: 4, position_x: 400, position_y: 100 },
-        { label: 4, type: 'circle', seats: 4, position_x: 100, position_y: 250 },
-        { label: 5, type: 'rectangle', seats: 6, position_x: 250, position_y: 250 },
-        { label: 6, type: 'circle', seats: 4, position_x: 400, position_y: 250 },
-        { label: 7, type: 'square', seats: 4, position_x: 100, position_y: 400 },
-        { label: 8, type: 'circle', seats: 4, position_x: 250, position_y: 400 },
+        {
+          label: 1,
+          type: 'circle',
+          seats: 4,
+          position_x: 100,
+          position_y: 100,
+        },
+        {
+          label: 2,
+          type: 'rectangle',
+          seats: 6,
+          position_x: 250,
+          position_y: 100,
+        },
+        {
+          label: 3,
+          type: 'square',
+          seats: 4,
+          position_x: 400,
+          position_y: 100,
+        },
+        {
+          label: 4,
+          type: 'circle',
+          seats: 4,
+          position_x: 100,
+          position_y: 250,
+        },
+        {
+          label: 5,
+          type: 'rectangle',
+          seats: 6,
+          position_x: 250,
+          position_y: 250,
+        },
+        {
+          label: 6,
+          type: 'circle',
+          seats: 4,
+          position_x: 400,
+          position_y: 250,
+        },
+        {
+          label: 7,
+          type: 'square',
+          seats: 4,
+          position_x: 100,
+          position_y: 400,
+        },
+        {
+          label: 8,
+          type: 'circle',
+          seats: 4,
+          position_x: 250,
+          position_y: 400,
+        },
       ]
 
       for (const table of tables) {
         const { data: tableData, error } = await this.supabase
           .from('tables')
-          .insert([{
-            label: table.label,
-            type: table.type,
-            status: 'available',
-            position_x: table.position_x,
-            position_y: table.position_y,
-            width: table.type === 'circle' ? 80 : table.type === 'square' ? 100 : 120,
-            height: table.type === 'circle' ? 80 : table.type === 'square' ? 100 : 80,
-            rotation: 0,
-            z_index: 1,
-          }])
+          .insert([
+            {
+              label: table.label,
+              type: table.type,
+              status: 'available',
+              position_x: table.position_x,
+              position_y: table.position_y,
+              width:
+                table.type === 'circle'
+                  ? 80
+                  : table.type === 'square'
+                    ? 100
+                    : 120,
+              height:
+                table.type === 'circle'
+                  ? 80
+                  : table.type === 'square'
+                    ? 100
+                    : 80,
+              rotation: 0,
+              z_index: 1,
+            },
+          ])
           .select()
           .single()
 
@@ -377,9 +454,14 @@ class DemoDataResetManager {
         .select('id, table_id')
         .limit(5)
 
-      if (residents && servers && tables && seats && 
-          residents.length > 0 && servers.length > 0) {
-        
+      if (
+        residents &&
+        servers &&
+        tables &&
+        seats &&
+        residents.length > 0 &&
+        servers.length > 0
+      ) {
         const sampleOrders = [
           {
             table_id: tables[0].id,
@@ -420,7 +502,10 @@ class DemoDataResetManager {
   private async createBackup(): Promise<boolean> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const backupFile = path.join(this.backupDir, `demo-backup-${timestamp}.json`)
+      const backupFile = path.join(
+        this.backupDir,
+        `demo-backup-${timestamp}.json`
+      )
 
       const backupData = {
         timestamp,
@@ -432,7 +517,7 @@ class DemoDataResetManager {
 
       fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2))
       console.log(`💾 Backup created: ${backupFile}`)
-      
+
       return true
     } catch (error) {
       console.error('Failed to create backup:', error)
@@ -442,9 +527,7 @@ class DemoDataResetManager {
 
   private async exportTable(tableName: string): Promise<any[]> {
     try {
-      const { data, error } = await this.supabase
-        .from(tableName)
-        .select('*')
+      const { data, error } = await this.supabase.from(tableName).select('*')
 
       if (error) throw error
       return data || []
@@ -472,7 +555,7 @@ class DemoDataResetManager {
           tables: tables.data?.[0]?.count || 0,
           seats: seats.data?.[0]?.count || 0,
           orders: orders.data?.[0]?.count || 0,
-        }
+        },
       }
     } catch (error) {
       console.error('Failed to capture data state:', error)
@@ -510,7 +593,6 @@ class DemoDataResetManager {
       if (!fs.existsSync(this.backupDir)) {
         issues.push('Backup directory not accessible')
       }
-
     } catch (error) {
       issues.push(`Readiness check failed: ${error}`)
     }
@@ -525,7 +607,9 @@ class DemoDataResetManager {
     try {
       const files = fs.readdirSync(this.backupDir)
       return files
-        .filter(file => file.startsWith('demo-backup-') && file.endsWith('.json'))
+        .filter(
+          file => file.startsWith('demo-backup-') && file.endsWith('.json')
+        )
         .sort()
         .reverse() // Most recent first
     } catch (error) {

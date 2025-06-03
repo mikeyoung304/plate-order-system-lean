@@ -30,6 +30,7 @@ This guide provides comprehensive coverage of the API architecture, endpoints, d
 ### Authentication & Session Management
 
 #### `GET /api/auth-check`
+
 **Purpose**: Validate user session and retrieve role information
 
 ```typescript
@@ -61,6 +62,7 @@ Headers: {
 ```
 
 **Implementation**:
+
 ```typescript
 // app/api/auth-check/route.ts
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
@@ -68,9 +70,12 @@ import { cookies } from 'next/headers'
 
 export async function GET() {
   const supabase = createRouteHandlerClient({ cookies })
-  
-  const { data: { session }, error } = await supabase.auth.getSession()
-  
+
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
+
   if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 401 })
   }
@@ -87,12 +92,12 @@ export async function GET() {
     user: {
       id: session.user.id,
       email: session.user.email,
-      role: profile?.role
+      role: profile?.role,
     },
     session: {
       access_token: session.access_token,
-      expires_at: session.expires_at
-    }
+      expires_at: session.expires_at,
+    },
   })
 }
 ```
@@ -100,6 +105,7 @@ export async function GET() {
 ### Voice Processing
 
 #### `POST /api/transcribe`
+
 **Purpose**: Convert audio to text using OpenAI Whisper API
 
 ```typescript
@@ -127,6 +133,7 @@ Body: FormData {
 ```
 
 **Implementation**:
+
 ```typescript
 // app/api/transcribe/route.ts
 import OpenAI from 'openai'
@@ -139,7 +146,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File
-    
+
     if (!audioFile) {
       return NextResponse.json(
         { success: false, error: 'No audio file provided' },
@@ -150,18 +157,18 @@ export async function POST(request: Request) {
     // Convert to supported format
     const audioBuffer = await audioFile.arrayBuffer()
     const audioBlob = new Blob([audioBuffer], { type: 'audio/wav' })
-    
+
     const startTime = Date.now()
-    
+
     const transcription = await openai.audio.transcriptions.create({
       file: audioBlob,
       model: 'whisper-1',
       language: 'en',
-      response_format: 'json'
+      response_format: 'json',
     })
-    
+
     const processingTime = Date.now() - startTime
-    
+
     // Sanitize transcript
     const sanitizedText = transcription.text
       .replace(/<[^>]*>/g, '') // Remove HTML
@@ -173,9 +180,8 @@ export async function POST(request: Request) {
       success: true,
       transcript: sanitizedText,
       confidence: 0.95, // OpenAI doesn't return confidence
-      processing_time: processingTime
+      processing_time: processingTime,
     })
-    
   } catch (error) {
     console.error('Transcription error:', error)
     return NextResponse.json(
@@ -189,6 +195,7 @@ export async function POST(request: Request) {
 ### Environment & Debugging
 
 #### `GET /api/vercel-auth`
+
 **Purpose**: Environment variable validation and debugging
 
 ```typescript
@@ -208,11 +215,12 @@ export async function POST(request: Request) {
 ### Supabase Client Operations
 
 #### Standard Query Pattern
+
 ```typescript
 // lib/modassembly/supabase/database/orders.ts
 export async function createOrder(orderData: CreateOrderRequest) {
   const supabase = createClient()
-  
+
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -223,15 +231,17 @@ export async function createOrder(orderData: CreateOrderRequest) {
       items: orderData.items,
       transcript: orderData.transcript,
       type: orderData.type,
-      status: 'new'
+      status: 'new',
     })
-    .select(`
+    .select(
+      `
       *,
       table:tables(label, type),
       seat:seats(label),
       resident:profiles!resident_id(name),
       server:profiles!server_id(name)
-    `)
+    `
+    )
     .single()
 
   if (error) {
@@ -243,6 +253,7 @@ export async function createOrder(orderData: CreateOrderRequest) {
 ```
 
 #### Real-time Subscription Pattern
+
 ```typescript
 // hooks/use-kds-orders.ts
 export function useKDSOrders(stationId: string) {
@@ -256,11 +267,13 @@ export function useKDSOrders(stationId: string) {
     async function fetchOrders() {
       const { data } = await supabase
         .from('kds_order_routing')
-        .select(`
+        .select(
+          `
           *,
           order:orders(*),
           station:kds_stations(*)
-        `)
+        `
+        )
         .eq('station_id', stationId)
         .is('completed_at', null)
         .order('routed_at', { ascending: true })
@@ -276,19 +289,21 @@ export function useKDSOrders(stationId: string) {
       .channel('kds-orders-updates')
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'kds_order_routing',
-          filter: `station_id=eq.${stationId}`
+          filter: `station_id=eq.${stationId}`,
         },
-        (payload) => {
+        payload => {
           if (payload.eventType === 'INSERT') {
             setOrders(prev => [...prev, payload.new as KDSOrder])
           } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev => prev.map(order => 
-              order.id === payload.new.id ? payload.new as KDSOrder : order
-            ))
+            setOrders(prev =>
+              prev.map(order =>
+                order.id === payload.new.id ? (payload.new as KDSOrder) : order
+              )
+            )
           } else if (payload.eventType === 'DELETE') {
             setOrders(prev => prev.filter(order => order.id !== payload.old.id))
           }
@@ -321,12 +336,12 @@ sequenceDiagram
     API->>OpenAI: Audio transcription
     OpenAI-->>API: Text response
     API-->>Client: Sanitized transcript
-    
+
     Client->>Supabase: Insert order
     Supabase->>Supabase: Trigger auto_route_order_to_stations()
     Supabase->>KDS: Insert kds_order_routing
     Supabase-->>Client: Order created
-    
+
     Supabase->>Client: Real-time notification
     Supabase->>KDS: Real-time notification
 ```
@@ -374,29 +389,35 @@ export interface APISuccess<T> {
 
 // lib/api-helpers.ts
 export function createErrorResponse(
-  error: string, 
-  code?: string, 
+  error: string,
+  code?: string,
   status: number = 500
 ): NextResponse {
-  return NextResponse.json({
-    success: false,
-    error,
-    code,
-    timestamp: new Date().toISOString(),
-    request_id: crypto.randomUUID()
-  }, { status })
+  return NextResponse.json(
+    {
+      success: false,
+      error,
+      code,
+      timestamp: new Date().toISOString(),
+      request_id: crypto.randomUUID(),
+    },
+    { status }
+  )
 }
 
 export function createSuccessResponse<T>(
-  data: T, 
+  data: T,
   status: number = 200
 ): NextResponse {
-  return NextResponse.json({
-    success: true,
-    data,
-    timestamp: new Date().toISOString(),
-    request_id: crypto.randomUUID()
-  }, { status })
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+      request_id: crypto.randomUUID(),
+    },
+    { status }
+  )
 }
 ```
 
@@ -405,11 +426,7 @@ export function createSuccessResponse<T>(
 ```typescript
 // Authentication errors
 if (!session) {
-  return createErrorResponse(
-    'Authentication required',
-    'AUTH_REQUIRED',
-    401
-  )
+  return createErrorResponse('Authentication required', 'AUTH_REQUIRED', 401)
 }
 
 // Permission errors
@@ -423,20 +440,12 @@ if (!hasPermission(session.user.role, 'create_order')) {
 
 // Validation errors
 if (!isValidOrderData(orderData)) {
-  return createErrorResponse(
-    'Invalid order data',
-    'VALIDATION_ERROR',
-    400
-  )
+  return createErrorResponse('Invalid order data', 'VALIDATION_ERROR', 400)
 }
 
 // Database errors
 if (error?.code === 'PGRST116') {
-  return createErrorResponse(
-    'Record not found',
-    'NOT_FOUND',
-    404
-  )
+  return createErrorResponse('Record not found', 'NOT_FOUND', 404)
 }
 ```
 
@@ -456,7 +465,7 @@ export class RealTimeManager {
 
   subscribeToOrders(callback: (payload: any) => void): string {
     const channelId = `orders-${crypto.randomUUID()}`
-    
+
     const channel = this.supabase
       .channel(channelId)
       .on(
@@ -472,16 +481,16 @@ export class RealTimeManager {
 
   subscribeToKDS(stationId: string, callback: (payload: any) => void): string {
     const channelId = `kds-${stationId}-${crypto.randomUUID()}`
-    
+
     const channel = this.supabase
       .channel(channelId)
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'kds_order_routing',
-          filter: `station_id=eq.${stationId}`
+          filter: `station_id=eq.${stationId}`,
         },
         callback
       )
@@ -515,9 +524,7 @@ export class RealTimeManager {
 ```typescript
 // Efficient order fetching with relationships
 export async function getOrdersWithDetails(filters: OrderFilters) {
-  const query = supabase
-    .from('orders')
-    .select(`
+  const query = supabase.from('orders').select(`
       id,
       items,
       status,
@@ -533,20 +540,18 @@ export async function getOrdersWithDetails(filters: OrderFilters) {
   if (filters.status) {
     query.eq('status', filters.status)
   }
-  
+
   if (filters.tableId) {
     query.eq('table_id', filters.tableId)
   }
-  
+
   if (filters.dateRange) {
     query.gte('created_at', filters.dateRange.start)
     query.lte('created_at', filters.dateRange.end)
   }
 
   // Optimize with indexes
-  return query
-    .order('created_at', { ascending: false })
-    .limit(50) // Reasonable page size
+  return query.order('created_at', { ascending: false }).limit(50) // Reasonable page size
 }
 ```
 
@@ -564,7 +569,7 @@ export async function getCachedData<T>(
   const cached = cache.get(key)
   const now = Date.now()
 
-  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+  if (cached && now - cached.timestamp < CACHE_TTL) {
     return cached.data
   }
 
@@ -574,9 +579,8 @@ export async function getCachedData<T>(
 }
 
 // Usage
-const orders = await getCachedData(
-  `orders-${tableId}`,
-  () => getOrdersForTable(tableId)
+const orders = await getCachedData(`orders-${tableId}`, () =>
+  getOrdersForTable(tableId)
 )
 ```
 
@@ -596,7 +600,7 @@ export const CreateOrderSchema = z.object({
   items: z.array(z.string()).min(1).max(10),
   transcript: z.string().max(500).optional(),
   type: z.enum(['food', 'beverage', 'dessert']),
-  specialRequests: z.string().max(200).optional()
+  specialRequests: z.string().max(200).optional(),
 })
 
 export function validateOrderData(data: unknown): CreateOrderRequest {
@@ -618,7 +622,7 @@ export function rateLimit(
   const now = Date.now()
   const record = rateLimitMap.get(identifier)
 
-  if (!record || (now - record.timestamp) > windowMs) {
+  if (!record || now - record.timestamp > windowMs) {
     rateLimitMap.set(identifier, { count: 1, timestamp: now })
     return true
   }
@@ -634,15 +638,11 @@ export function rateLimit(
 // Usage in API route
 export async function POST(request: Request) {
   const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
-  
+
   if (!rateLimit(clientIP, 5, 60000)) {
-    return createErrorResponse(
-      'Rate limit exceeded',
-      'RATE_LIMIT',
-      429
-    )
+    return createErrorResponse('Rate limit exceeded', 'RATE_LIMIT', 429)
   }
-  
+
   // Continue with request processing
 }
 ```
@@ -667,9 +667,9 @@ export class ThermalPrinterService implements PrinterService {
       orderNumber: order.id.slice(-6).toUpperCase(),
       items: order.items,
       timestamp: order.created_at,
-      total: this.calculateTotal(order.items)
+      total: this.calculateTotal(order.items),
     }
-    
+
     // Send to printer API/SDK
     console.log('Printing receipt:', receiptData)
   }
@@ -681,9 +681,9 @@ export class ThermalPrinterService implements PrinterService {
       seat: order.seat?.label,
       items: order.items,
       specialRequests: order.special_requests,
-      timestamp: order.created_at
+      timestamp: order.created_at,
     }
-    
+
     console.log('Printing kitchen ticket:', ticketData)
   }
 
@@ -691,13 +691,13 @@ export class ThermalPrinterService implements PrinterService {
     return {
       connected: true,
       paperLevel: 'ok',
-      lastError: null
+      lastError: null,
     }
   }
 
   private calculateTotal(items: string[]): number {
     // Price calculation logic
-    return items.length * 12.50 // Mock pricing
+    return items.length * 12.5 // Mock pricing
   }
 }
 ```
@@ -791,32 +791,30 @@ class MetricsCollector {
 
   track(metric: APIMetric): void {
     this.metrics.push(metric)
-    
+
     // Persist to database or external service
     this.persistMetric(metric)
   }
 
   getMetrics(timeRange?: { start: number; end: number }): APIMetric[] {
     if (!timeRange) return this.metrics
-    
-    return this.metrics.filter(m => 
-      m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
+
+    return this.metrics.filter(
+      m => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
     )
   }
 
   private async persistMetric(metric: APIMetric): Promise<void> {
     // Store in database for analytics
     const supabase = createClient()
-    await supabase
-      .from('api_metrics')
-      .insert({
-        endpoint: metric.endpoint,
-        method: metric.method,
-        status: metric.status,
-        duration_ms: metric.duration,
-        user_id: metric.userId,
-        recorded_at: new Date(metric.timestamp).toISOString()
-      })
+    await supabase.from('api_metrics').insert({
+      endpoint: metric.endpoint,
+      method: metric.method,
+      status: metric.status,
+      duration_ms: metric.duration,
+      user_id: metric.userId,
+      recorded_at: new Date(metric.timestamp).toISOString(),
+    })
   }
 }
 
@@ -836,7 +834,7 @@ export function middleware(request: NextRequest) {
 
   return NextResponse.next().then(response => {
     const duration = Date.now() - start
-    
+
     // Track API performance
     if (request.nextUrl.pathname.startsWith('/api/')) {
       metrics.track({
@@ -845,7 +843,7 @@ export function middleware(request: NextRequest) {
         status: response.status,
         duration,
         timestamp: start,
-        userId: request.headers.get('x-user-id') || undefined
+        userId: request.headers.get('x-user-id') || undefined,
       })
     }
 
@@ -854,7 +852,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*'
+  matcher: '/api/:path*',
 }
 ```
 
@@ -873,7 +871,7 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string(),
   NODE_ENV: z.enum(['development', 'production', 'test']),
   VERCEL: z.string().optional(),
-  VERCEL_URL: z.string().optional()
+  VERCEL_URL: z.string().optional(),
 })
 
 export const env = envSchema.parse(process.env)
@@ -895,24 +893,27 @@ export async function GET() {
   const checks = await Promise.allSettled([
     checkDatabase(),
     checkOpenAI(),
-    checkStorage()
+    checkStorage(),
   ])
 
   const results = checks.map((check, index) => ({
     service: ['database', 'openai', 'storage'][index],
     status: check.status === 'fulfilled' ? 'healthy' : 'unhealthy',
-    details: check.status === 'rejected' ? check.reason : 'OK'
+    details: check.status === 'rejected' ? check.reason : 'OK',
   }))
 
   const allHealthy = results.every(r => r.status === 'healthy')
 
-  return NextResponse.json({
-    status: allHealthy ? 'healthy' : 'degraded',
-    timestamp: new Date().toISOString(),
-    checks: results
-  }, {
-    status: allHealthy ? 200 : 503
-  })
+  return NextResponse.json(
+    {
+      status: allHealthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      checks: results,
+    },
+    {
+      status: allHealthy ? 200 : 503,
+    }
+  )
 }
 
 async function checkDatabase(): Promise<void> {
@@ -924,14 +925,16 @@ async function checkDatabase(): Promise<void> {
 async function checkOpenAI(): Promise<void> {
   // Test OpenAI connectivity
   const response = await fetch('https://api.openai.com/v1/models', {
-    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` }
+    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
   })
   if (!response.ok) throw new Error('OpenAI API unavailable')
 }
 
 async function checkStorage(): Promise<void> {
   const supabase = createClient()
-  const { error } = await supabase.storage.from('audio-recordings').list('', { limit: 1 })
+  const { error } = await supabase.storage
+    .from('audio-recordings')
+    .list('', { limit: 1 })
   if (error) throw new Error(`Storage: ${error.message}`)
 }
 ```

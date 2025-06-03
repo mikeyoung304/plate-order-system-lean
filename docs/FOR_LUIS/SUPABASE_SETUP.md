@@ -178,17 +178,17 @@ BEGIN
   IF NEW.type = 'food' THEN
     INSERT INTO kds_order_routing (order_id, station_id, sequence)
     SELECT NEW.id, id, 1 FROM kds_stations WHERE type = 'grill' AND is_active = true;
-    
+
     INSERT INTO kds_order_routing (order_id, station_id, sequence)
     SELECT NEW.id, id, 2 FROM kds_stations WHERE type = 'expo' AND is_active = true;
   END IF;
-  
+
   -- Route beverage orders to bar
   IF NEW.type = 'beverage' THEN
     INSERT INTO kds_order_routing (order_id, station_id, sequence)
     SELECT NEW.id, id, 1 FROM kds_stations WHERE type = 'bar' AND is_active = true;
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -409,28 +409,28 @@ CREATE POLICY "Audio access for authenticated users" ON storage.objects
 
 ```sql
 -- Monitor query performance
-SELECT 
+SELECT
   query,
   mean_exec_time,
   calls,
   total_exec_time
-FROM pg_stat_statements 
+FROM pg_stat_statements
 WHERE mean_exec_time > 100
 ORDER BY mean_exec_time DESC;
 
 -- Monitor active connections
-SELECT 
-  state, 
-  COUNT(*) 
-FROM pg_stat_activity 
+SELECT
+  state,
+  COUNT(*)
+FROM pg_stat_activity
 GROUP BY state;
 
 -- Monitor table sizes
-SELECT 
+SELECT
   schemaname,
   tablename,
   pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
-FROM pg_tables 
+FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ```
@@ -455,6 +455,7 @@ pg_dump -h db.eiipozoogrrfudhjoqms.supabase.co \
 ### Common Issues
 
 1. **Connection Issues**
+
 ```bash
 # Test connection
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres
@@ -464,6 +465,7 @@ SELECT * FROM pg_stat_activity WHERE state = 'active';
 ```
 
 2. **RLS Policy Debug**
+
 ```sql
 -- Test RLS policies
 SET role authenticated;
@@ -472,6 +474,7 @@ RESET role;
 ```
 
 3. **Real-time Issues**
+
 ```sql
 -- Check real-time publication
 SELECT * FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
@@ -509,11 +512,13 @@ REINDEX INDEX CONCURRENTLY orders_status_created_at;
 ## Environment-Specific Configuration
 
 ### Development
+
 - Use anon key for client connections
 - Enable statement logging
 - Relaxed connection limits
 
 ### Production
+
 - Secure service role key storage
 - Enable connection pooling
 - Monitor performance metrics

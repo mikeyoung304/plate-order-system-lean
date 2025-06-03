@@ -7,18 +7,21 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## What Makes It Special
 
 ### 🎙️ **Voice Ordering Magic**
+
 - Residents speak their order naturally: "I'll have the chicken, mashed potatoes, and green beans"
 - The system captures their voice, sends it to AI (OpenAI), and automatically creates the order
 - No typing, no complex menus - just natural conversation
 - **This actually works and is production-ready**
 
 ### 🏠 **Built for Assisted Living**
+
 - Residents often sit at the same seats and have preferences
 - The system remembers who sits where and suggests their usual orders
 - Servers can quickly see "Mrs. Johnson usually orders the salmon on Fridays"
 - Makes the dining experience more personal and efficient
 
 ### 📱 **Real-Time Everything**
+
 - When a server takes an order, the kitchen sees it instantly
 - As cooks prepare items, everyone knows the status
 - No more shouting between kitchen and dining room
@@ -27,24 +30,28 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## The Four Main Parts
 
 ### 1. **Server Station** (Order Taking)
+
 - Interactive floor plan showing all tables
 - Click a table → navigate through seats → take voice orders
 - Smart suggestions based on resident history
 - Real-time order tracking
 
 ### 2. **Kitchen Display System (KDS)**
+
 - Orders appear automatically on kitchen screens
 - Organized by cooking stations (grill, fryer, salad, etc.)
 - Cooks can mark items as "preparing" or "ready"
 - Smart timing with urgency indicators
 
 ### 3. **Expo Station** (Quality Control)
+
 - Sees orders ready for delivery
 - Organizes by table for efficient delivery
 - Tracks timing to ensure food goes out quickly
 - Quality checkpoint before customer delivery
 
 ### 4. **Admin Dashboard**
+
 - Real-time analytics and metrics
 - Floor plan editor for table layout
 - User management and system settings
@@ -53,18 +60,21 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## Technical Architecture (In Plain English)
 
 ### **The Stack**
+
 - **Frontend**: Next.js (React) - Modern web application
 - **Database**: Supabase (PostgreSQL) - Secure, real-time data
 - **Voice**: OpenAI - AI-powered speech transcription
 - **Hosting**: Vercel - Global, fast deployment
 
 ### **The Data Flow**
+
 1. Voice recording → AI transcription → Order creation
 2. Order → Kitchen display → Cooking status updates
 3. Ready items → Expo station → Delivery tracking
 4. All changes → Real-time updates everywhere
 
 ### **The Security**
+
 - Role-based access (admin, server, cook roles)
 - Secure authentication with session management
 - Input sanitization to prevent malicious attacks
@@ -73,21 +83,25 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## What I Learned Building This
 
 ### **Vibe-Coding vs. Professional Development**
+
 - Started as "make it work" prototype
 - Transformed through systematic cleanup into production system
 - Learned the importance of refactoring before technical debt accumulates
 
 ### **Real Features vs. Feature Theater**
+
 - Initially built "impressive" features that were just hardcoded logic
 - Learned to focus on genuinely useful functionality
 - Voice ordering is a real innovation, not just a gimmick
 
 ### **State Management Complexity**
+
 - Started with chaotic component state everywhere
 - Evolved to clean state machines and context patterns
 - 92% reduction in useState declarations through better architecture
 
 ### **Performance Matters**
+
 - Real optimization (React.memo, proper callbacks) vs. performance theater
 - Bundle size reduction from ~800KB to ~200KB
 - Actual user experience improvements, not just impressive-sounding code
@@ -95,18 +109,21 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## The Business Value
 
 ### **For Staff**
+
 - Faster order taking with voice input
 - Less running between kitchen and dining room
 - Better coordination between stations
 - Reduced errors from miscommunication
 
 ### **For Residents**
+
 - More personal dining experience
 - Easier ordering process (just speak)
 - Consistent service based on their preferences
 - Faster service with better coordination
 
 ### **For Management**
+
 - Real-time insights into operations
 - Better resource allocation with data
 - Improved customer satisfaction through efficiency
@@ -115,6 +132,7 @@ I built a **voice-powered restaurant management system** specifically designed f
 ## Current Status: 75% Complete
 
 ### **Production-Ready Core** ✅
+
 - Voice ordering system
 - Kitchen display with real-time updates
 - Basic order management
@@ -122,6 +140,7 @@ I built a **voice-powered restaurant management system** specifically designed f
 - Floor plan interaction
 
 ### **In Development** 🔧
+
 - Order editing functionality
 - Advanced analytics and reporting
 - Comprehensive resident management
@@ -129,6 +148,7 @@ I built a **voice-powered restaurant management system** specifically designed f
 - Mobile optimization
 
 ### **Future Vision** 🚀
+
 - AI-powered menu suggestions
 - Integration with dietary management systems
 - Advanced reporting and business intelligence

@@ -7,12 +7,12 @@ import { createClient } from '@/lib/modassembly/supabase/client'
 import { Table } from '../../../floor-plan-utils'
 import { Security } from '@/lib/security'
 import { measureApiCall } from '@/lib/performance-utils'
-import { 
-  Database, 
-  Table as DatabaseTable, 
-  TableInsert, 
-  TableStatus, 
-  TableUpdate 
+import {
+  Database,
+  Table as DatabaseTable,
+  TableInsert,
+  TableStatus,
+  TableUpdate,
 } from '@/types/database'
 
 type SupabaseTable = DatabaseTable
@@ -119,8 +119,12 @@ export async function fetchTables(): Promise<Table[]> {
         status: (['available', 'occupied', 'reserved'].includes(table.status)
           ? table.status
           : 'available') as 'available' | 'occupied' | 'reserved',
-        type: (['circle', 'rectangle', 'square'].includes(table.shape || table.type)
-          ? (table.shape || table.type === 'oval' ? 'circle' : table.shape || table.type)
+        type: (['circle', 'rectangle', 'square'].includes(
+          table.shape || table.type
+        )
+          ? table.shape || table.type === 'oval'
+            ? 'circle'
+            : table.shape || table.type
           : 'rectangle') as 'circle' | 'rectangle' | 'square',
         seats: Math.max(0, Math.min(20, seatCountMap[table.id] || 0)), // Clamp seats to valid range
         x: Math.max(0, Math.min(2000, x)), // Clamp position to canvas bounds
@@ -142,7 +146,9 @@ export async function fetchTables(): Promise<Table[]> {
  * @param tableData Table data to create
  * @returns The created table
  */
-export async function createTable(tableData: Omit<TableInsert, 'id' | 'created_at' | 'updated_at' | 'table_id'>): Promise<SupabaseTable> {
+export async function createTable(
+  tableData: Omit<TableInsert, 'id' | 'created_at' | 'updated_at' | 'table_id'>
+): Promise<SupabaseTable> {
   return measureApiCall('create_table', async () => {
     // Security: Validate and sanitize input data
     const validTypes = ['circle', 'rectangle', 'square']
@@ -151,7 +157,9 @@ export async function createTable(tableData: Omit<TableInsert, 'id' | 'created_a
     const sanitizedData = {
       table_id: `table_${Date.now()}`, // Generate unique table_id
       label: tableData.label || 'Table',
-      type: validTypes.includes(tableData.type || '') ? tableData.type : 'rectangle',
+      type: validTypes.includes(tableData.type || '')
+        ? tableData.type
+        : 'rectangle',
       status:
         tableData.status && validStatuses.includes(tableData.status)
           ? tableData.status
@@ -176,8 +184,10 @@ export async function createTable(tableData: Omit<TableInsert, 'id' | 'created_a
         tableData.rotation !== undefined && tableData.rotation !== null
           ? Math.max(0, Math.min(360, tableData.rotation))
           : null,
-      shape: (['circle', 'rectangle', 'oval'].includes(tableData.shape || tableData.type || '')
-        ? (tableData.shape || tableData.type)
+      shape: (['circle', 'rectangle', 'oval'].includes(
+        tableData.shape || tableData.type || ''
+      )
+        ? tableData.shape || tableData.type
         : 'rectangle') as 'rectangle' | 'circle' | 'oval',
     }
 
@@ -238,39 +248,46 @@ export async function updateTable(
     }
 
     if (updates.position_x !== undefined) {
-      sanitizedUpdates.position_x = updates.position_x !== null 
-        ? Math.max(0, Math.min(2000, updates.position_x))
-        : null
+      sanitizedUpdates.position_x =
+        updates.position_x !== null
+          ? Math.max(0, Math.min(2000, updates.position_x))
+          : null
     }
 
     if (updates.position_y !== undefined) {
-      sanitizedUpdates.position_y = updates.position_y !== null
-        ? Math.max(0, Math.min(2000, updates.position_y))
-        : null
+      sanitizedUpdates.position_y =
+        updates.position_y !== null
+          ? Math.max(0, Math.min(2000, updates.position_y))
+          : null
     }
 
     if (updates.width !== undefined) {
-      sanitizedUpdates.width = updates.width !== null
-        ? Math.max(50, Math.min(200, updates.width))
-        : null
+      sanitizedUpdates.width =
+        updates.width !== null
+          ? Math.max(50, Math.min(200, updates.width))
+          : null
     }
 
     if (updates.height !== undefined) {
-      sanitizedUpdates.height = updates.height !== null
-        ? Math.max(50, Math.min(200, updates.height))
-        : null
+      sanitizedUpdates.height =
+        updates.height !== null
+          ? Math.max(50, Math.min(200, updates.height))
+          : null
     }
 
     if (updates.rotation !== undefined) {
-      sanitizedUpdates.rotation = updates.rotation !== null
-        ? Math.max(0, Math.min(360, updates.rotation))
-        : null
+      sanitizedUpdates.rotation =
+        updates.rotation !== null
+          ? Math.max(0, Math.min(360, updates.rotation))
+          : null
     }
 
     if ('shape' in updates && updates.shape !== undefined) {
-      sanitizedUpdates.shape = (['circle', 'rectangle', 'oval'].includes(updates.shape || '')
-        ? updates.shape
-        : 'rectangle') as 'rectangle' | 'circle' | 'oval' | null
+      sanitizedUpdates.shape = (
+        ['circle', 'rectangle', 'oval'].includes(updates.shape || '')
+          ? updates.shape
+          : 'rectangle'
+      ) as 'rectangle' | 'circle' | 'oval' | null
     }
 
     const supabase = createClient()

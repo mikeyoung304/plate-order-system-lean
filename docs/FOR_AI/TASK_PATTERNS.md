@@ -9,6 +9,7 @@ This document provides standardized patterns for AI assistants working on the Pl
 ### Creating New Components
 
 #### Standard Component Structure
+
 ```typescript
 // components/example/ExampleComponent.tsx
 import { FC, useState, useEffect } from 'react'
@@ -72,6 +73,7 @@ export const ExampleComponent: FC<ExampleComponentProps> = ({
 ```
 
 #### Component File Organization
+
 ```
 components/
 ├── example/
@@ -86,6 +88,7 @@ components/
 ### Modifying Large Components
 
 #### When Component > 200 Lines: Split Pattern
+
 ```typescript
 // Before: server/page.tsx (893 lines)
 // After: Split into focused components
@@ -110,6 +113,7 @@ export default function ServerPage() {
 ```
 
 #### Refactoring Checklist
+
 - [ ] Extract sub-components under 150 lines each
 - [ ] Move shared logic to custom hooks
 - [ ] Extract types to separate files
@@ -120,6 +124,7 @@ export default function ServerPage() {
 ## Database Query Patterns
 
 ### Standard Supabase Query Pattern
+
 ```typescript
 // lib/modassembly/supabase/database/[entity].ts
 import { createClient } from '@/lib/modassembly/supabase/client'
@@ -134,10 +139,8 @@ export async function getOrdersWithRelations(filters?: {
   limit?: number
 }) {
   const supabase = createClient()
-  
-  let query = supabase
-    .from('orders')
-    .select(`
+
+  let query = supabase.from('orders').select(`
       *,
       table:tables(id, label, type),
       seat:seats(id, label),
@@ -149,7 +152,7 @@ export async function getOrdersWithRelations(filters?: {
   if (filters?.tableId) {
     query = query.eq('table_id', filters.tableId)
   }
-  
+
   if (filters?.status) {
     query = query.eq('status', filters.status)
   }
@@ -188,6 +191,7 @@ export async function createOrderWithValidation(orderData: CreateOrder) {
 ```
 
 ### Real-time Subscription Pattern
+
 ```typescript
 // hooks/use-realtime-[entity].ts
 import { useState, useEffect } from 'react'
@@ -214,19 +218,21 @@ export function useRealtimeOrders(tableId?: string) {
       .channel('orders-realtime')
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'orders',
-          filter: tableId ? `table_id=eq.${tableId}` : undefined
+          filter: tableId ? `table_id=eq.${tableId}` : undefined,
         },
-        (payload) => {
+        payload => {
           if (payload.eventType === 'INSERT') {
             setOrders(prev => [payload.new as Order, ...prev])
           } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev => prev.map(order => 
-              order.id === payload.new.id ? payload.new as Order : order
-            ))
+            setOrders(prev =>
+              prev.map(order =>
+                order.id === payload.new.id ? (payload.new as Order) : order
+              )
+            )
           } else if (payload.eventType === 'DELETE') {
             setOrders(prev => prev.filter(order => order.id !== payload.old.id))
           }
@@ -246,6 +252,7 @@ export function useRealtimeOrders(tableId?: string) {
 ## State Management Patterns
 
 ### Context Pattern for Domain State
+
 ```typescript
 // lib/state/[domain]-context.tsx
 import { createContext, useContext, useReducer, ReactNode } from 'react'
@@ -258,7 +265,7 @@ interface OrderState {
   currentStep: OrderFlowStep
 }
 
-type OrderAction = 
+type OrderAction =
   | { type: 'SELECT_TABLE'; table: Table }
   | { type: 'SELECT_SEAT'; seat: Seat }
   | { type: 'SET_ORDER_TYPE'; orderType: 'food' | 'beverage' }
@@ -309,6 +316,7 @@ export function useOrderState() {
 ```
 
 ### Custom Hook Pattern for Business Logic
+
 ```typescript
 // hooks/use-[feature]-logic.ts
 import { useState, useCallback } from 'react'
@@ -318,38 +326,49 @@ export function useOrderFlow() {
   const [loading, setLoading] = useState(false)
   const { state, dispatch } = useOrderState()
 
-  const createOrder = useCallback(async (orderData: CreateOrderRequest) => {
-    setLoading(true)
-    try {
-      const order = await createOrderWithValidation(orderData)
-      toast.success('Order created successfully')
-      dispatch({ type: 'RESET' })
-      return order
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create order')
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }, [dispatch])
+  const createOrder = useCallback(
+    async (orderData: CreateOrderRequest) => {
+      setLoading(true)
+      try {
+        const order = await createOrderWithValidation(orderData)
+        toast.success('Order created successfully')
+        dispatch({ type: 'RESET' })
+        return order
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to create order'
+        )
+        throw error
+      } finally {
+        setLoading(false)
+      }
+    },
+    [dispatch]
+  )
 
-  const selectTable = useCallback((table: Table) => {
-    dispatch({ type: 'SELECT_TABLE', table })
-  }, [dispatch])
+  const selectTable = useCallback(
+    (table: Table) => {
+      dispatch({ type: 'SELECT_TABLE', table })
+    },
+    [dispatch]
+  )
 
-  const selectSeat = useCallback((seat: Seat) => {
-    dispatch({ type: 'SELECT_SEAT', seat })
-  }, [dispatch])
+  const selectSeat = useCallback(
+    (seat: Seat) => {
+      dispatch({ type: 'SELECT_SEAT', seat })
+    },
+    [dispatch]
+  )
 
   return {
     // State
     ...state,
     loading,
-    
+
     // Actions
     createOrder,
     selectTable,
-    selectSeat
+    selectSeat,
   }
 }
 ```
@@ -357,6 +376,7 @@ export function useOrderFlow() {
 ## Error Handling Patterns
 
 ### API Error Handling
+
 ```typescript
 // lib/error-handling.ts
 export class APIError extends Error {
@@ -374,17 +394,17 @@ export async function handleSupabaseError<T>(
   operation: () => Promise<{ data: T | null; error: any }>
 ): Promise<T> {
   const { data, error } = await operation()
-  
+
   if (error) {
     // Map Supabase errors to user-friendly messages
     const message = getErrorMessage(error)
     throw new APIError(message, error.code, error.status)
   }
-  
+
   if (!data) {
     throw new APIError('No data returned', 'NO_DATA')
   }
-  
+
   return data
 }
 
@@ -403,6 +423,7 @@ function getErrorMessage(error: any): string {
 ```
 
 ### Component Error Boundaries
+
 ```typescript
 // components/error-boundary.tsx
 import { Component, ErrorInfo, ReactNode } from 'react'
@@ -431,7 +452,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
-    
+
     // Log to external service in production
     if (process.env.NODE_ENV === 'production') {
       // logErrorToService(error, errorInfo)
@@ -444,9 +465,9 @@ export class ErrorBoundary extends Component<Props, State> {
         <Alert variant="destructive" className="m-4">
           <AlertDescription>
             Something went wrong. Please refresh the page or try again.
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="ml-2"
               onClick={() => this.setState({ hasError: false })}
             >
@@ -465,6 +486,7 @@ export class ErrorBoundary extends Component<Props, State> {
 ## Performance Optimization Patterns
 
 ### Memoization Pattern
+
 ```typescript
 // Use React.memo for expensive components
 export const ExpensiveComponent = React.memo<Props>(({ data, onAction }) => {
@@ -492,7 +514,7 @@ function ParentComponent() {
   const [data, setData] = useState([])
 
   const handleUpdate = useCallback((id: string, updates: any) => {
-    setData(prev => prev.map(item => 
+    setData(prev => prev.map(item =>
       item.id === id ? { ...item, ...updates } : item
     ))
   }, [])
@@ -500,10 +522,10 @@ function ParentComponent() {
   return (
     <div>
       {data.map(item => (
-        <ChildComponent 
-          key={item.id} 
-          item={item} 
-          onUpdate={handleUpdate} 
+        <ChildComponent
+          key={item.id}
+          item={item}
+          onUpdate={handleUpdate}
         />
       ))}
     </div>
@@ -512,6 +534,7 @@ function ParentComponent() {
 ```
 
 ### Code Splitting Pattern
+
 ```typescript
 // Lazy load heavy components
 const KDSLayout = lazy(() => import('@/components/kds/kds-layout'))
@@ -532,6 +555,7 @@ function App() {
 ## Testing Patterns
 
 ### Unit Test Pattern
+
 ```typescript
 // __tests__/components/ExampleComponent.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -558,9 +582,9 @@ describe('ExampleComponent', () => {
 
   it('calls onAction when button is clicked', async () => {
     render(<ExampleComponent {...defaultProps} />)
-    
+
     fireEvent.click(screen.getByText('Perform Action'))
-    
+
     await waitFor(() => {
       expect(defaultProps.onAction).toHaveBeenCalledTimes(1)
     })
@@ -568,15 +592,16 @@ describe('ExampleComponent', () => {
 
   it('shows loading state', () => {
     render(<ExampleComponent {...defaultProps} />)
-    
+
     fireEvent.click(screen.getByText('Perform Action'))
-    
+
     expect(screen.getByText('Loading...')).toBeInTheDocument()
   })
 })
 ```
 
 ### Integration Test Pattern
+
 ```typescript
 // __tests__/integration/order-flow.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -594,19 +619,19 @@ describe('Order Flow Integration', () => {
 
   it('completes full order flow', async () => {
     renderWithProviders(<ServerPage />)
-    
+
     // Select table
     fireEvent.click(screen.getByText('Table 1'))
-    
+
     // Select seat
     fireEvent.click(screen.getByText('Seat 1'))
-    
+
     // Select order type
     fireEvent.click(screen.getByText('Food'))
-    
+
     // Create order
     fireEvent.click(screen.getByText('Create Order'))
-    
+
     await waitFor(() => {
       expect(screen.getByText('Order created successfully')).toBeInTheDocument()
     })
@@ -617,21 +642,25 @@ describe('Order Flow Integration', () => {
 ## Safe Modification Guidelines
 
 ### Component Size Limits
+
 - **Maximum 200 lines per component**
 - **Maximum 5 props per component**
 - **Split into sub-components when exceeded**
 
 ### Function Complexity Limits
+
 - **Maximum 20 lines per function**
 - **Maximum 3 parameters per function**
 - **Single responsibility principle**
 
 ### State Management Rules
+
 - **Use context for domain state only**
 - **Keep component state local when possible**
 - **Avoid prop drilling beyond 2 levels**
 
 ### Database Query Rules
+
 - **Always use TypeScript types**
 - **Include error handling**
 - **Limit query results (default 50)**
@@ -640,11 +669,12 @@ describe('Order Flow Integration', () => {
 ## Common Refactoring Patterns
 
 ### Extract Custom Hook
+
 ```typescript
 // Before: Logic in component
 function OrderCard({ order }: { order: Order }) {
   const [updating, setUpdating] = useState(false)
-  
+
   const updateStatus = async (newStatus: string) => {
     setUpdating(true)
     try {
@@ -656,14 +686,14 @@ function OrderCard({ order }: { order: Order }) {
       setUpdating(false)
     }
   }
-  
+
   return <div>{/* render */}</div>
 }
 
 // After: Logic in custom hook
 function useOrderActions(orderId: string) {
   const [updating, setUpdating] = useState(false)
-  
+
   const updateStatus = useCallback(async (newStatus: string) => {
     setUpdating(true)
     try {
@@ -675,7 +705,7 @@ function useOrderActions(orderId: string) {
       setUpdating(false)
     }
   }, [orderId])
-  
+
   return { updating, updateStatus }
 }
 
@@ -686,6 +716,7 @@ function OrderCard({ order }: { order: Order }) {
 ```
 
 ### Extract Sub-Components
+
 ```typescript
 // Before: Large component
 function LargeOrderDisplay({ orders }: { orders: Order[] }) {
@@ -727,14 +758,14 @@ function LargeOrderDisplay({ orders }: { orders: Order[] }) {
 // After: Extracted sub-components
 function OrderCard({ order }: { order: Order }) {
   const { updating, updateStatus } = useOrderActions(order.id)
-  
+
   return (
     <div className="border rounded p-4">
       <OrderHeader order={order} />
       <OrderDetails order={order} />
       <OrderItems items={order.items} />
-      <OrderActions 
-        order={order} 
+      <OrderActions
+        order={order}
         onUpdateStatus={updateStatus}
         loading={updating}
       />
@@ -756,6 +787,7 @@ function OrderList({ orders }: { orders: Order[] }) {
 ## Security Patterns
 
 ### Input Sanitization
+
 ```typescript
 // lib/validation.ts
 export function sanitizeInput(input: string): string {
@@ -770,22 +802,24 @@ export function validateOrderInput(data: any): CreateOrderRequest {
   return {
     table_id: validateUUID(data.table_id),
     seat_id: validateUUID(data.seat_id),
-    items: Array.isArray(data.items) 
+    items: Array.isArray(data.items)
       ? data.items.slice(0, 10).map(sanitizeInput)
       : [],
-    transcript: typeof data.transcript === 'string' 
-      ? sanitizeInput(data.transcript)
-      : undefined
+    transcript:
+      typeof data.transcript === 'string'
+        ? sanitizeInput(data.transcript)
+        : undefined,
   }
 }
 ```
 
 ### Permission Checking
+
 ```typescript
 // lib/permissions.ts
 export function canUserPerformAction(
-  userRole: string, 
-  action: string, 
+  userRole: string,
+  action: string,
   resource?: any
 ): boolean {
   const permissions = {
@@ -794,20 +828,20 @@ export function canUserPerformAction(
     cook: ['view_orders', 'update_order_status'],
     resident: ['view_own_orders']
   }
-  
+
   const userPermissions = permissions[userRole as keyof typeof permissions] || []
-  
+
   return userPermissions.includes('*') || userPermissions.includes(action)
 }
 
 // Usage in components
 function OrderActions({ order }: { order: Order }) {
   const { user } = useAuth()
-  
+
   if (!canUserPerformAction(user.role, 'update_order_status')) {
     return null
   }
-  
+
   return <div>{/* Action buttons */}</div>
 }
 ```

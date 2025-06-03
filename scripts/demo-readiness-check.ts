@@ -41,7 +41,10 @@ class DemoReadinessCoordinator {
       fallbacksAvailable: false,
     }
 
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
       this.supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -106,8 +109,11 @@ class DemoReadinessCoordinator {
     }
 
     try {
-      const { data, error } = await this.supabase.from('profiles').select('count').limit(1)
-      
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .select('count')
+        .limit(1)
+
       if (error) {
         this.addCheck('database_connection', {
           status: 'fail',
@@ -185,8 +191,12 @@ class DemoReadinessCoordinator {
       }
 
       // Check for tables and seats
-      const { data: tables } = await this.supabase.from('tables').select('id, label')
-      const { data: seats } = await this.supabase.from('seats').select('id, table_id')
+      const { data: tables } = await this.supabase
+        .from('tables')
+        .select('id, label')
+      const { data: seats } = await this.supabase
+        .from('seats')
+        .select('id, table_id')
 
       if (!tables || tables.length === 0) {
         this.addCheck('demo_tables', {
@@ -202,7 +212,6 @@ class DemoReadinessCoordinator {
           critical: false,
         })
       }
-
     } catch (error) {
       this.addCheck('demo_data', {
         status: 'fail',
@@ -256,11 +265,7 @@ class DemoReadinessCoordinator {
   async checkApiEndpoints(): Promise<void> {
     console.log('🌐 Checking API endpoints...')
 
-    const endpoints = [
-      '/api/test-env',
-      '/api/auth-check',
-      '/api/transcribe',
-    ]
+    const endpoints = ['/api/test-env', '/api/auth-check', '/api/transcribe']
 
     for (const endpoint of endpoints) {
       try {
@@ -269,7 +274,8 @@ class DemoReadinessCoordinator {
           headers: { 'Content-Type': 'application/json' },
         })
 
-        if (response.ok || response.status === 401) { // 401 is expected for protected endpoints
+        if (response.ok || response.status === 401) {
+          // 401 is expected for protected endpoints
           this.addCheck(`api_${endpoint.replace(/[\/\-]/g, '_')}`, {
             status: 'pass',
             message: `API endpoint ${endpoint} accessible`,
@@ -305,13 +311,7 @@ class DemoReadinessCoordinator {
       'tsconfig.json',
     ]
 
-    const criticalDirs = [
-      'components',
-      'app',
-      'lib',
-      'hooks',
-      'types',
-    ]
+    const criticalDirs = ['components', 'app', 'lib', 'hooks', 'types']
 
     let missingFiles = []
     let missingDirs = []
@@ -399,11 +399,15 @@ class DemoReadinessCoordinator {
     try {
       // Test realtime connection capability
       const channel = this.supabase.channel('demo-test')
-      const isConnected = await new Promise((resolve) => {
+      const isConnected = await new Promise(resolve => {
         const timeout = setTimeout(() => resolve(false), 5000)
-        
+
         channel
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {})
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            () => {}
+          )
           .subscribe((status: string) => {
             if (status === 'SUBSCRIBED') {
               clearTimeout(timeout)
@@ -442,7 +446,7 @@ class DemoReadinessCoordinator {
     console.log('⚡ Checking performance baseline...')
 
     const startTime = Date.now()
-    
+
     if (this.supabase) {
       try {
         await this.supabase.from('profiles').select('count').limit(1)
@@ -476,8 +480,10 @@ class DemoReadinessCoordinator {
 
   // MAIN EXECUTION
   async runAllChecks(): Promise<DemoHealthReport> {
-    console.log('🎯 DEMO READINESS COORDINATOR - Starting comprehensive check...')
-    console.log('=' .repeat(70))
+    console.log(
+      '🎯 DEMO READINESS COORDINATOR - Starting comprehensive check...'
+    )
+    console.log('='.repeat(70))
 
     await this.checkEnvironmentVariables()
     await this.checkDatabaseConnection()
@@ -514,7 +520,8 @@ class DemoReadinessCoordinator {
 
   private checkFallbackAvailability(): boolean {
     // Fallbacks available if we have basic auth and database access
-    const hasDatabase = this.results.checks['database_connection']?.status === 'pass'
+    const hasDatabase =
+      this.results.checks['database_connection']?.status === 'pass'
     const hasAuth = this.results.checks['auth_system']?.status !== 'fail'
     const hasFiles = this.results.checks['file_system']?.status === 'pass'
 
@@ -525,10 +532,12 @@ class DemoReadinessCoordinator {
   generateReport(): string {
     const report = []
     report.push('🎯 DEMO READINESS REPORT')
-    report.push('=' .repeat(50))
+    report.push('='.repeat(50))
     report.push(`Overall Status: ${this.results.overall.toUpperCase()}`)
     report.push(`Ready for Demo: ${this.results.readyForDemo ? 'YES' : 'NO'}`)
-    report.push(`Fallbacks Available: ${this.results.fallbacksAvailable ? 'YES' : 'NO'}`)
+    report.push(
+      `Fallbacks Available: ${this.results.fallbacksAvailable ? 'YES' : 'NO'}`
+    )
     report.push(`Timestamp: ${this.results.timestamp}`)
     report.push('')
 
@@ -550,7 +559,12 @@ class DemoReadinessCoordinator {
 
     report.push('📋 DETAILED CHECKS:')
     Object.entries(this.results.checks).forEach(([name, check]) => {
-      const icon = check.status === 'pass' ? '✅' : check.status === 'warning' ? '⚠️' : '❌'
+      const icon =
+        check.status === 'pass'
+          ? '✅'
+          : check.status === 'warning'
+            ? '⚠️'
+            : '❌'
       const critical = check.critical ? ' (CRITICAL)' : ''
       report.push(`   ${icon} ${name}${critical}: ${check.message}`)
     })
@@ -571,9 +585,9 @@ class DemoReadinessCoordinator {
 async function main() {
   const coordinator = new DemoReadinessCoordinator()
   const results = await coordinator.runAllChecks()
-  
+
   console.log('\n' + coordinator.generateReport())
-  
+
   // Exit with appropriate code
   process.exit(results.readyForDemo ? 0 : 1)
 }

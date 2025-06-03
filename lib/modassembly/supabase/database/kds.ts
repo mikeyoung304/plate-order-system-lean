@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
 import { Security } from '@/lib/security'
 import { measureApiCall } from '@/lib/performance-utils'
-import { 
+import {
   KDSConfiguration as DatabaseKDSConfiguration,
   KDSMetric as DatabaseKDSMetric,
   KDSOrderRouting as DatabaseKDSOrderRouting,
   KDSStation as DatabaseKDSStation,
   KDSOrderWithJoins,
-  OrderType
+  OrderType,
 } from '@/types/database'
 
 // Re-export database types for backward compatibility

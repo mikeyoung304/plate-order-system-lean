@@ -131,7 +131,6 @@ export function PrinterSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-6'>
-
         <div className='space-y-2'>
           <Label htmlFor='printer-ip'>Printer IP Address</Label>
           <div className='flex gap-2'>

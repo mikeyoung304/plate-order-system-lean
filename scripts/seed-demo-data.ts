@@ -426,7 +426,7 @@ async function createSampleOrders() {
     console.log('Missing data for creating orders, skipping...')
     console.log('Debug info:')
     console.log('- Residents:', residents?.length || 0)
-    console.log('- Servers:', servers?.length || 0)  
+    console.log('- Servers:', servers?.length || 0)
     console.log('- Tables:', tables?.length || 0)
     console.log('- Seats:', seats?.length || 0)
     return
@@ -436,7 +436,12 @@ async function createSampleOrders() {
   for (const resident of residents) {
     // Use sample favorite items since metadata doesn't exist yet
     const favoriteItems = [
-      'Grilled chicken', 'Meatloaf', 'Soup', 'Salad', 'Coffee', 'Tea'
+      'Grilled chicken',
+      'Meatloaf',
+      'Soup',
+      'Salad',
+      'Coffee',
+      'Tea',
     ]
 
     // Create 10-15 historical orders

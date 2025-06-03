@@ -7,6 +7,7 @@ This guide covers end-to-end deployment processes, environment configuration, mo
 ## Deployment Overview
 
 ### Current Production Setup
+
 - **Platform**: Vercel (Serverless Next.js)
 - **Database**: Supabase (Managed PostgreSQL)
 - **Domain**: plate-restaurant-system-ej2qsvqd2.vercel.app
@@ -60,6 +61,7 @@ VERCEL_URL=plate-restaurant-system-ej2qsvqd2.vercel.app
 ### Vercel Environment Configuration
 
 #### Development Environment
+
 ```bash
 # Set development variables
 vercel env add NEXT_PUBLIC_SUPABASE_URL development
@@ -69,6 +71,7 @@ vercel env add OPENAI_API_KEY development
 ```
 
 #### Production Environment
+
 ```bash
 # Set production variables
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
@@ -78,6 +81,7 @@ vercel env add OPENAI_API_KEY production
 ```
 
 #### Preview Environment
+
 ```bash
 # Set preview variables (for PR deployments)
 vercel env add NEXT_PUBLIC_SUPABASE_URL preview
@@ -168,37 +172,37 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run type check
-      run: npm run type-check
-      
-    - name: Run tests
-      run: npm run test
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Deploy to Vercel
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        vercel-org-id: ${{ secrets.ORG_ID }}
-        vercel-project-id: ${{ secrets.PROJECT_ID }}
-        vercel-args: '--prod'
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: '--prod'
 ```
 
 ### Vercel Configuration
@@ -291,10 +295,10 @@ RETURNS void AS $$
 BEGIN
   -- Clean up old metrics (keep 90 days)
   DELETE FROM kds_metrics WHERE recorded_at < NOW() - INTERVAL '90 days';
-  
+
   -- Clean up old cancelled orders (keep 30 days)
   DELETE FROM orders WHERE status = 'cancelled' AND created_at < NOW() - INTERVAL '30 days';
-  
+
   -- Update statistics
   ANALYZE;
 END;
@@ -375,27 +379,27 @@ interface HealthStatus {
 
 export async function performHealthCheck(): Promise<HealthStatus> {
   const start = Date.now()
-  
+
   const checks = await Promise.allSettled([
     checkDatabase(),
     checkOpenAI(),
-    checkStorage()
+    checkStorage(),
   ])
-  
+
   const services = {
     database: checks[0].status === 'fulfilled' ? 'up' : 'down',
     openai: checks[1].status === 'fulfilled' ? 'up' : 'down',
-    storage: checks[2].status === 'fulfilled' ? 'up' : 'down'
+    storage: checks[2].status === 'fulfilled' ? 'up' : 'down',
   }
-  
+
   const allUp = Object.values(services).every(status => status === 'up')
   const anyDown = Object.values(services).some(status => status === 'down')
-  
+
   return {
     status: allUp ? 'healthy' : anyDown ? 'down' : 'degraded',
     services,
     timestamp: new Date().toISOString(),
-    response_time: Date.now() - start
+    response_time: Date.now() - start,
   }
 }
 
@@ -404,22 +408,19 @@ async function checkDatabase(): Promise<void> {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-  
-  const { error } = await supabase
-    .from('profiles')
-    .select('id')
-    .limit(1)
-  
+
+  const { error } = await supabase.from('profiles').select('id').limit(1)
+
   if (error) throw new Error(`Database check failed: ${error.message}`)
 }
 
 async function checkOpenAI(): Promise<void> {
   const response = await fetch('https://api.openai.com/v1/models', {
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-    }
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
   })
-  
+
   if (!response.ok) {
     throw new Error(`OpenAI API check failed: ${response.status}`)
   }
@@ -430,11 +431,11 @@ async function checkStorage(): Promise<void> {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-  
+
   const { error } = await supabase.storage
     .from('audio-recordings')
     .list('', { limit: 1 })
-  
+
   if (error) throw new Error(`Storage check failed: ${error.message}`)
 }
 ```
@@ -457,12 +458,12 @@ vercel logs --limit 10
 echo
 echo "=== Database Performance ==="
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "
-SELECT 
+SELECT
   query,
   mean_exec_time,
   calls,
   total_exec_time
-FROM pg_stat_statements 
+FROM pg_stat_statements
 WHERE mean_exec_time > 100
 ORDER BY mean_exec_time DESC
 LIMIT 10;"
@@ -470,19 +471,19 @@ LIMIT 10;"
 echo
 echo "=== Active Connections ==="
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "
-SELECT 
-  state, 
+SELECT
+  state,
   COUNT(*) as count
-FROM pg_stat_activity 
+FROM pg_stat_activity
 GROUP BY state;"
 
 echo
 echo "=== Table Sizes ==="
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "
-SELECT 
+SELECT
   tablename,
   pg_size_pretty(pg_total_relation_size('public.'||tablename)) as size
-FROM pg_tables 
+FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size('public.'||tablename) DESC;"
 ```
@@ -512,7 +513,7 @@ export class ErrorTracker {
       user_id: context.user_id,
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'unknown',
-      severity: this.determineSeverity(error, context)
+      severity: this.determineSeverity(error, context),
     }
 
     // Log to console
@@ -525,9 +526,7 @@ export class ErrorTracker {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       )
 
-      await supabase
-        .from('error_logs')
-        .insert(errorReport)
+      await supabase.from('error_logs').insert(errorReport)
     } catch (dbError) {
       console.error('Failed to log error to database:', dbError)
     }
@@ -538,14 +537,23 @@ export class ErrorTracker {
     }
   }
 
-  private static determineSeverity(error: Error, context: any): 'low' | 'medium' | 'high' | 'critical' {
+  private static determineSeverity(
+    error: Error,
+    context: any
+  ): 'low' | 'medium' | 'high' | 'critical' {
     // Database connection errors
-    if (error.message.includes('connection') || error.message.includes('timeout')) {
+    if (
+      error.message.includes('connection') ||
+      error.message.includes('timeout')
+    ) {
       return 'critical'
     }
 
     // Authentication errors
-    if (error.message.includes('auth') || error.message.includes('unauthorized')) {
+    if (
+      error.message.includes('auth') ||
+      error.message.includes('unauthorized')
+    ) {
       return 'high'
     }
 
@@ -600,9 +608,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!api/|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api/|_next/static|_next/image|favicon.ico).*)'],
 }
 ```
 
@@ -683,6 +689,7 @@ $$ LANGUAGE plpgsql;
 ### Common Deployment Issues
 
 #### Build Failures
+
 ```bash
 # Check TypeScript errors
 npm run type-check
@@ -696,6 +703,7 @@ npm run build
 ```
 
 #### Environment Variable Issues
+
 ```bash
 # Verify environment variables
 vercel env ls
@@ -708,6 +716,7 @@ NODE_ENV=production npm run build
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Test database connection
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "SELECT 1;"
@@ -717,27 +726,28 @@ psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "SELECT 1
 
 # Monitor active connections
 psql -h db.eiipozoogrrfudhjoqms.supabase.co -U postgres -d postgres -c "
-SELECT count(*) as active_connections 
-FROM pg_stat_activity 
+SELECT count(*) as active_connections
+FROM pg_stat_activity
 WHERE state = 'active';"
 ```
 
 ### Performance Issues
 
 #### Slow API Responses
+
 ```sql
 -- Find slow queries
-SELECT 
+SELECT
   query,
   mean_exec_time,
   calls,
   total_exec_time
-FROM pg_stat_statements 
+FROM pg_stat_statements
 WHERE mean_exec_time > 1000
 ORDER BY mean_exec_time DESC;
 
 -- Check for missing indexes
-SELECT 
+SELECT
   schemaname,
   tablename,
   seq_scan,
@@ -749,6 +759,7 @@ WHERE seq_scan > idx_scan;
 ```
 
 #### Memory Issues
+
 ```bash
 # Monitor Vercel function memory usage
 vercel logs --follow | grep "memory"
@@ -766,6 +777,7 @@ vercel logs --follow | grep "memory"
 ### Recovery Procedures
 
 #### Rollback Deployment
+
 ```bash
 # Rollback to previous deployment
 vercel rollback [deployment-url]
@@ -776,6 +788,7 @@ git push origin main
 ```
 
 #### Database Recovery
+
 ```bash
 # Point-in-time recovery (contact Supabase support)
 # Or restore from backup
@@ -846,6 +859,7 @@ echo "=== Maintenance completed ==="
 ## Production Checklist
 
 ### Pre-Deployment
+
 - [ ] All tests passing
 - [ ] TypeScript compilation successful
 - [ ] Environment variables configured
@@ -855,6 +869,7 @@ echo "=== Maintenance completed ==="
 - [ ] Monitoring setup complete
 
 ### Post-Deployment
+
 - [ ] Health check endpoint responding
 - [ ] Database connections stable
 - [ ] Real-time features working
@@ -864,6 +879,7 @@ echo "=== Maintenance completed ==="
 - [ ] Backup systems verified
 
 ### Ongoing Operations
+
 - [ ] Daily health checks
 - [ ] Weekly performance reviews
 - [ ] Monthly security audits

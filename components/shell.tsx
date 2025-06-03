@@ -35,7 +35,7 @@ export function Shell({ children, className }: ShellProps) {
       {/* Background texture and lighting */}
       <div className='absolute inset-0 bg-gradient-radial from-apple-blue/5 via-transparent to-transparent opacity-30'></div>
       <div className='absolute inset-0 bg-noise opacity-[0.02] pointer-events-none'></div>
-      
+
       <Sidebar />
       <main className={cn('flex-1 overflow-auto relative', className)}>
         {/* Enhanced ambient lighting */}

@@ -7,11 +7,13 @@ This document identifies specific components and patterns that need refactoring,
 ## Critical Refactoring Targets
 
 ### 1. Server Page Component (893 lines)
+
 **File**: `app/(auth)/server/page.tsx`
 **Priority**: CRITICAL
 **Complexity Score**: 9/10
 
 #### Current Issues
+
 - Monolithic component handling 6+ responsibilities
 - Complex state management with multiple contexts
 - Difficult to test individual features
@@ -81,7 +83,7 @@ function FloorPlanSection() {
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Floor Plan</h2>
-      <FloorPlanCanvas 
+      <FloorPlanCanvas
         tables={tables}
         selectedTable={selectedTable}
         onTableSelect={selectTable}
@@ -94,7 +96,7 @@ function FloorPlanSection() {
 // 3. Order processing section (< 150 lines)
 function OrderProcessingSection() {
   const { currentStep, selectedTable, selectedSeat } = useOrderFlow()
-  
+
   return (
     <Card className="p-6">
       <OrderFlowSteps currentStep={currentStep} />
@@ -113,12 +115,12 @@ function OrderProcessingSection() {
 
 // 4. Modals container (< 100 lines)
 function OrderFlowModals() {
-  const { 
-    showSeatPicker, 
-    showResidentSelector, 
-    showVoicePanel 
+  const {
+    showSeatPicker,
+    showResidentSelector,
+    showVoicePanel
   } = useOrderFlow()
-  
+
   return (
     <>
       <SeatPickerModal open={showSeatPicker} />
@@ -132,6 +134,7 @@ function OrderFlowModals() {
 #### Step-by-Step Refactoring Plan
 
 1. **Extract State Management** (Day 1)
+
    ```typescript
    // Create lib/state/order-flow-context.tsx
    // Move all order-related state to context
@@ -139,6 +142,7 @@ function OrderFlowModals() {
    ```
 
 2. **Extract Floor Plan Logic** (Day 2)
+
    ```typescript
    // Create components/server/FloorPlanSection.tsx
    // Move table selection and display logic
@@ -146,6 +150,7 @@ function OrderFlowModals() {
    ```
 
 3. **Extract Order Processing** (Day 3)
+
    ```typescript
    // Create components/server/OrderProcessingSection.tsx
    // Move step management and form logic
@@ -153,6 +158,7 @@ function OrderFlowModals() {
    ```
 
 4. **Extract Modals** (Day 4)
+
    ```typescript
    // Create components/server/modals/
    // Move each modal to separate component
@@ -167,11 +173,13 @@ function OrderFlowModals() {
    ```
 
 ### 2. Floor Plan Reducer (865 lines)
+
 **File**: `hooks/use-floor-plan-reducer.ts`
 **Priority**: HIGH
 **Complexity Score**: 8/10
 
 #### Current Issues
+
 - Single reducer handling 15+ action types
 - Complex state transitions that are hard to debug
 - Inconsistent state updates
@@ -184,15 +192,15 @@ function OrderFlowModals() {
 function floorPlanReducer(state: FloorPlanState, action: FloorPlanAction) {
   switch (action.type) {
     case 'SET_TABLES':
-      // 50 lines of logic
+    // 50 lines of logic
     case 'UPDATE_TABLE':
-      // 40 lines of logic
+    // 40 lines of logic
     case 'ADD_TABLE':
-      // 60 lines of logic
+    // 60 lines of logic
     case 'DELETE_TABLE':
-      // 30 lines of logic
+    // 30 lines of logic
     case 'SELECT_TABLE':
-      // 20 lines of logic
+    // 20 lines of logic
     // ... 10+ more cases with 200+ lines each
   }
 }
@@ -208,12 +216,12 @@ function tableReducer(state: TableState, action: TableAction) {
         ...state,
         tables: state.tables.map(table =>
           table.id === action.id ? { ...table, ...action.updates } : table
-        )
+        ),
       }
     case 'DELETE_TABLE':
       return {
         ...state,
-        tables: state.tables.filter(table => table.id !== action.id)
+        tables: state.tables.filter(table => table.id !== action.id),
       }
   }
 }
@@ -244,18 +252,19 @@ function canvasReducer(state: CanvasState, action: CanvasAction) {
 
 // 4. Combined reducer
 function floorPlanReducer(
-  state: FloorPlanState, 
+  state: FloorPlanState,
   action: FloorPlanAction
 ): FloorPlanState {
   return {
     tables: tableReducer(state.tables, action),
     selection: selectionReducer(state.selection, action),
-    canvas: canvasReducer(state.canvas, action)
+    canvas: canvasReducer(state.canvas, action),
   }
 }
 ```
 
 ### 3. KDS Layout Component (792 lines)
+
 **File**: `components/kds/kds-layout.tsx`
 **Priority**: HIGH
 **Complexity Score**: 7/10
@@ -285,11 +294,11 @@ function KDSLayout() {
 // Extract station column (< 150 lines)
 function StationColumn({ stationType }: { stationType: string }) {
   const { orders, updateOrder } = useKDSStation(stationType)
-  
+
   return (
     <div className="bg-white rounded-lg shadow">
       <StationHeader type={stationType} />
-      <OrderQueue 
+      <OrderQueue
         orders={orders}
         onOrderUpdate={updateOrder}
       />
@@ -299,11 +308,13 @@ function StationColumn({ stationType }: { stationType: string }) {
 ```
 
 ### 4. Restaurant State Context (731 lines)
+
 **File**: `lib/state/restaurant-state-context.tsx`
 **Priority**: HIGH
 **Complexity Score**: 8/10
 
 #### Current Issues
+
 - Over-centralized state causing unnecessary re-renders
 - Mixing different domains (tables, orders, UI state)
 - Complex state updates
@@ -376,6 +387,7 @@ function RestaurantProvider({ children }) {
 ## Medium Priority Targets
 
 ### 5. Database KDS Module (777 lines)
+
 **File**: `lib/modassembly/supabase/database/kds.ts`
 **Priority**: MEDIUM
 **Complexity Score**: 6/10
@@ -387,21 +399,39 @@ function RestaurantProvider({ children }) {
 
 // 1. Station management (< 200 lines)
 // lib/modassembly/supabase/database/kds-stations.ts
-export async function getStations() { /* ... */ }
-export async function createStation() { /* ... */ }
-export async function updateStation() { /* ... */ }
+export async function getStations() {
+  /* ... */
+}
+export async function createStation() {
+  /* ... */
+}
+export async function updateStation() {
+  /* ... */
+}
 
-// 2. Order routing (< 200 lines)  
+// 2. Order routing (< 200 lines)
 // lib/modassembly/supabase/database/kds-routing.ts
-export async function routeOrder() { /* ... */ }
-export async function updateRouting() { /* ... */ }
-export async function completeOrder() { /* ... */ }
+export async function routeOrder() {
+  /* ... */
+}
+export async function updateRouting() {
+  /* ... */
+}
+export async function completeOrder() {
+  /* ... */
+}
 
 // 3. Metrics and analytics (< 200 lines)
 // lib/modassembly/supabase/database/kds-metrics.ts
-export async function recordMetric() { /* ... */ }
-export async function getStationMetrics() { /* ... */ }
-export async function getPerformanceData() { /* ... */ }
+export async function recordMetric() {
+  /* ... */
+}
+export async function getStationMetrics() {
+  /* ... */
+}
+export async function getPerformanceData() {
+  /* ... */
+}
 
 // 4. Main KDS module (< 100 lines)
 // lib/modassembly/supabase/database/kds.ts
@@ -411,6 +441,7 @@ export * from './kds-metrics'
 ```
 
 ### 6. Use Floor Plan State Hook (512 lines)
+
 **File**: `hooks/use-floor-plan-state.ts`
 **Priority**: MEDIUM
 **Complexity Score**: 5/10
@@ -423,15 +454,15 @@ export * from './kds-metrics'
 // 1. Table management hook (< 200 lines)
 function useTableManagement() {
   const [tables, setTables] = useState([])
-  
-  const addTable = useCallback(async (table) => {
+
+  const addTable = useCallback(async table => {
     // Implementation
   }, [])
-  
+
   const updateTable = useCallback(async (id, updates) => {
     // Implementation
   }, [])
-  
+
   return { tables, addTable, updateTable }
 }
 
@@ -439,12 +470,12 @@ function useTableManagement() {
 function useFloorPlanSelection() {
   const [selectedTable, setSelectedTable] = useState(null)
   const [selectedSeat, setSelectedSeat] = useState(null)
-  
-  return { 
-    selectedTable, 
-    selectedSeat, 
-    setSelectedTable, 
-    setSelectedSeat 
+
+  return {
+    selectedTable,
+    selectedSeat,
+    setSelectedTable,
+    setSelectedSeat,
   }
 }
 
@@ -452,7 +483,7 @@ function useFloorPlanSelection() {
 function useCanvasInteractions() {
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
-  
+
   return { zoom, pan, setZoom, setPan }
 }
 
@@ -461,11 +492,11 @@ function useFloorPlanState() {
   const tableState = useTableManagement()
   const selectionState = useFloorPlanSelection()
   const canvasState = useCanvasInteractions()
-  
+
   return {
     ...tableState,
     ...selectionState,
-    ...canvasState
+    ...canvasState,
   }
 }
 ```
@@ -473,11 +504,13 @@ function useFloorPlanState() {
 ## Low Priority Targets
 
 ### 7. Use KDS Orders Hook (445 lines)
+
 **File**: `hooks/use-kds-orders.ts`
 **Priority**: LOW
 **Complexity Score**: 4/10
 
 ### 8. Voice Order Panel (389 lines)
+
 **File**: `components/voice-order-panel.tsx`
 **Priority**: LOW
 **Complexity Score**: 4/10
@@ -487,16 +520,19 @@ function useFloorPlanState() {
 ### Safe Refactoring Steps
 
 1. **Prepare Phase**
+
    - Create comprehensive tests for existing functionality
    - Document current behavior
    - Identify all dependencies and imports
 
 2. **Extract Phase**
+
    - Create new files with focused responsibilities
    - Move code in small, testable chunks
    - Maintain existing interfaces initially
 
 3. **Replace Phase**
+
    - Update imports one file at a time
    - Test after each change
    - Maintain backwards compatibility
@@ -536,31 +572,34 @@ describe('useOrderFlow', () => {
 
 ### Performance Impact Assessment
 
-| Component | Before (lines) | After (est. lines) | Perf Impact |
-|-----------|----------------|-------------------|-------------|
-| server/page.tsx | 893 | 6 files × 150 avg | +40% faster rendering |
-| use-floor-plan-reducer.ts | 865 | 4 files × 150 avg | +60% state updates |
-| kds-layout.tsx | 792 | 5 files × 150 avg | +50% rendering |
-| restaurant-state-context.tsx | 731 | 4 contexts × 150 avg | +70% re-render reduction |
+| Component                    | Before (lines) | After (est. lines)   | Perf Impact              |
+| ---------------------------- | -------------- | -------------------- | ------------------------ |
+| server/page.tsx              | 893            | 6 files × 150 avg    | +40% faster rendering    |
+| use-floor-plan-reducer.ts    | 865            | 4 files × 150 avg    | +60% state updates       |
+| kds-layout.tsx               | 792            | 5 files × 150 avg    | +50% rendering           |
+| restaurant-state-context.tsx | 731            | 4 contexts × 150 avg | +70% re-render reduction |
 
 ### Risk Assessment
 
 #### High Risk
+
 - **State management refactoring**: Could break existing functionality
 - **Component splitting**: May introduce prop drilling
 
-#### Medium Risk  
+#### Medium Risk
+
 - **Hook extraction**: Could affect performance if not memoized correctly
 - **Database module splitting**: May create circular dependencies
 
 #### Low Risk
+
 - **UI component extraction**: Isolated changes with clear boundaries
 - **Utility function extraction**: Pure functions with no side effects
 
 ### Rollback Strategy
 
 1. **Git branching**: Each refactoring in separate feature branch
-2. **Feature flags**: Gradual rollout of refactored components  
+2. **Feature flags**: Gradual rollout of refactored components
 3. **A/B testing**: Compare performance before/after
 4. **Monitoring**: Track error rates and performance metrics
 
@@ -572,7 +611,7 @@ describe('useOrderFlow', () => {
 # Component template generator
 npx create-component FloorPlanSection --type=server --features=state,hooks
 
-# Hook template generator  
+# Hook template generator
 npx create-hook useOrderFlow --type=context --features=reducer,realtime
 
 # Context template generator

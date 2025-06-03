@@ -181,7 +181,14 @@ export type Database = {
         Row: {
           id: string
           name: string
-          type: 'grill' | 'fryer' | 'salad' | 'expo' | 'bar' | 'prep' | 'dessert'
+          type:
+            | 'grill'
+            | 'fryer'
+            | 'salad'
+            | 'expo'
+            | 'bar'
+            | 'prep'
+            | 'dessert'
           color: string
           position: number
           is_active: boolean
@@ -192,7 +199,14 @@ export type Database = {
         Insert: {
           id?: string
           name: string
-          type: 'grill' | 'fryer' | 'salad' | 'expo' | 'bar' | 'prep' | 'dessert'
+          type:
+            | 'grill'
+            | 'fryer'
+            | 'salad'
+            | 'expo'
+            | 'bar'
+            | 'prep'
+            | 'dessert'
           color?: string
           position?: number
           is_active?: boolean
@@ -203,7 +217,14 @@ export type Database = {
         Update: {
           id?: string
           name?: string
-          type?: 'grill' | 'fryer' | 'salad' | 'expo' | 'bar' | 'prep' | 'dessert'
+          type?:
+            | 'grill'
+            | 'fryer'
+            | 'salad'
+            | 'expo'
+            | 'bar'
+            | 'prep'
+            | 'dessert'
           color?: string
           position?: number
           is_active?: boolean
@@ -358,16 +379,26 @@ export type Database = {
       order_status: 'new' | 'in_progress' | 'ready' | 'delivered' | 'cancelled'
       order_type: 'food' | 'drink'
       table_status: 'available' | 'occupied' | 'cleaning' | 'reserved'
-      station_type: 'grill' | 'fryer' | 'salad' | 'expo' | 'bar' | 'prep' | 'dessert'
+      station_type:
+        | 'grill'
+        | 'fryer'
+        | 'salad'
+        | 'expo'
+        | 'bar'
+        | 'prep'
+        | 'dessert'
       metric_type: 'prep_time' | 'throughput' | 'efficiency' | 'errors'
     }
   }
 }
 
 // Type helpers for common operations
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type InsertTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type UpdateTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row']
+export type InsertTables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']
+export type UpdateTables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update']
 
 // Common type aliases
 export type Profile = Tables<'profiles'>
@@ -404,7 +435,8 @@ export type StationType = Database['public']['Enums']['station_type']
 export type MetricType = Database['public']['Enums']['metric_type']
 
 // View types
-export type KDSTableSummary = Database['public']['Views']['kds_table_summary']['Row']
+export type KDSTableSummary =
+  Database['public']['Views']['kds_table_summary']['Row']
 
 // Composite types for queries with joins
 export type OrderWithJoins = Order & {

@@ -91,7 +91,6 @@ export function AuthForm() {
     }
   }
 
-
   const isLoading = state.status === 'loading' || isPending
 
   return (
@@ -202,7 +201,6 @@ export function AuthForm() {
             ? 'Already have an account? Sign In'
             : 'Need an account? Sign Up'}
         </Button>
-
       </div>
 
       {state.isRateLimited && (
