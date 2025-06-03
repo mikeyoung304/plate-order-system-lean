@@ -651,21 +651,6 @@ export function RestaurantStateProvider({
               }
             }
           )
-          .on('subscribe', status => {
-            if (status === 'SUBSCRIBED') {
-              console.warn('Orders channel subscribed successfully')
-            }
-          })
-          .on('error', error => {
-            console.warn('Orders channel error:', error)
-            dispatch({
-              type: 'SET_ERROR',
-              payload: {
-                key: 'connection',
-                error: 'Real-time updates unavailable',
-              },
-            })
-          })
           .subscribe()
 
         // Add timeout to prevent hanging on failed connections
@@ -690,9 +675,6 @@ export function RestaurantStateProvider({
               }
             }
           )
-          .on('error', error => {
-            console.warn('KDS channel error:', error)
-          })
           .subscribe()
 
         // Tables subscription with error handling
@@ -707,9 +689,6 @@ export function RestaurantStateProvider({
               }
             }
           )
-          .on('error', error => {
-            console.warn('Tables channel error:', error)
-          })
           .subscribe()
 
         // Seats subscription with error handling
@@ -724,9 +703,6 @@ export function RestaurantStateProvider({
               }
             }
           )
-          .on('error', error => {
-            console.warn('Seats channel error:', error)
-          })
           .subscribe()
 
         channelsRef.current = [
