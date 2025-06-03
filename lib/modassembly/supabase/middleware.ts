@@ -7,6 +7,12 @@ import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  // TEMPORARY: Skip middleware entirely on Vercel until auth issues resolved
+  if (process.env.VERCEL === '1') {
+    console.log('Vercel detected - skipping middleware for:', request.nextUrl.pathname)
+    return NextResponse.next({ request })
+  }
+
   // Check if required environment variables are present
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
