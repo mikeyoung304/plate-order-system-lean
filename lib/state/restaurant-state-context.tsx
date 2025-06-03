@@ -2,19 +2,26 @@
 
 /**
  * RESTAURANT STATE INTELLIGENCE COORDINATOR
- * 
+ *
  * Central state management system that provides:
  * - Real-time coordination across all restaurant views
  * - Intelligent state synchronization
  * - Performance optimized updates
  * - Unified data management
- * 
+ *
  * MISSION: Make state management feel alive and responsive
  */
 
-import React, { createContext, useContext, useEffect, useReducer, useCallback, useRef } from 'react'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+} from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import type { Order } from '@/lib/modassembly/supabase/database/orders'
 import type { Table } from '@/lib/floor-plan-utils'
 import type { KDSOrderRouting } from '@/lib/modassembly/supabase/database/kds'
@@ -27,31 +34,36 @@ interface RestaurantState {
   kdsQueue: KDSOrderRouting[]
   residents: any[]
   servers: any[]
-  
+
   // Real-time connection status
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting'
   lastUpdated: Date
-  
+
   // View-specific states
   serverView: {
     selectedTable: Table | null
     selectedSeat: number | null
     orderType: 'food' | 'drink' | null
-    currentView: 'floorPlan' | 'seatPicker' | 'orderType' | 'residentSelect' | 'voiceOrder'
+    currentView:
+      | 'floorPlan'
+      | 'seatPicker'
+      | 'orderType'
+      | 'residentSelect'
+      | 'voiceOrder'
   }
-  
+
   kitchenView: {
     selectedStation: string | null
     filterStatus: string | null
     sortBy: 'time' | 'priority' | 'table'
   }
-  
+
   analyticsView: {
     dateRange: { start: Date; end: Date }
     selectedMetrics: string[]
     refreshInterval: number
   }
-  
+
   // Loading states
   loading: {
     tables: boolean
@@ -59,7 +71,7 @@ interface RestaurantState {
     kdsQueue: boolean
     general: boolean
   }
-  
+
   // Error states
   errors: {
     tables: string | null
@@ -71,9 +83,18 @@ interface RestaurantState {
 
 // STATE ACTIONS
 type RestaurantAction =
-  | { type: 'SET_LOADING'; payload: { key: keyof RestaurantState['loading']; loading: boolean } }
-  | { type: 'SET_ERROR'; payload: { key: keyof RestaurantState['errors']; error: string | null } }
-  | { type: 'SET_CONNECTION_STATUS'; payload: 'connected' | 'disconnected' | 'reconnecting' }
+  | {
+      type: 'SET_LOADING'
+      payload: { key: keyof RestaurantState['loading']; loading: boolean }
+    }
+  | {
+      type: 'SET_ERROR'
+      payload: { key: keyof RestaurantState['errors']; error: string | null }
+    }
+  | {
+      type: 'SET_CONNECTION_STATUS'
+      payload: 'connected' | 'disconnected' | 'reconnecting'
+    }
   | { type: 'SET_TABLES'; payload: Table[] }
   | { type: 'SET_ORDERS'; payload: Order[] }
   | { type: 'SET_KDS_QUEUE'; payload: KDSOrderRouting[] }
@@ -86,7 +107,10 @@ type RestaurantAction =
   | { type: 'SERVER_SELECT_TABLE'; payload: Table }
   | { type: 'SERVER_SELECT_SEAT'; payload: number }
   | { type: 'SERVER_SET_ORDER_TYPE'; payload: 'food' | 'drink' }
-  | { type: 'SERVER_SET_VIEW'; payload: RestaurantState['serverView']['currentView'] }
+  | {
+      type: 'SERVER_SET_VIEW'
+      payload: RestaurantState['serverView']['currentView']
+    }
   | { type: 'SERVER_RESET' }
   | { type: 'KITCHEN_SELECT_STATION'; payload: string | null }
   | { type: 'KITCHEN_SET_FILTER'; payload: string | null }
@@ -102,23 +126,23 @@ const initialState: RestaurantState = {
   kdsQueue: [],
   residents: [],
   servers: [],
-  
+
   connectionStatus: 'disconnected',
   lastUpdated: new Date(),
-  
+
   serverView: {
     selectedTable: null,
     selectedSeat: null,
     orderType: null,
     currentView: 'floorPlan',
   },
-  
+
   kitchenView: {
     selectedStation: null,
     filterStatus: null,
     sortBy: 'time',
   },
-  
+
   analyticsView: {
     dateRange: {
       start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
@@ -127,14 +151,14 @@ const initialState: RestaurantState = {
     selectedMetrics: ['prep_time', 'throughput', 'wait_time'],
     refreshInterval: 30000, // 30 seconds
   },
-  
+
   loading: {
     tables: true,
     orders: true,
     kdsQueue: true,
     general: false,
   },
-  
+
   errors: {
     tables: null,
     orders: null,
@@ -144,7 +168,10 @@ const initialState: RestaurantState = {
 }
 
 // STATE REDUCER WITH INTELLIGENT UPDATES
-function restaurantStateReducer(state: RestaurantState, action: RestaurantAction): RestaurantState {
+function restaurantStateReducer(
+  state: RestaurantState,
+  action: RestaurantAction
+): RestaurantState {
   switch (action.type) {
     case 'SET_LOADING':
       return {
@@ -364,37 +391,41 @@ interface RestaurantStateContextType {
     refreshOrders: () => Promise<void>
     refreshKDSQueue: () => Promise<void>
     refreshAll: () => Promise<void>
-    
+
     // Server view actions
-    selectTable: (table: Table) => void
-    selectSeat: (seat: number) => void
-    setOrderType: (type: 'food' | 'drink') => void
-    setServerView: (view: RestaurantState['serverView']['currentView']) => void
+    selectTable: (_table: Table) => void
+    selectSeat: (_seat: number) => void
+    setOrderType: (_type: 'food' | 'drink') => void
+    setServerView: (_view: RestaurantState['serverView']['currentView']) => void
     resetServerView: () => void
-    
+
     // Kitchen view actions
-    selectStation: (stationId: string | null) => void
-    setKitchenFilter: (status: string | null) => void
-    setKitchenSort: (sort: 'time' | 'priority' | 'table') => void
-    
+    selectStation: (_stationId: string | null) => void
+    setKitchenFilter: (_status: string | null) => void
+    setKitchenSort: (_sort: 'time' | 'priority' | 'table') => void
+
     // Analytics view actions
-    setAnalyticsDateRange: (range: { start: Date; end: Date }) => void
-    setAnalyticsMetrics: (metrics: string[]) => void
-    
+    setAnalyticsDateRange: (_range: { start: Date; end: Date }) => void
+    setAnalyticsMetrics: (_metrics: string[]) => void
+
     // Real-time optimistic updates
-    optimisticUpdateOrder: (order: Order) => void
-    optimisticUpdateKDSRouting: (routing: KDSOrderRouting) => void
+    optimisticUpdateOrder: (_order: Order) => void
+    optimisticUpdateKDSRouting: (_routing: KDSOrderRouting) => void
   }
 }
 
-const RestaurantStateContext = createContext<RestaurantStateContextType | null>(null)
+const RestaurantStateContext = createContext<RestaurantStateContextType | null>(
+  null
+)
 
 // CONTEXT PROVIDER
 interface RestaurantStateProviderProps {
   children: React.ReactNode
 }
 
-export function RestaurantStateProvider({ children }: RestaurantStateProviderProps) {
+export function RestaurantStateProvider({
+  children,
+}: RestaurantStateProviderProps) {
   const [state, dispatch] = useReducer(restaurantStateReducer, initialState)
   const supabaseRef = useRef<SupabaseClient | null>(null)
   const channelsRef = useRef<RealtimeChannel[]>([])
@@ -409,45 +440,65 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
     } catch (error) {
       console.error('Failed to initialize Supabase client:', error)
       dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'disconnected' })
-      dispatch({ type: 'SET_ERROR', payload: { key: 'connection', error: 'Failed to connect to database' } })
+      dispatch({
+        type: 'SET_ERROR',
+        payload: { key: 'connection', error: 'Failed to connect to database' },
+      })
     }
   }, [])
 
   // Data fetching functions
   const refreshTables = useCallback(async () => {
-    if (!supabaseRef.current) return
-    
+    if (!supabaseRef.current) {
+      return
+    }
+
     try {
-      dispatch({ type: 'SET_LOADING', payload: { key: 'tables', loading: true } })
-      
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { key: 'tables', loading: true },
+      })
+
       // Fetch tables with seat counts
       const { data: tables, error: tablesError } = await supabaseRef.current
         .from('tables')
         .select('*')
         .order('label')
-      
-      if (tablesError) throw tablesError
-      
+
+      if (tablesError) {
+        throw tablesError
+      }
+
       // Fetch seats for occupancy data
       const { data: seats, error: seatsError } = await supabaseRef.current
         .from('seats')
         .select('*')
-      
-      if (seatsError) throw seatsError
-      
+
+      if (seatsError) {
+        throw seatsError
+      }
+
       // Transform to Table format with seat counts and occupancy
-      const seatCountMap = seats?.reduce((acc, seat) => {
-        acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
-        return acc
-      }, {} as Record<string, number>) || {}
-      
-      const occupiedSeatMap = seats?.reduce((acc, seat) => {
-        if (seat.status === 'occupied') {
-          acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
-        }
-        return acc
-      }, {} as Record<string, number>) || {}
-      
+      const seatCountMap =
+        seats?.reduce(
+          (acc, seat) => {
+            acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
+            return acc
+          },
+          {} as Record<string, number>
+        ) || {}
+
+      const occupiedSeatMap =
+        seats?.reduce(
+          (acc, seat) => {
+            if (seat.status === 'occupied') {
+              acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
+            }
+            return acc
+          },
+          {} as Record<string, number>
+        ) || {}
+
       const transformedTables: Table[] = (tables || []).map((table, index) => ({
         id: table.id,
         label: table.label.toString(),
@@ -455,65 +506,92 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
         type: table.type as 'circle' | 'rectangle' | 'square',
         seats: seatCountMap[table.id] || 0,
         occupiedSeats: occupiedSeatMap[table.id] || 0,
-        x: table.position_x || (100 + (index % 3) * 150),
-        y: table.position_y || (100 + Math.floor(index / 3) * 150),
+        x: table.position_x || 100 + (index % 3) * 150,
+        y: table.position_y || 100 + Math.floor(index / 3) * 150,
         width: table.width || (table.type === 'circle' ? 80 : 120),
         height: table.height || 80,
         rotation: table.rotation || 0,
         zIndex: 1,
       }))
-      
+
       dispatch({ type: 'SET_TABLES', payload: transformedTables })
-      
     } catch (error) {
       console.error('Error fetching tables:', error)
-      dispatch({ type: 'SET_ERROR', payload: { key: 'tables', error: error instanceof Error ? error.message : 'Failed to fetch tables' } })
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          key: 'tables',
+          error:
+            error instanceof Error ? error.message : 'Failed to fetch tables',
+        },
+      })
     }
   }, [])
 
   const refreshOrders = useCallback(async () => {
-    if (!supabaseRef.current) return
-    
+    if (!supabaseRef.current) {
+      return
+    }
+
     try {
-      dispatch({ type: 'SET_LOADING', payload: { key: 'orders', loading: true } })
-      
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { key: 'orders', loading: true },
+      })
+
       const { data, error } = await supabaseRef.current
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           tables!inner(label),
           seats!inner(label),
           resident:profiles!resident_id(name),
           server:profiles!server_id(name)
-        `)
+        `
+        )
         .order('created_at', { ascending: false })
         .limit(50)
-      
-      if (error) throw error
-      
+
+      if (error) {
+        throw error
+      }
+
       const transformedOrders: Order[] = (data || []).map(order => ({
         ...order,
         table: `Table ${order.tables.label}`,
         seat: order.seats.label,
       }))
-      
+
       dispatch({ type: 'SET_ORDERS', payload: transformedOrders })
-      
     } catch (error) {
       console.error('Error fetching orders:', error)
-      dispatch({ type: 'SET_ERROR', payload: { key: 'orders', error: error instanceof Error ? error.message : 'Failed to fetch orders' } })
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          key: 'orders',
+          error:
+            error instanceof Error ? error.message : 'Failed to fetch orders',
+        },
+      })
     }
   }, [])
 
   const refreshKDSQueue = useCallback(async () => {
-    if (!supabaseRef.current) return
-    
+    if (!supabaseRef.current) {
+      return
+    }
+
     try {
-      dispatch({ type: 'SET_LOADING', payload: { key: 'kdsQueue', loading: true } })
-      
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { key: 'kdsQueue', loading: true },
+      })
+
       const { data, error } = await supabaseRef.current
         .from('kds_order_routing')
-        .select(`
+        .select(
+          `
           *,
           order:orders!inner (
             *,
@@ -522,82 +600,155 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
             table:tables!table_id (label)
           ),
           station:kds_stations!station_id (*)
-        `)
+        `
+        )
         .is('completed_at', null)
         .order('routed_at', { ascending: true })
-      
-      if (error) throw error
-      
+
+      if (error) {
+        throw error
+      }
+
       dispatch({ type: 'SET_KDS_QUEUE', payload: data || [] })
-      
     } catch (error) {
       console.error('Error fetching KDS queue:', error)
-      dispatch({ type: 'SET_ERROR', payload: { key: 'kdsQueue', error: error instanceof Error ? error.message : 'Failed to fetch KDS queue' } })
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          key: 'kdsQueue',
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to fetch KDS queue',
+        },
+      })
     }
   }, [])
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([
-      refreshTables(),
-      refreshOrders(),
-      refreshKDSQueue(),
-    ])
+    await Promise.all([refreshTables(), refreshOrders(), refreshKDSQueue()])
   }, [refreshTables, refreshOrders, refreshKDSQueue])
 
-  // Real-time subscriptions
+  // Real-time subscriptions with graceful degradation
   useEffect(() => {
-    if (!supabaseRef.current) return
+    if (!supabaseRef.current) {
+      return
+    }
 
-    const setupRealtimeSubscriptions = () => {
-      // Orders subscription
-      const ordersChannel = supabaseRef.current!
-        .channel('orders-changes')
-        .on('postgres_changes', 
-           { event: '*', schema: 'public', table: 'orders' },
-           () => {
-             if (isMountedRef.current) {
-               refreshOrders()
-             }
-           })
-        .subscribe()
+    const setupRealtimeSubscriptions = async () => {
+      try {
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'reconnecting' })
 
-      // KDS routing subscription
-      const kdsChannel = supabaseRef.current!
-        .channel('kds-changes')
-        .on('postgres_changes',
-           { event: '*', schema: 'public', table: 'kds_order_routing' },
-           () => {
-             if (isMountedRef.current) {
-               refreshKDSQueue()
-             }
-           })
-        .subscribe()
+        // Orders subscription with error handling
+        const ordersChannel = supabaseRef
+          .current!.channel('orders-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            () => {
+              if (isMountedRef.current) {
+                refreshOrders()
+              }
+            }
+          )
+          .on('subscribe', status => {
+            if (status === 'SUBSCRIBED') {
+              console.warn('Orders channel subscribed successfully')
+            }
+          })
+          .on('error', error => {
+            console.warn('Orders channel error:', error)
+            dispatch({
+              type: 'SET_ERROR',
+              payload: {
+                key: 'connection',
+                error: 'Real-time updates unavailable',
+              },
+            })
+          })
+          .subscribe()
 
-      // Tables subscription
-      const tablesChannel = supabaseRef.current!
-        .channel('tables-changes')
-        .on('postgres_changes',
-           { event: '*', schema: 'public', table: 'tables' },
-           () => {
-             if (isMountedRef.current) {
-               refreshTables()
-             }
-           })
-        .subscribe()
+        // Add timeout to prevent hanging on failed connections
+        setTimeout(() => {
+          if (ordersChannel.state !== 'joined') {
+            console.warn(
+              'Real-time connection timeout - continuing without real-time updates'
+            )
+            dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' })
+          }
+        }, 5000)
 
-      // Seats subscription
-      const seatsChannel = supabaseRef.current!
-        .channel('seats-changes')
-        .on('postgres_changes',
-           { event: '*', schema: 'public', table: 'seats' },
-           () => {
-             if (isMountedRef.current) {
-               refreshTables() // Refresh tables when seats change
-             }
-           })
-        .subscribe()
+        // KDS routing subscription with error handling
+        const kdsChannel = supabaseRef
+          .current!.channel('kds-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'kds_order_routing' },
+            () => {
+              if (isMountedRef.current) {
+                refreshKDSQueue()
+              }
+            }
+          )
+          .on('error', error => {
+            console.warn('KDS channel error:', error)
+          })
+          .subscribe()
 
-      channelsRef.current = [ordersChannel, kdsChannel, tablesChannel, seatsChannel]
+        // Tables subscription with error handling
+        const tablesChannel = supabaseRef
+          .current!.channel('tables-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'tables' },
+            () => {
+              if (isMountedRef.current) {
+                refreshTables()
+              }
+            }
+          )
+          .on('error', error => {
+            console.warn('Tables channel error:', error)
+          })
+          .subscribe()
+
+        // Seats subscription with error handling
+        const seatsChannel = supabaseRef
+          .current!.channel('seats-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'seats' },
+            () => {
+              if (isMountedRef.current) {
+                refreshTables() // Refresh tables when seats change
+              }
+            }
+          )
+          .on('error', error => {
+            console.warn('Seats channel error:', error)
+          })
+          .subscribe()
+
+        channelsRef.current = [
+          ordersChannel,
+          kdsChannel,
+          tablesChannel,
+          seatsChannel,
+        ]
+
+        // Set connected status after attempting subscriptions
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' })
+      } catch (error) {
+        console.error('Failed to setup real-time subscriptions:', error)
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' }) // Still mark as connected for basic functionality
+        dispatch({
+          type: 'SET_ERROR',
+          payload: {
+            key: 'connection',
+            error: 'Real-time updates unavailable',
+          },
+        })
+      }
     }
 
     setupRealtimeSubscriptions()
@@ -631,22 +782,33 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
     refreshOrders,
     refreshKDSQueue,
     refreshAll,
-    
-    selectTable: (table: Table) => dispatch({ type: 'SERVER_SELECT_TABLE', payload: table }),
-    selectSeat: (seat: number) => dispatch({ type: 'SERVER_SELECT_SEAT', payload: seat }),
-    setOrderType: (type: 'food' | 'drink') => dispatch({ type: 'SERVER_SET_ORDER_TYPE', payload: type }),
-    setServerView: (view: RestaurantState['serverView']['currentView']) => dispatch({ type: 'SERVER_SET_VIEW', payload: view }),
+
+    selectTable: (table: Table) =>
+      dispatch({ type: 'SERVER_SELECT_TABLE', payload: table }),
+    selectSeat: (seat: number) =>
+      dispatch({ type: 'SERVER_SELECT_SEAT', payload: seat }),
+    setOrderType: (type: 'food' | 'drink') =>
+      dispatch({ type: 'SERVER_SET_ORDER_TYPE', payload: type }),
+    setServerView: (view: RestaurantState['serverView']['currentView']) =>
+      dispatch({ type: 'SERVER_SET_VIEW', payload: view }),
     resetServerView: () => dispatch({ type: 'SERVER_RESET' }),
-    
-    selectStation: (stationId: string | null) => dispatch({ type: 'KITCHEN_SELECT_STATION', payload: stationId }),
-    setKitchenFilter: (status: string | null) => dispatch({ type: 'KITCHEN_SET_FILTER', payload: status }),
-    setKitchenSort: (sort: 'time' | 'priority' | 'table') => dispatch({ type: 'KITCHEN_SET_SORT', payload: sort }),
-    
-    setAnalyticsDateRange: (range: { start: Date; end: Date }) => dispatch({ type: 'ANALYTICS_SET_DATE_RANGE', payload: range }),
-    setAnalyticsMetrics: (metrics: string[]) => dispatch({ type: 'ANALYTICS_SET_METRICS', payload: metrics }),
-    
-    optimisticUpdateOrder: (order: Order) => dispatch({ type: 'UPDATE_ORDER', payload: order }),
-    optimisticUpdateKDSRouting: (routing: KDSOrderRouting) => dispatch({ type: 'UPDATE_KDS_ROUTING', payload: routing }),
+
+    selectStation: (stationId: string | null) =>
+      dispatch({ type: 'KITCHEN_SELECT_STATION', payload: stationId }),
+    setKitchenFilter: (status: string | null) =>
+      dispatch({ type: 'KITCHEN_SET_FILTER', payload: status }),
+    setKitchenSort: (sort: 'time' | 'priority' | 'table') =>
+      dispatch({ type: 'KITCHEN_SET_SORT', payload: sort }),
+
+    setAnalyticsDateRange: (range: { start: Date; end: Date }) =>
+      dispatch({ type: 'ANALYTICS_SET_DATE_RANGE', payload: range }),
+    setAnalyticsMetrics: (metrics: string[]) =>
+      dispatch({ type: 'ANALYTICS_SET_METRICS', payload: metrics }),
+
+    optimisticUpdateOrder: (order: Order) =>
+      dispatch({ type: 'UPDATE_ORDER', payload: order }),
+    optimisticUpdateKDSRouting: (routing: KDSOrderRouting) =>
+      dispatch({ type: 'UPDATE_KDS_ROUTING', payload: routing }),
   }
 
   return (
@@ -660,7 +822,9 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
 export function useRestaurantState() {
   const context = useContext(RestaurantStateContext)
   if (!context) {
-    throw new Error('useRestaurantState must be used within a RestaurantStateProvider')
+    throw new Error(
+      'useRestaurantState must be used within a RestaurantStateProvider'
+    )
   }
   return context
 }

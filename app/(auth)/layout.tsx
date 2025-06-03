@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/modassembly/supabase/server'
+import { RestaurantStateProvider } from '@/lib/state/restaurant-state-context'
 
 export default async function AuthLayout({
   children,
@@ -23,5 +24,5 @@ export default async function AuthLayout({
     }
   }
 
-  return <>{children}</>
+  return <RestaurantStateProvider>{children}</RestaurantStateProvider>
 }
