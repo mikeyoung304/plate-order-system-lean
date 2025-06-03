@@ -7,9 +7,9 @@ import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  // TEMPORARY: Skip middleware entirely on Vercel until auth issues resolved
-  if (process.env.VERCEL === '1') {
-    console.log('Vercel detected - skipping middleware for:', request.nextUrl.pathname)
+  // Skip middleware for specific paths that don't need auth
+  const skipPaths = ['/api/', '/_next/', '/favicon.ico', '/images/']
+  if (skipPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     return NextResponse.next({ request })
   }
 
@@ -24,7 +24,9 @@ export async function updateSession(request: NextRequest) {
         hasUrl: !!supabaseUrl,
         hasKey: !!supabaseAnonKey,
         nodeEnv: process.env.NODE_ENV,
-        allEnvKeys: Object.keys(process.env).filter(key => key.includes('SUPABASE')),
+        allEnvKeys: Object.keys(process.env).filter(key =>
+          key.includes('SUPABASE')
+        ),
       }
     )
     // Allow access to debugging endpoints
@@ -36,18 +38,21 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.next({ request })
     }
     // For production deployment testing, allow home page temporarily
-    if (process.env.NODE_ENV === 'production' && request.nextUrl.pathname === '/') {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      request.nextUrl.pathname === '/'
+    ) {
       return NextResponse.next({ request })
     }
     // Return error response for other routes
     return new NextResponse(
-      JSON.stringify({ 
-        error: 'Server configuration error', 
+      JSON.stringify({
+        error: 'Server configuration error',
         details: {
           hasUrl: !!supabaseUrl,
           hasKey: !!supabaseAnonKey,
-          env: process.env.NODE_ENV
-        }
+          env: process.env.NODE_ENV,
+        },
       }),
       { status: 500, headers: { 'content-type': 'application/json' } }
     )
@@ -133,10 +138,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users from login page to dashboard
-  if (user && request.nextUrl.pathname === '/') {
+  // Redirect authenticated users from login page to dashboard (avoid infinite redirects)
+  if (
+    user &&
+    request.nextUrl.pathname === '/' &&
+    !request.nextUrl.searchParams.has('redirected')
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
+    url.searchParams.set('redirected', 'true')
     return NextResponse.redirect(url)
   }
 
