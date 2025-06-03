@@ -402,19 +402,15 @@ export function RestaurantStateProvider({ children }: RestaurantStateProviderPro
 
   // Initialize Supabase client
   useEffect(() => {
-    const initializeClient = async () => {
-      try {
-        const client = await createClient()
-        supabaseRef.current = client
-        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' })
-      } catch (error) {
-        console.error('Failed to initialize Supabase client:', error)
-        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'disconnected' })
-        dispatch({ type: 'SET_ERROR', payload: { key: 'connection', error: 'Failed to connect to database' } })
-      }
+    try {
+      const client = createClient()
+      supabaseRef.current = client
+      dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' })
+    } catch (error) {
+      console.error('Failed to initialize Supabase client:', error)
+      dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'disconnected' })
+      dispatch({ type: 'SET_ERROR', payload: { key: 'connection', error: 'Failed to connect to database' } })
     }
-    
-    initializeClient()
   }, [])
 
   // Data fetching functions

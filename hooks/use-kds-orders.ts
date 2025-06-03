@@ -55,21 +55,18 @@ export function useKDSOrders(
   const isMountedRef = useRef(true)
 
   useEffect(() => {
-    const initSupabase = async () => {
-      try {
-        const client = await createClient()
-        if (isMountedRef.current) {
-          supabaseRef.current = client
-        }
-      } catch (error) {
-        console.error('Error initializing Supabase client:', error)
-        if (isMountedRef.current) {
-          setError('Failed to initialize connection')
-          setConnectionStatus('disconnected')
-        }
+    try {
+      const client = createClient()
+      if (isMountedRef.current) {
+        supabaseRef.current = client
+      }
+    } catch (error) {
+      console.error('Error initializing Supabase client:', error)
+      if (isMountedRef.current) {
+        setError('Failed to initialize connection')
+        setConnectionStatus('disconnected')
       }
     }
-    initSupabase()
   }, [])
 
   const fetchOrders = useCallback(async () => {
@@ -386,7 +383,7 @@ export function useKDSStations() {
 
   const fetchStations = useCallback(async () => {
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       const { data, error: fetchError } = await supabase
         .from('kds_stations')
         .select('*')
