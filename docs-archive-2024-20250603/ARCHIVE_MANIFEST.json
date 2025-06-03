@@ -1,0 +1,20 @@
+{
+  "archive_date": "2024-06-03T19:01:00Z",
+  "source_project": "Plate Restaurant System",
+  "reason": "Complete documentation regeneration - vibe-coded to enterprise-grade",
+  "total_files": 70,
+  "archive_strategy": "Complete markdown file migration with structure preservation",
+  "recovery_instructions": "All files maintain original paths relative to project root",
+  "next_phase": "Parallel MCP-powered analysis and regeneration",
+  "categories": {
+    "project_logs": ["AI_CHANGES_LOG.md", "AUTONOMOUS_PERFORMANCE_SESSION.md", "CHAT_SUMMARY_REFERENCE.md"],
+    "phase_reports": ["PHASE_1_RESULTS.md", "PHASE_2_PROGRESS.md", "PHASE_4_PLAN.md", "PHASE_5_RESULTS.md"],
+    "deployment": ["DEPLOYMENT_ANALYSIS_COMPLETE.md", "VERCEL_DEPLOYMENT_FIX.md", "deploy-solution.md"],
+    "technical_debt": ["STATE_MANAGEMENT_CHAOS.md", "DEPENDENCY_BLOAT_ANALYSIS.md", "CLEANUP_ROADMAP.md"],
+    "fixes": ["FIX_SUPABASE_ISSUES.md", "FIXES_APPLIED.md", "WEBSOCKET_FIX.md"],
+    "mcp_setup": ["MCP_SETUP_COMPLETE.md", "MCP_SETUP_GUIDE.md", "MCP_RESTAURANT_GUIDE.md"],
+    "guides": ["START_APP_GUIDE.md", "UI_DEBUG_GUIDE.md", "DEMO_SCRIPT_PERFECT_JOURNEY.md"],
+    "vibe_patterns": ["VIBE_CODING_PATTERNS.md", "PLATER_ANALYSIS.md", "PROFESSIONAL_VERDICT.md"]
+  },
+  "preservation_note": "These files represent the journey from vibe-coded prototype to working system. Valuable for learning patterns and avoiding repeated mistakes."
+}

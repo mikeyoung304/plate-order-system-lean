@@ -34,3 +34,13 @@ yarn-error.log*
 next-env.d.ts
 
 .temp
+
+# Project cleanup artifacts
+/temp/
+/archive/
+cleanup-project.js
+CLEANUP_SUMMARY.md
+
+# Generated files
+tsconfig.tsbuildinfo
+next-env.d.ts
