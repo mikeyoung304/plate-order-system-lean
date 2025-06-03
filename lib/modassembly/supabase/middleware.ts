@@ -18,15 +18,31 @@ export async function updateSession(request: NextRequest) {
         hasUrl: !!supabaseUrl,
         hasKey: !!supabaseAnonKey,
         nodeEnv: process.env.NODE_ENV,
+        allEnvKeys: Object.keys(process.env).filter(key => key.includes('SUPABASE')),
       }
     )
-    // Allow access to test-env endpoint for debugging
-    if (request.nextUrl.pathname === '/api/test-env') {
+    // Allow access to debugging endpoints
+    if (
+      request.nextUrl.pathname === '/api/test-env' ||
+      request.nextUrl.pathname === '/api/auth-check' ||
+      request.nextUrl.pathname === '/api/vercel-auth'
+    ) {
+      return NextResponse.next({ request })
+    }
+    // For production deployment testing, allow home page temporarily
+    if (process.env.NODE_ENV === 'production' && request.nextUrl.pathname === '/') {
       return NextResponse.next({ request })
     }
     // Return error response for other routes
     return new NextResponse(
-      JSON.stringify({ error: 'Server configuration error' }),
+      JSON.stringify({ 
+        error: 'Server configuration error', 
+        details: {
+          hasUrl: !!supabaseUrl,
+          hasKey: !!supabaseAnonKey,
+          env: process.env.NODE_ENV
+        }
+      }),
       { status: 500, headers: { 'content-type': 'application/json' } }
     )
   }
