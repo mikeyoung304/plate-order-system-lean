@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Shell } from '@/components/shell'
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -58,12 +58,12 @@ export default function KitchenPage() {
   // INTELLIGENT STATE MANAGEMENT - Full integration
   const {
     orders,
-    selectedStation,
+    selectedStation: _selectedStation,
     filterStatus,
-    sortBy,
-    connectionStatus,
+    sortBy: _sortBy,
+    connectionStatus: _connectionStatus,
     loading,
-    errors,
+    errors: _errors,
     actions,
   } = useKitchenState()
 
@@ -251,7 +251,7 @@ export default function KitchenPage() {
         title: 'Table Complete',
         description: `All ${tableOrders.length} orders marked as ready`,
       })
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to complete table',

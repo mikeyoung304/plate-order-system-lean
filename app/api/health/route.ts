@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/modassembly/supabase/server'
-import { env, assertServerEnv } from '@/lib/env'
+import { assertServerEnv, env } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +47,7 @@ async function checkDatabase(): Promise<HealthCheck> {
       .limit(1)
       .single()
     
-    if (error) throw error
+    if (error) {throw error}
     
     const responseTime = Date.now() - start
     
@@ -72,7 +72,7 @@ async function checkAuth(): Promise<HealthCheck> {
     const supabase = await createClient()
     
     // Test auth endpoint
-    const { data, error } = await supabase.auth.getSession()
+    const { data, error: _error } = await supabase.auth.getSession()
     
     const responseTime = Date.now() - start
     
@@ -133,7 +133,7 @@ async function checkStorage(): Promise<HealthCheck> {
     // Test storage by listing buckets
     const { data, error } = await supabase.storage.listBuckets()
     
-    if (error) throw error
+    if (error) {throw error}
     
     const responseTime = Date.now() - start
     
@@ -229,7 +229,7 @@ export async function GET() {
     
     return NextResponse.json(result, { status: statusCode })
     
-  } catch (error) {
+  } catch {
     const result: HealthCheckResult = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Shell } from '@/components/shell'
 import { ProtectedRoute } from '@/lib/modassembly/supabase/auth'
 import { PageHeaderWithTime } from '@/components/page-header'
@@ -19,11 +19,8 @@ import {
   AlertCircle,
   CheckCircle,
   ChefHat,
-  Clock,
   Package,
-  RefreshCw,
   Timer,
-  TrendingUp,
   Users,
   Utensils,
 } from 'lucide-react'
@@ -74,8 +71,8 @@ export default function ExpoPage() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        payload => {
-          console.log('Expo received order update:', payload)
+        _payload => {
+          // console.log('Expo received order update:', payload)
           // Reload orders when any order changes
           loadOrders()
         }
@@ -88,7 +85,7 @@ export default function ExpoPage() {
   }, [toast])
 
   // Mark order as delivered
-  const markAsDelivered = async (orderId: string) => {
+  const _markAsDelivered = async (orderId: string) => {
     try {
       // Optimistically update the UI
       setOrders(prev =>

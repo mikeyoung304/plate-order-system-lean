@@ -25,9 +25,9 @@ const PrinterSettings = lazy(() =>
 )
 
 export default function AdminPage() {
-  const [floorPlanId, setFloorPlanId] = useState('default')
-  const [activeTab, setActiveTab] = useState('analytics')
-  const [isLoading, setIsLoading] = useState(true)
+  const [_floorPlanId, _setFloorPlanId] = useState('default')
+  const [_activeTab, _setActiveTab] = useState('analytics')
+  const [_isLoading, _setIsLoading] = useState(true)
 
   // Mock data for analytics
   const salesData = [

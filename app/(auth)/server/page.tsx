@@ -76,7 +76,7 @@ import { SeatNavigation } from '@/components/server/seat-navigation'
 import { useSeatNavigation } from '@/hooks/use-seat-navigation'
 import { useOrderFlowState } from '@/lib/hooks/use-order-flow-state'
 import { useServerPageData } from '@/lib/hooks/use-server-page-data'
-import { useConnection, useTables, useOrders, useServer } from '@/lib/state/domains'
+import { useConnection, useOrders, useServer, useTables } from '@/lib/state/domains'
 
 type Order = {
   id: string
@@ -177,11 +177,11 @@ export default function ServerPage() {
   }
 
   // Reset selection fully when going back
-  const handleBackToFloorPlan = () => {
+  const handleBackToFloorPlan = useCallback(() => {
     resetOrder()
     orderFlow.resetFlow()
     seatNav.resetTable()
-  }
+  }, [resetOrder, orderFlow, seatNav])
 
   // Go back from Order Type selection to Seat Picker
   const handleBackFromOrderType = () => {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/modassembly/supabase/server'
-import { env, assertServerEnv } from '@/lib/env'
+import { assertServerEnv } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,7 +98,7 @@ async function getOpenAIMetrics() {
       .select('tokens_used, cost_cents')
       .gte('request_timestamp', `${today}T00:00:00.000Z`)
     
-    if (error) throw error
+    if (error) {throw error}
     
     const requestsToday = usage?.length || 0
     const costToday = usage?.reduce((sum, record) => sum + (record.cost_cents || 0), 0) || 0
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
     
     // Filter by time range
     const now = new Date()
-    let cutoffTime = new Date()
+    const cutoffTime = new Date()
     
     switch (range) {
       case '1h':
