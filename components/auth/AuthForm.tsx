@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useActionState, useCallback, useTransition } from 'react'
+import React, { useActionState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,8 +25,8 @@ export function AuthForm() {
   const [signInState, signInAction] = useActionState(signIn, null)
   const [signUpState, signUpAction] = useActionState(signUp, null)
 
-  // Check server action states for errors/success
-  const handleServerStates = useCallback(() => {
+  // Check server states whenever they change
+  React.useEffect(() => {
     if (signInState?.error) {
       actions.setStatus('error', signInState.error)
       actions.incrementAttempts()
@@ -44,11 +44,6 @@ export function AuthForm() {
       )
     }
   }, [signInState, signUpState, actions])
-
-  // Check server states whenever they change
-  React.useEffect(() => {
-    handleServerStates()
-  }, [handleServerStates])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

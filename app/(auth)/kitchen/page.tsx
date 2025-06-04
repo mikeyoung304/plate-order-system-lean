@@ -36,7 +36,7 @@ import {
   type Order,
   updateOrderStatus,
 } from '@/lib/modassembly/supabase/database/orders'
-import { useKitchenState } from '@/lib/state/restaurant-state-context'
+import { useConnection, useOrders } from '@/lib/state/domains'
 
 interface TableGroup {
   tableId: string
@@ -55,33 +55,24 @@ type ViewMode = 'table' | 'grid' | 'list'
 type FilterBy = 'all' | 'new' | 'preparing' | 'ready'
 
 export default function KitchenPage() {
-  // INTELLIGENT STATE MANAGEMENT - Full integration
-  const {
-    orders,
-    selectedStation: _selectedStation,
-    filterStatus,
-    sortBy: _sortBy,
-    connectionStatus: _connectionStatus,
-    loading,
-    errors: _errors,
-    actions,
-  } = useKitchenState()
+  // NEW DOMAIN-SPECIFIC STATE MANAGEMENT
+  const { isConnected: _isConnected } = useConnection()
+  const { state: ordersState, loadOrders } = useOrders()
 
   // Local UI state
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [filterBy, setFilterBy] = useState<FilterBy>('all')
   const { toast } = useToast()
 
-  // Filter mapping to intelligent state
-  const filterBy = (filterStatus as FilterBy) || 'all'
-  const setFilterBy = (filter: FilterBy) => {
-    actions.setFilter(filter === 'all' ? null : filter)
-  }
+  // Extract loading state
+  const loading = { orders: ordersState.loading || false }
 
   // Get filtered orders (remove delivered orders)
   const activeOrders = useMemo(() => {
+    const orders = ordersState.orders || []
     return orders.filter(order => order.status !== 'delivered')
-  }, [orders])
+  }, [ordersState.orders])
 
   // Group orders by table
   const tableGroups = useMemo(() => {
@@ -375,7 +366,7 @@ export default function KitchenPage() {
               <Button
                 variant='outline'
                 size='sm'
-                onClick={actions.refresh}
+                onClick={() => loadOrders()}
                 disabled={loading.orders}
                 title='Refresh orders'
               >

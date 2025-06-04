@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { Security } from '@/lib/security'
 
@@ -24,12 +24,12 @@ export interface AuthFormState {
 }
 
 export interface AuthFormActions {
-  setMode: (mode: AuthMode) => void
-  setEmail: (email: string) => void
-  setPassword: (password: string) => void
-  setName: (name: string) => void
-  setRole: (role: string) => void
-  setStatus: (status: AuthStatus, message?: string) => void
+  setMode: (_mode: AuthMode) => void
+  setEmail: (_email: string) => void
+  setPassword: (_password: string) => void
+  setName: (_name: string) => void
+  setRole: (_role: string) => void
+  setStatus: (_status: AuthStatus, _message?: string) => void
   incrementAttempts: () => void
   resetRateLimit: () => void
   validateAndPrepareData: () => {
@@ -235,20 +235,75 @@ export function useAuthFormState() {
     }
   }, [state.error, state.successMessage, toast])
 
-  const actions: AuthFormActions = {
-    setMode: mode => dispatch({ type: 'SET_MODE', payload: mode }),
-    setEmail: email => dispatch({ type: 'SET_EMAIL', payload: email }),
-    setPassword: password =>
-      dispatch({ type: 'SET_PASSWORD', payload: password }),
-    setName: name => dispatch({ type: 'SET_NAME', payload: name }),
-    setRole: role => dispatch({ type: 'SET_ROLE', payload: role }),
-    setStatus: (status, message) =>
+  const setMode = useCallback(
+    (mode: AuthMode) => dispatch({ type: 'SET_MODE', payload: mode }),
+    []
+  )
+
+  const setEmail = useCallback(
+    (email: string) => dispatch({ type: 'SET_EMAIL', payload: email }),
+    []
+  )
+
+  const setPassword = useCallback(
+    (password: string) => dispatch({ type: 'SET_PASSWORD', payload: password }),
+    []
+  )
+
+  const setName = useCallback(
+    (name: string) => dispatch({ type: 'SET_NAME', payload: name }),
+    []
+  )
+
+  const setRole = useCallback(
+    (role: string) => dispatch({ type: 'SET_ROLE', payload: role }),
+    []
+  )
+
+  const setStatus = useCallback(
+    (status: AuthStatus, message?: string) =>
       dispatch({ type: 'SET_STATUS', payload: { status, message } }),
-    incrementAttempts: () => dispatch({ type: 'INCREMENT_ATTEMPTS' }),
-    resetRateLimit: () => dispatch({ type: 'RESET_RATE_LIMIT' }),
-    validateAndPrepareData,
-    reset: () => dispatch({ type: 'RESET' }),
-  }
+    []
+  )
+
+  const incrementAttempts = useCallback(
+    () => dispatch({ type: 'INCREMENT_ATTEMPTS' }),
+    []
+  )
+
+  const resetRateLimit = useCallback(
+    () => dispatch({ type: 'RESET_RATE_LIMIT' }),
+    []
+  )
+
+  const reset = useCallback(() => dispatch({ type: 'RESET' }), [])
+
+  const actions: AuthFormActions = useMemo(
+    () => ({
+      setMode,
+      setEmail,
+      setPassword,
+      setName,
+      setRole,
+      setStatus,
+      incrementAttempts,
+      resetRateLimit,
+      validateAndPrepareData,
+      reset,
+    }),
+    [
+      setMode,
+      setEmail,
+      setPassword,
+      setName,
+      setRole,
+      setStatus,
+      incrementAttempts,
+      resetRateLimit,
+      validateAndPrepareData,
+      reset,
+    ]
+  )
 
   return { state, actions }
 }
