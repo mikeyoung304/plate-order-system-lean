@@ -238,10 +238,10 @@ export async function POST(request: NextRequest) {
 
     // 7. Enhanced Logging
     // console.log('Batch transcription completed:', {
-      userId: session.user.id,
-      batchSize: audioFiles.length,
-      summary,
-    })
+    //   userId: session.user.id,
+    //   batchSize: audioFiles.length,
+    //   summary,
+    // })
 
     const response: BatchTranscribeResponse = {
       success: true,

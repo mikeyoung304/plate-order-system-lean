@@ -138,10 +138,10 @@ export async function POST(request: NextRequest) {
     // Log large files for optimization tracking
     if (audioFile.size > targetFileSize) {
       // console.log('Large audio file detected, will optimize:', {
-        userId: session.user.id,
-        originalSize: audioFile.size,
-        fileName: Security.sanitize.sanitizeIdentifier(audioFile.name || 'unknown'),
-      })
+      //   userId: session.user.id,
+      //   originalSize: audioFile.size,
+      //   fileName: Security.sanitize.sanitizeIdentifier(audioFile.name || 'unknown'),
+      // })
     }
 
     // Strict MIME type validation
@@ -244,12 +244,12 @@ export async function POST(request: NextRequest) {
 
     // 8. Enhanced Logging with Optimization Metrics
     // console.log('Optimized transcription completed:', {
-      userId: session.user.id,
-      itemCount: safeItems.length,
-      transcriptionLength: safeTranscription.length,
-      originalFileSize: audioFile.size,
-      // optimizationMetrics: transcriptionResult.metadata || {},
-    })
+    //   userId: session.user.id,
+    //   itemCount: safeItems.length,
+    //   transcriptionLength: safeTranscription.length,
+    //   originalFileSize: audioFile.size,
+    //   // optimizationMetrics: transcriptionResult.metadata || {},
+    // })
 
     const response: TranscribeResponse = {
       success: true,

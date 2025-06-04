@@ -16,6 +16,7 @@ import {
   Mic,
   Settings,
   Shield,
+  TrendingUp,
   User,
   Utensils,
 } from 'lucide-react'

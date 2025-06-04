@@ -76,7 +76,7 @@ async function getDatabaseMetrics() {
       queryTime,
       slowQueries: queryTime > 500 ? 1 : 0
     }
-  } catch {
+  } catch (error) {
     return {
       connections: 0,
       queryTime: Date.now() - start,
@@ -117,7 +117,7 @@ async function getOpenAIMetrics() {
       costToday,
       cacheHitRate
     }
-  } catch {
+  } catch (error) {
     return {
       requestsToday: 0,
       costToday: 0,
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response)
     
-  } catch {
+  } catch (error) {
     errorCounter++
     console.error('Metrics collection error:', error)
     
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       recorded_at: new Date().toISOString()
     })
     
-  } catch {
+  } catch (error) {
     errorCounter++
     console.error('Custom metrics recording error:', error)
     
