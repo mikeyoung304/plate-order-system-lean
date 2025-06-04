@@ -348,6 +348,85 @@ export type Database = {
           updated_at?: string
         }
       }
+      transcription_cache: {
+        Row: {
+          id: string
+          audio_hash: string
+          transcription: string
+          extracted_items: string[]
+          confidence: number
+          created_at: string
+          last_used: string
+          use_count: number
+          metadata: Record<string, any>
+        }
+        Insert: {
+          id?: string
+          audio_hash: string
+          transcription: string
+          extracted_items?: string[]
+          confidence?: number
+          created_at?: string
+          last_used?: string
+          use_count?: number
+          metadata?: Record<string, any>
+        }
+        Update: {
+          id?: string
+          audio_hash?: string
+          transcription?: string
+          extracted_items?: string[]
+          confidence?: number
+          created_at?: string
+          last_used?: string
+          use_count?: number
+          metadata?: Record<string, any>
+        }
+      }
+      openai_usage_metrics: {
+        Row: {
+          id: string
+          user_id: string
+          operation: 'transcription' | 'chat_completion' | 'batch_processing'
+          model: string
+          input_tokens: number | null
+          output_tokens: number | null
+          audio_duration: number | null
+          cost: number
+          cached: boolean
+          optimized: boolean
+          timestamp: string
+          metadata: Record<string, any>
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          operation: 'transcription' | 'chat_completion' | 'batch_processing'
+          model: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          audio_duration?: number | null
+          cost?: number
+          cached?: boolean
+          optimized?: boolean
+          timestamp?: string
+          metadata?: Record<string, any>
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          operation?: 'transcription' | 'chat_completion' | 'batch_processing'
+          model?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          audio_duration?: number | null
+          cost?: number
+          cached?: boolean
+          optimized?: boolean
+          timestamp?: string
+          metadata?: Record<string, any>
+        }
+      }
     }
     Views: {
       kds_table_summary: {
@@ -386,6 +465,7 @@ export type Database = {
         | 'prep'
         | 'dessert'
       metric_type: 'prep_time' | 'throughput' | 'efficiency' | 'errors'
+      openai_operation: 'transcription' | 'chat_completion' | 'batch_processing'
     }
   }
 }
@@ -407,6 +487,8 @@ export type KDSStation = Tables<'kds_stations'>
 export type KDSOrderRouting = Tables<'kds_order_routing'>
 export type KDSMetric = Tables<'kds_metrics'>
 export type KDSConfiguration = Tables<'kds_configuration'>
+export type TranscriptionCache = Tables<'transcription_cache'>
+export type OpenAIUsageMetric = Tables<'openai_usage_metrics'>
 
 // Insert types
 export type ProfileInsert = InsertTables<'profiles'>
@@ -415,6 +497,8 @@ export type SeatInsert = InsertTables<'seats'>
 export type OrderInsert = InsertTables<'orders'>
 export type KDSStationInsert = InsertTables<'kds_stations'>
 export type KDSOrderRoutingInsert = InsertTables<'kds_order_routing'>
+export type TranscriptionCacheInsert = InsertTables<'transcription_cache'>
+export type OpenAIUsageMetricInsert = InsertTables<'openai_usage_metrics'>
 
 // Update types
 export type ProfileUpdate = UpdateTables<'profiles'>
@@ -423,6 +507,8 @@ export type SeatUpdate = UpdateTables<'seats'>
 export type OrderUpdate = UpdateTables<'orders'>
 export type KDSStationUpdate = UpdateTables<'kds_stations'>
 export type KDSOrderRoutingUpdate = UpdateTables<'kds_order_routing'>
+export type TranscriptionCacheUpdate = UpdateTables<'transcription_cache'>
+export type OpenAIUsageMetricUpdate = UpdateTables<'openai_usage_metrics'>
 
 // Enum types
 export type UserRole = Database['public']['Enums']['user_role']
@@ -431,6 +517,7 @@ export type OrderType = Database['public']['Enums']['order_type']
 export type TableStatus = Database['public']['Enums']['table_status']
 export type StationType = Database['public']['Enums']['station_type']
 export type MetricType = Database['public']['Enums']['metric_type']
+export type OpenAIOperation = Database['public']['Enums']['openai_operation']
 
 // View types
 export type KDSTableSummary =

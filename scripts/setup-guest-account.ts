@@ -58,7 +58,7 @@ async function setupGuestAccount() {
         email_confirm: true,
         user_metadata: {
           name: 'Guest User',
-          role: 'admin',
+          role: 'server',
         },
       })
 
@@ -84,7 +84,7 @@ async function setupGuestAccount() {
         .from('profiles')
         .update({
           name: 'Guest User',
-          role: 'admin',
+          role: 'server',
         })
         .eq('user_id', authData.user.id)
 
@@ -97,7 +97,7 @@ async function setupGuestAccount() {
       const { error: profileError } = await supabase.from('profiles').insert({
         user_id: authData.user.id,
         name: 'Guest User',
-        role: 'admin',
+        role: 'server',
       })
 
       if (profileError) {

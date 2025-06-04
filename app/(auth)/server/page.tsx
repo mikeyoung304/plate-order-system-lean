@@ -76,7 +76,7 @@ import { SeatNavigation } from '@/components/server/seat-navigation'
 import { useSeatNavigation } from '@/hooks/use-seat-navigation'
 import { useOrderFlowState } from '@/lib/hooks/use-order-flow-state'
 import { useServerPageData } from '@/lib/hooks/use-server-page-data'
-import { useServerState } from '@/lib/state/restaurant-state-context'
+import { useConnection, useTables, useOrders, useServer } from '@/lib/state/domains'
 
 type Order = {
   id: string
@@ -88,26 +88,36 @@ type Order = {
 }
 
 export default function ServerPage() {
-  // INTELLIGENT STATE MANAGEMENT - Complete integration
-  const {
-    tables,
-    orders,
-    residents,
-    servers,
-    selectedTable,
-    selectedSeat,
-    orderType,
-    currentView,
-    connectionStatus,
-    loading,
-    errors,
-    actions,
-  } = useServerState()
+  // DOMAIN-SPECIFIC STATE MANAGEMENT
+  const { isConnected, connectionState: _connectionState } = useConnection()
+  const { state: tablesState, selectTable } = useTables()
+  const { state: ordersState, createNewOrder: _createNewOrder, removeOrder: _removeOrder } = useOrders()
+  const { 
+    state: serverState,
+    setStep: _setStep,
+    setOrderType: _setOrderType,
+    selectSeat: _selectSeat,
+    resetOrder
+  } = useServer()
+  
+  // Extract commonly used values
+  const tables = tablesState.tables
+  const _selectedTable = tablesState.selectedTable
+  const orders = ordersState.orders
+  const _currentView = serverState.currentStep // Maps to workflow step
+  const _orderType = serverState.orderType
+  const _selectedSeat = serverState.selectedSeat
+  const loading = { tables: tablesState.loading, orders: ordersState.loading }
+  const _errors = { tables: tablesState.error, orders: ordersState.error }
 
   // Legacy state hooks (minimal usage for compatibility)
   const orderFlow = useOrderFlowState()
   const data = useServerPageData('default')
   const { toast } = useToast()
+  
+  // Data from legacy hooks
+  const residents = data.residents
+  const _connectionStatus = isConnected ? 'connected' : 'disconnected'
 
   // Minimal remaining state
   const [_floorPlanId, _setFloorPlanId] = useState('default')
@@ -143,7 +153,7 @@ export default function ServerPage() {
 
   const handleSelectTable = (table: any) => {
     // Use intelligent state management
-    actions.selectTable(table)
+    selectTable(table)
 
     // Legacy compatibility
     orderFlow.selectTable(table)
@@ -168,7 +178,7 @@ export default function ServerPage() {
 
   // Reset selection fully when going back
   const handleBackToFloorPlan = () => {
-    actions.reset()
+    resetOrder()
     orderFlow.resetFlow()
     seatNav.resetTable()
   }

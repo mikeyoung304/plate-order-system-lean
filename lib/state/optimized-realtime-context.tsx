@@ -1,8 +1,19 @@
 'use client'
 
 /**
- * Optimized Real-time Context
+ * ⚠️ DEPRECATED: Optimized Real-time Context
  * 
+ * 🚨 THIS FILE IS DEPRECATED AS OF DECEMBER 2024 🚨
+ * 
+ * Real-time optimization features have been integrated into the domain-specific contexts:
+ * - Connection management: @/lib/state/domains/connection-context
+ * - Table subscriptions: @/lib/state/domains/tables-context  
+ * - Order subscriptions: @/lib/state/domains/orders-context
+ * 
+ * The optimization features are now built into the domain contexts, eliminating
+ * the need for a separate optimization layer.
+ * 
+ * ORIGINAL DESCRIPTION:
  * Enterprise-grade real-time connection management with:
  * - Connection pooling for 1000+ concurrent users
  * - Role-based selective filtering to reduce data transfer
@@ -18,16 +29,16 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  useMemo,
 } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { 
   RealtimeChannel, 
-  SupabaseClient,
-  RealtimePostgresChangesPayload,
   RealtimePostgresChangesFilter,
+  RealtimePostgresChangesPayload,
+  SupabaseClient,
 } from '@supabase/supabase-js'
 
 // Connection pool configuration
@@ -167,7 +178,7 @@ export function OptimizedRealtimeProvider({
   
   // Get role-based filter for a table
   const getRoleBasedFilter = useCallback((table: string): string | undefined => {
-    if (!userRole || !userId) return undefined
+    if (!userRole || !userId) {return undefined}
     
     // Role-based filtering rules
     switch (userRole) {
@@ -191,7 +202,7 @@ export function OptimizedRealtimeProvider({
   
   // Find or create optimal channel for subscription
   const findOrCreateChannel = useCallback((): PooledChannel | null => {
-    if (!supabaseRef.current || !mountedRef.current) return null
+    if (!supabaseRef.current || !mountedRef.current) {return null}
     
     // Find channel with capacity
     for (const [channelName, pooledChannel] of channelPoolRef.current) {
@@ -338,7 +349,7 @@ export function OptimizedRealtimeProvider({
   // Unsubscribe from updates
   const unsubscribe = useCallback((subscriptionId: string) => {
     const subscription = subscriptionsRef.current.get(subscriptionId)
-    if (!subscription) return
+    if (!subscription) {return}
     
     // Remove from subscriptions
     subscriptionsRef.current.delete(subscriptionId)
@@ -368,7 +379,7 @@ export function OptimizedRealtimeProvider({
   
   // Heartbeat monitoring
   const performHeartbeat = useCallback(() => {
-    if (!mountedRef.current) return
+    if (!mountedRef.current) {return}
     
     const now = Date.now()
     let activeChannels = 0
@@ -399,7 +410,7 @@ export function OptimizedRealtimeProvider({
   
   // Latency monitoring
   const checkLatency = useCallback(async () => {
-    if (!supabaseRef.current || !mountedRef.current) return
+    if (!supabaseRef.current || !mountedRef.current) {return}
     
     const measurements: number[] = []
     
@@ -426,7 +437,7 @@ export function OptimizedRealtimeProvider({
   
   // Cleanup idle channels
   const cleanupIdleChannels = useCallback(() => {
-    if (!supabaseRef.current || !mountedRef.current) return
+    if (!supabaseRef.current || !mountedRef.current) {return}
     
     const now = Date.now()
     const idleThreshold = 5 * 60 * 1000 // 5 minutes
@@ -458,7 +469,7 @@ export function OptimizedRealtimeProvider({
   
   // Schedule reconnection with exponential backoff
   const scheduleReconnect = useCallback(() => {
-    if (!mountedRef.current || reconnectTimeoutRef.current) return
+    if (!mountedRef.current || reconnectTimeoutRef.current) {return}
     
     setMetrics(prev => {
       const attempts = prev.reconnectAttempts + 1
@@ -482,7 +493,7 @@ export function OptimizedRealtimeProvider({
   
   // Reconnect all channels
   const reconnect = useCallback(async () => {
-    if (!supabaseRef.current || !mountedRef.current) return
+    if (!supabaseRef.current || !mountedRef.current) {return}
     
     setConnectionStatus('reconnecting')
     
@@ -511,7 +522,7 @@ export function OptimizedRealtimeProvider({
   
   // Disconnect all channels
   const disconnect = useCallback(() => {
-    if (!supabaseRef.current) return
+    if (!supabaseRef.current) {return}
     
     // Clear all intervals
     if (heartbeatIntervalRef.current) {
@@ -734,9 +745,9 @@ function calculateHealthScore(
   let score = 100
   
   // Deduct for high latency
-  if (connection.averageLatency > 1000) score -= 30
-  else if (connection.averageLatency > 500) score -= 20
-  else if (connection.averageLatency > 200) score -= 10
+  if (connection.averageLatency > 1000) {score -= 30}
+  else if (connection.averageLatency > 500) {score -= 20}
+  else if (connection.averageLatency > 200) {score -= 10}
   
   // Deduct for errors
   score -= Math.min(connection.errorCount * 5, 30)
@@ -745,7 +756,7 @@ function calculateHealthScore(
   score -= Math.min(connection.reconnectAttempts * 10, 30)
   
   // Deduct for low channel utilization
-  if (performance.channelUtilization < 0.3) score -= 10
+  if (performance.channelUtilization < 0.3) {score -= 10}
   
   // Bonus for high cache hit rate
   score += Math.round(performance.cacheHitRate * 10)

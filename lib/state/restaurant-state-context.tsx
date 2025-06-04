@@ -1,8 +1,20 @@
 'use client'
 
 /**
- * RESTAURANT STATE INTELLIGENCE COORDINATOR
+ * ⚠️ DEPRECATED: RESTAURANT STATE INTELLIGENCE COORDINATOR
+ * 
+ * 🚨 THIS FILE IS DEPRECATED AS OF DECEMBER 2024 🚨
+ * 
+ * Please use the new domain-specific contexts instead:
+ * - import { useConnection, useTables, useOrders, useServer } from '@/lib/state/domains'
+ * - Or: import { RestaurantProvider } from '@/lib/state/domains'
  *
+ * This 890-line monolithic context has been refactored into 4 focused domain contexts
+ * for better maintainability, performance, and reduced memory usage.
+ * 
+ * Migration completed in December 2024. This file is kept for reference only.
+ * 
+ * ORIGINAL DESCRIPTION:
  * Central state management system that provides:
  * - Real-time coordination across all restaurant views
  * - Intelligent state synchronization

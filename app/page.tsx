@@ -34,17 +34,19 @@ export default async function LandingPage() {
             Streamlined Restaurant Systems
           </p>
 
-          {/* Quick Demo Login Helper */}
-          <div className='text-center mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl'>
-            <h3 className='text-sm font-medium text-blue-300 mb-2'>
-              Demo Account
-            </h3>
-            <p className='text-xs text-blue-200/80'>
-              Email: guest@restaurant.plate
-              <br />
-              Password: guest123
-            </p>
-          </div>
+          {/* Demo Login Helper - Only show in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className='text-center mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl'>
+              <h3 className='text-sm font-medium text-blue-300 mb-2'>
+                Demo Account (Development Only)
+              </h3>
+              <p className='text-xs text-blue-200/80'>
+                Email: guest@restaurant.plate
+                <br />
+                Password: guest123
+              </p>
+            </div>
+          )}
         </div>
 
         <div className='backdrop-blur-xl bg-black/20 p-8 rounded-3xl border border-white/10 shadow-2xl'>
