@@ -49,7 +49,7 @@ interface OpenAIUsageResponse {
 export async function GET() {
   try {
     assertServerEnv()
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Date ranges
     const now = new Date()

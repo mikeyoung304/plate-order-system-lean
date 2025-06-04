@@ -38,7 +38,7 @@ interface HealthCheck {
 async function checkDatabase(): Promise<HealthCheck> {
   const start = Date.now()
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test basic connectivity
     const { data, error } = await supabase
@@ -69,7 +69,7 @@ async function checkDatabase(): Promise<HealthCheck> {
 async function checkAuth(): Promise<HealthCheck> {
   const start = Date.now()
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test auth endpoint
     const { data, error } = await supabase.auth.getSession()
@@ -128,7 +128,7 @@ async function checkOpenAI(): Promise<HealthCheck> {
 async function checkStorage(): Promise<HealthCheck> {
   const start = Date.now()
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test storage by listing buckets
     const { data, error } = await supabase.storage.listBuckets()
@@ -155,7 +155,7 @@ async function checkStorage(): Promise<HealthCheck> {
 async function checkRealtime(): Promise<HealthCheck> {
   const start = Date.now()
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test realtime by creating a channel (without subscribing)
     const channel = supabase.channel('health-check')

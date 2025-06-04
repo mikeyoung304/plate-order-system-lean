@@ -15,8 +15,10 @@ export const config = {
      * - api/test-env (test endpoint)
      * - api/vercel-auth (debug endpoint)
      * - api/auth-check (auth check endpoint)
+     * - api/health (health check endpoint)
+     * - api/metrics (metrics endpoint)
      * - public files with extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/test-env|api/vercel-auth|api/auth-check|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/test-env|api/vercel-auth|api/auth-check|api/health|api/metrics|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

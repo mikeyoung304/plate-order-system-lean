@@ -61,7 +61,7 @@ function getCPUUsage(): number {
 async function getDatabaseMetrics() {
   const start = Date.now()
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test query to measure response time
     await supabase
@@ -88,7 +88,7 @@ async function getDatabaseMetrics() {
 // Helper to get OpenAI metrics
 async function getOpenAIMetrics() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get today's usage from the database
     const today = new Date().toISOString().split('T')[0]
@@ -138,7 +138,7 @@ async function collectMetrics(): Promise<SystemMetrics> {
     timestamp: new Date().toISOString(),
     cpu: {
       usage: getCPUUsage(),
-      loadAverage: process.platform === 'win32' ? [0, 0, 0] : (process.loadavg?.() || [0, 0, 0])
+      loadAverage: process.platform === 'win32' ? [0, 0, 0] : [0, 0, 0]
     },
     memory: {
       used: memoryUsage.rss,
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
     const { event, data, timestamp } = body
     
     // Store custom metric in database
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { error } = await supabase
       .from('custom_metrics')
