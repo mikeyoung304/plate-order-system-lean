@@ -81,8 +81,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
           case 'start':
             // Optimistic update
             kdsState.optimisticUpdate(orderId, {
-              started_at: new Date().toISOString(),
-              status: 'in_progress'
+              started_at: new Date().toISOString()
             })
             await startOrderPrep(orderId)
             toast({
@@ -95,8 +94,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
             // Optimistic update
             kdsState.optimisticUpdate(orderId, {
               completed_at: new Date().toISOString(),
-              bumped_at: new Date().toISOString(),
-              status: 'ready'
+              bumped_at: new Date().toISOString()
             })
             await bumpOrder(orderId, userId)
             toast({
@@ -108,10 +106,9 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
           case 'recall':
             // Optimistic update
             kdsState.optimisticUpdate(orderId, {
-              completed_at: undefined,
-              bumped_at: undefined,
-              recalled_at: new Date().toISOString(),
-              status: 'in_progress'
+              completed_at: null,
+              bumped_at: null,
+              recalled_at: new Date().toISOString()
             })
             await recallOrder(orderId)
             toast({
@@ -121,10 +118,9 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
             break
             
           case 'quality_check':
-            // Custom quality check action for expo station
+            // Custom quality check action for expo station (using notes field)
             kdsState.optimisticUpdate(orderId, {
-              quality_checked_at: new Date().toISOString(),
-              quality_checked_by: userId
+              notes: `Quality checked by ${userId} at ${new Date().toISOString()}`
             })
             toast({
               title: 'Quality check completed',

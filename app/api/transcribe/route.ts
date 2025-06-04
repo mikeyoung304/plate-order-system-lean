@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { transcribeAudioFile } from '@/lib/modassembly/openai/transcribe'
+import { optimizedTranscribeAudioFile } from '@/lib/modassembly/openai/optimized-transcribe'
+import { getUsageTracker } from '@/lib/modassembly/openai/usage-tracking'
 import { Security } from '@/lib/security'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { measureApiCall } from '@/lib/performance-utils'
@@ -38,19 +39,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Rate Limiting (stricter for expensive OpenAI calls)
+    // 3. Enhanced Rate Limiting with Cost-Based Budgets
+    const usageTracker = getUsageTracker()
+    
+    // Check if user is within daily budget
+    const dailyStats = await usageTracker.getUsageStats('day', session.user.id)
+    const dailyBudget = 5.0 // $5 daily budget per user
+    
+    if (dailyStats.totalCost >= dailyBudget) {
+      return NextResponse.json(
+        {
+          error: `Daily budget exceeded ($${dailyBudget}). Current usage: $${dailyStats.totalCost.toFixed(3)}`,
+        },
+        {
+          status: 429,
+          headers: {
+            ...Security.headers.getHeaders(),
+            'Retry-After': '86400', // 24 hours
+          },
+        }
+      )
+    }
+
+    // Standard rate limiting
     const isAllowed = Security.rateLimit.isAllowed(
       session.user.id,
       'transcribe',
-      5, // Only 5 transcriptions per minute
-      5 / 60 // Rate per second
+      10, // Increased to 10 per minute (caching should reduce actual OpenAI calls)
+      10 / 60 // Rate per second
     )
 
     if (!isAllowed) {
       return NextResponse.json(
         {
           error:
-            'Rate limit exceeded. Voice transcription is limited to 5 requests per minute.',
+            'Rate limit exceeded. Voice transcription is limited to 10 requests per minute.',
         },
         {
           status: 429,
@@ -87,13 +110,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. Comprehensive File Validation (Fort Knox level)
-    const maxFileSize = 5 * 1024 * 1024 // Reduced to 5MB for security
-    const minFileSize = 1024 // Minimum 1KB to prevent empty uploads
+    // 5. Optimized File Validation with Auto-Optimization
+    const maxFileSize = 25 * 1024 * 1024 // OpenAI limit (optimization will reduce size)
+    const minFileSize = 100 // Minimum 100 bytes
+    const targetFileSize = 1 * 1024 * 1024 // 1MB target for optimization
 
     if (audioFile.size > maxFileSize) {
       return NextResponse.json(
-        { error: 'Audio file too large. Maximum size is 5MB.' },
+        { error: 'Audio file too large. Maximum size is 25MB.' },
         {
           status: 413,
           headers: Security.headers.getHeaders(),
@@ -109,6 +133,15 @@ export async function POST(request: NextRequest) {
           headers: Security.headers.getHeaders(),
         }
       )
+    }
+
+    // Log large files for optimization tracking
+    if (audioFile.size > targetFileSize) {
+      console.log('Large audio file detected, will optimize:', {
+        userId: session.user.id,
+        originalSize: audioFile.size,
+        fileName: Security.sanitize.sanitizeIdentifier(audioFile.name || 'unknown'),
+      })
     }
 
     // Strict MIME type validation
@@ -134,30 +167,66 @@ export async function POST(request: NextRequest) {
       audioFile.name || 'unknown'
     )
 
-    // 6. Secure Audio Processing with Error Boundaries
+    // 6. Optimized Audio Processing with Full Pipeline
     let transcriptionResult
     try {
       const audioBlob = new Blob([await audioFile.arrayBuffer()], {
         type: audioFile.type,
       })
-      transcriptionResult = await transcribeAudioFile(audioBlob, safeFileName)
+      
+      // Use optimized transcription service with caching, optimization, and tracking
+      const result = await optimizedTranscribeAudioFile(
+        audioBlob,
+        session.user.id,
+        safeFileName,
+        {
+          enableOptimization: true,
+          enableCaching: true,
+          enableFallback: true,
+          maxRetries: 3,
+          confidenceThreshold: 0.7,
+          preferredModel: 'gpt-3.5-turbo', // Cost-effective for menu parsing
+        }
+      )
+      
+      transcriptionResult = result
+      
     } catch (transcriptionError: any) {
-      console.error('Transcription failed:', {
+      console.error('Optimized transcription failed:', {
         error: transcriptionError.message,
+        code: transcriptionError.code,
+        retryable: transcriptionError.retryable,
         userId: session.user.id,
         fileSize: audioFile.size,
         fileType: audioFile.type,
       })
 
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Audio transcription failed. Please try again with a clearer recording.'
+      let statusCode = 422
+
+      if (transcriptionError.code === 'RATE_LIMITED') {
+        errorMessage = 'Service temporarily unavailable due to high demand. Please try again in a moment.'
+        statusCode = 503
+      } else if (transcriptionError.code === 'AUDIO_TOO_LARGE') {
+        errorMessage = 'Audio file is too large. Please record a shorter message.'
+        statusCode = 413
+      } else if (transcriptionError.code === 'INVALID_FORMAT') {
+        errorMessage = 'Audio format not supported. Please use a different recording format.'
+        statusCode = 400
+      } else if (transcriptionError.code === 'TIMEOUT') {
+        errorMessage = 'Transcription timed out. Please try recording a shorter message.'
+        statusCode = 408
+      }
+
       const errorResponse: TranscribeResponse = {
         success: false,
-        error:
-          'Audio transcription failed. Please try again with a clearer recording.',
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       }
 
       return NextResponse.json(errorResponse, {
-        status: 422,
+        status: statusCode,
         headers: Security.headers.getHeaders(),
       })
     }
@@ -173,12 +242,13 @@ export async function POST(request: NextRequest) {
       .filter(item => item.length > 0)
       .slice(0, 20) // Limit to 20 items for security
 
-    // 8. Security Logging
-    console.log('Secure transcription completed:', {
+    // 8. Enhanced Logging with Optimization Metrics
+    console.log('Optimized transcription completed:', {
       userId: session.user.id,
       itemCount: safeItems.length,
       transcriptionLength: safeTranscription.length,
-      fileSize: audioFile.size,
+      originalFileSize: audioFile.size,
+      // optimizationMetrics: transcriptionResult.metadata || {},
     })
 
     const response: TranscribeResponse = {
@@ -186,6 +256,14 @@ export async function POST(request: NextRequest) {
       data: {
         transcript: safeTranscription,
         items: safeItems,
+        // Include optimization metadata for debugging (remove in production)
+        // metadata: process.env.NODE_ENV === 'development' ? {
+        //   cached: transcriptionResult.metadata?.cached,
+        //   optimized: transcriptionResult.metadata?.optimized,
+        //   compressionRatio: transcriptionResult.metadata?.compressionRatio,
+        //   cost: transcriptionResult.metadata?.cost,
+        //   latency: transcriptionResult.metadata?.latency,
+        // } : undefined,
       },
       timestamp: new Date().toISOString(),
     }

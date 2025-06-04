@@ -14,12 +14,16 @@
         "GITHUB_TOKEN": "${GITHUB_TOKEN}"
       }
     },
-    "vercel": {
+    "postgres": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-vercel"],
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
       "env": {
-        "VERCEL_TOKEN": "${VERCEL_TOKEN}"
+        "DATABASE_URL": "postgresql://postgres.eiipozoogrrfudhjoqms:${SUPABASE_DB_PASSWORD}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
       }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }

@@ -17,7 +17,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { createOptimizedClient } from '@/lib/modassembly/supabase/optimized-client'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
 // Connection state interface
@@ -70,7 +70,7 @@ export function ConnectionProvider({
   // Initialize Supabase client
   useEffect(() => {
     if (!supabaseRef.current) {
-      supabaseRef.current = createClient()
+      supabaseRef.current = createOptimizedClient()
     }
   }, [])
   

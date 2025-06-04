@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 // PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
@@ -23,7 +23,46 @@ type TableViewProps = {
   onSelectSeat: (seatNumber: number) => void
 }
 
-export function TableView({ table, onSelectSeat }: TableViewProps) {
+// Memoized seat component for better performance
+const SeatButton = memo(({ 
+  seat, 
+  isHovered, 
+  onSelect, 
+  onHover, 
+  onLeave 
+}: { 
+  seat: { number: number; x: number; y: number; size: number }
+  isHovered: boolean
+  onSelect: (seatNumber: number) => void
+  onHover: (seatNumber: number) => void
+  onLeave: () => void
+}) => (
+  <div
+    className='absolute'
+    style={{
+      left: `${seat.x}px`,
+      top: `${seat.y}px`,
+      width: `${seat.size}px`,
+      height: `${seat.size}px`,
+    }}
+  >
+    <Button
+      className={`table-seat w-full h-full rounded-full ${
+        isHovered
+          ? 'bg-primary hover:bg-primary/90'
+          : 'bg-gray-700 hover:bg-gray-600'
+      }`}
+      onClick={() => onSelect(seat.number)}
+      onMouseEnter={() => onHover(seat.number)}
+      onMouseLeave={onLeave}
+    >
+      {seat.number}
+    </Button>
+  </div>
+))
+SeatButton.displayName = 'SeatButton'
+
+export const TableView = memo(function TableView({ table, onSelectSeat }: TableViewProps) {
   const [hoveredSeat, setHoveredSeat] = useState<number | null>(null)
 
   // Generate seats based on table type and size
@@ -163,7 +202,7 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
     return seats
   }
 
-  const seats = generateSeats()
+  const seats = useMemo(() => generateSeats(), [table])
 
   return (
     <div className='flex flex-col items-center justify-center'>
@@ -184,29 +223,14 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
 
         {/* Seats */}
         {seats.map(seat => (
-          <div
+          <SeatButton
             key={seat.number}
-            className='absolute'
-            style={{
-              left: `${seat.x}px`,
-              top: `${seat.y}px`,
-              width: `${seat.size}px`,
-              height: `${seat.size}px`,
-            }}
-          >
-            <Button
-              className={`table-seat w-full h-full rounded-full ${
-                hoveredSeat === seat.number
-                  ? 'bg-primary hover:bg-primary/90'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-              onClick={() => onSelectSeat(seat.number)}
-              onMouseEnter={() => setHoveredSeat(seat.number)}
-              onMouseLeave={() => setHoveredSeat(null)}
-            >
-              {seat.number}
-            </Button>
-          </div>
+            seat={seat}
+            isHovered={hoveredSeat === seat.number}
+            onSelect={onSelectSeat}
+            onHover={setHoveredSeat}
+            onLeave={() => setHoveredSeat(null)}
+          />
         ))}
       </div>
 
@@ -219,4 +243,6 @@ export function TableView({ table, onSelectSeat }: TableViewProps) {
       </Card>
     </div>
   )
-}
+})
+
+TableView.displayName = 'TableView'

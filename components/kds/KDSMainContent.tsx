@@ -74,15 +74,39 @@ const getGridClasses = (viewMode: string, orderCount: number) => {
 const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
   const kdsState = useKDSState()
   
+  // Placeholder action handlers matching OrderCard interface
+  const handleBump = async (routingId: string) => {
+    console.log('Bump order:', routingId)
+  }
+  
+  const handleRecall = async (routingId: string) => {
+    console.log('Recall order:', routingId)
+  }
+  
+  const handleStartPrep = async (routingId: string) => {
+    console.log('Start prep:', routingId)
+  }
+  
+  const handleUpdatePriority = async (routingId: string, priority: number) => {
+    console.log('Update priority:', routingId, priority)
+  }
+  
+  const handleAddNotes = async (routingId: string, notes: string) => {
+    console.log('Add notes:', routingId, notes)
+  }
+  
   return (
     <>
       {orders.map((order) => (
         <OrderCard
           key={order.id}
           order={order}
-          onOrderAction={kdsState.handleOrderAction}
-          showTableInfo={true}
-          compact={kdsState.viewMode === 'list'}
+          onBump={handleBump}
+          onRecall={handleRecall}
+          onStartPrep={handleStartPrep}
+          onUpdatePriority={handleUpdatePriority}
+          onAddNotes={handleAddNotes}
+          isCompact={kdsState.viewMode === 'list'}
         />
       ))}
     </>
@@ -93,22 +117,48 @@ IndividualOrderView.displayName = 'IndividualOrderView'
 // Table grouped view
 const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
   const kdsState = useKDSState()
-  const { groupedOrders } = useTableGroupedOrders(orders)
+  const tableGroups = useTableGroupedOrders(orders)
+  
+  // Placeholder action handlers matching TableGroupCard interface
+  const handleBumpOrder = async (routingId: string) => {
+    console.log('Bump order:', routingId)
+  }
+  
+  const handleBumpTable = async (tableId: string, orderIds: string[]) => {
+    console.log('Bump table:', tableId, orderIds)
+  }
+  
+  const handleStartPrep = async (routingId: string) => {
+    console.log('Start prep:', routingId)
+  }
+  
+  const handleRecallOrder = async (routingId: string) => {
+    console.log('Recall order:', routingId)
+  }
   
   return (
     <>
-      {Object.entries(groupedOrders).map(([tableId, tableOrders]) => (
+      {tableGroups.map((group) => (
         <TableGroupCard
-          key={tableId}
-          tableOrders={tableOrders as any}
-          onOrderAction={kdsState.handleOrderAction}
-          onBulkAction={kdsState.handleBulkAction}
+          key={group.tableId}
+          group={group}
+          onBumpOrder={handleBumpOrder}
+          onBumpTable={handleBumpTable}
+          onStartPrep={handleStartPrep}
+          onRecallOrder={handleRecallOrder}
         />
       ))}
     </>
   )
 })
 TableGroupedView.displayName = 'TableGroupedView'
+
+// Helper function to derive order status from KDS routing fields
+const getOrderStatus = (order: any) => {
+  if (order.completed_at) return 'ready'
+  if (order.started_at) return 'preparing'  // Match KDSFilterBy type
+  return 'new'
+}
 
 // Filter and sort orders
 function useFilteredAndSortedOrders() {
@@ -122,17 +172,9 @@ function useFilteredAndSortedOrders() {
     // Apply filters
     if (kdsState.filterBy !== 'all') {
       filtered = filtered.filter(order => {
-        if (kdsState.filterBy === 'in_progress') {
-          return order.status === 'in_progress' || order.status === 'started'
-        }
-        return order.status === kdsState.filterBy
+        const status = getOrderStatus(order)
+        return status === kdsState.filterBy
       })
-    }
-    
-    if (kdsState.selectedStation && kdsState.selectedStation !== 'all') {
-      filtered = filtered.filter(order => 
-        order.station_type === kdsState.selectedStation
-      )
     }
     
     // Apply sorting
@@ -143,14 +185,17 @@ function useFilteredAndSortedOrders() {
         case 'time':
           return new Date(a.routed_at).getTime() - new Date(b.routed_at).getTime()
         case 'table':
-          return (a.table_label || '').localeCompare(b.table_label || '')
+          // Access table information through the order relationship
+          const tableA = a.order?.table?.label || ''
+          const tableB = b.order?.table?.label || ''
+          return tableA.localeCompare(tableB)
         default:
           return new Date(a.routed_at).getTime() - new Date(b.routed_at).getTime()
       }
     })
     
     return filtered
-  }, [kdsState.orders, kdsState.filterBy, kdsState.selectedStation, kdsState.sortBy])
+  }, [kdsState.orders, kdsState.filterBy, kdsState.sortBy])
 }
 
 export const KDSMainContent = memo<KDSMainContentProps>(({ className }) => {

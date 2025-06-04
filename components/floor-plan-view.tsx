@@ -2,7 +2,7 @@
 'use client'
 
 import type React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 // PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely
 // Original: Full framer-motion library (~150KB) for table animations
@@ -17,7 +17,7 @@ type FloorPlanViewProps = {
   tables: Table[]
 }
 
-export function FloorPlanView({
+export const FloorPlanView = memo(function FloorPlanView({
   floorPlanId,
   onSelectTable,
   tables,
@@ -503,4 +503,6 @@ export function FloorPlanView({
       </div>
     </div>
   )
-}
+})
+
+FloorPlanView.displayName = 'FloorPlanView'

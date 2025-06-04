@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,7 +21,7 @@ interface SeatNavigationProps {
   seats?: Seat[]
 }
 
-export function SeatNavigation({
+export const SeatNavigation = memo(function SeatNavigation({
   tableId,
   currentSeat,
   maxSeats,
@@ -202,4 +202,6 @@ export function SeatNavigation({
       </div>
     </div>
   )
-}
+})
+
+SeatNavigation.displayName = 'SeatNavigation'

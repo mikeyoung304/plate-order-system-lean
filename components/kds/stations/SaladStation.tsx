@@ -99,7 +99,9 @@ const SaladOrderCard = memo(({
             <Leaf className="h-4 w-4 text-green-500" />
             <span className="font-semibold">Table {order.table_label}</span>
             {hasColdItems && (
-              <Snowflake className="h-3 w-3 text-blue-400" title="Contains cold items" />
+              <div title="Contains cold items">
+                <Snowflake className="h-3 w-3 text-blue-400" />
+              </div>
             )}
           </div>
           

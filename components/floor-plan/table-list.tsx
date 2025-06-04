@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useCallback } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -11,12 +12,17 @@ interface TableListProps {
   onSelectTable: (table: Table) => void
 }
 
-export function TableList({
-  tables,
-  selectedTable,
-  onSelectTable,
-}: TableListProps) {
-  const getStatusBadge = (status: string | undefined) => {
+// Memoized table row component for better performance
+const TableRow = memo(({ 
+  table, 
+  isSelected, 
+  onSelect 
+}: { 
+  table: Table
+  isSelected: boolean
+  onSelect: (table: Table) => void 
+}) => {
+  const getStatusBadge = useCallback((status: string | undefined) => {
     switch (status) {
       case 'available':
         return (
@@ -43,9 +49,9 @@ export function TableList({
           </Badge>
         )
     }
-  }
+  }, [])
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = useCallback((type: string) => {
     switch (type) {
       case 'circle':
         return '⭕'
@@ -56,7 +62,62 @@ export function TableList({
       default:
         return '⬜'
     }
-  }
+  }, [])
+
+  const handleClick = useCallback(() => {
+    onSelect(table)
+  }, [table, onSelect])
+
+  return (
+    <div
+      className={cn(
+        'p-3 flex items-center justify-between cursor-pointer hover:bg-gray-800/50 transition-colors',
+        isSelected && 'bg-blue-900/20 border-r-2 border-blue-500'
+      )}
+      onClick={handleClick}
+    >
+      <div className='flex items-center gap-3 min-w-0 flex-1'>
+        <span className='text-lg' title={`${table.type} table`}>
+          {getTypeIcon(table.type)}
+        </span>
+
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center gap-2'>
+            <h4 className='text-sm font-medium truncate'>
+              {table.label}
+            </h4>
+            <span className='text-xs text-gray-400 flex-shrink-0'>
+              {table.seats} seats
+            </span>
+          </div>
+
+          <div className='flex items-center gap-2 mt-1'>
+            <span className='text-xs text-gray-500'>
+              {Math.round(table.width)}×{Math.round(table.height)}
+            </span>
+
+            {table.rotation && table.rotation !== 0 && (
+              <span className='text-xs text-gray-500'>
+                {Math.round(table.rotation)}°
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className='flex-shrink-0'>
+        {getStatusBadge(table.status)}
+      </div>
+    </div>
+  )
+})
+TableRow.displayName = 'TableRow'
+
+export const TableList = memo(function TableList({
+  tables,
+  selectedTable,
+  onSelectTable,
+}: TableListProps) {
 
   return (
     <Card className='bg-gray-900/50 border-gray-800 shadow-lg'>
@@ -68,48 +129,12 @@ export function TableList({
         {tables.length > 0 ? (
           <div className='divide-y divide-gray-800'>
             {tables.map(table => (
-              <div
+              <TableRow
                 key={table.id}
-                className={cn(
-                  'p-3 flex items-center justify-between cursor-pointer hover:bg-gray-800/50 transition-colors',
-                  selectedTable?.id === table.id &&
-                    'bg-blue-900/20 border-r-2 border-blue-500'
-                )}
-                onClick={() => onSelectTable(table)}
-              >
-                <div className='flex items-center gap-3 min-w-0 flex-1'>
-                  <span className='text-lg' title={`${table.type} table`}>
-                    {getTypeIcon(table.type)}
-                  </span>
-
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-center gap-2'>
-                      <h4 className='text-sm font-medium truncate'>
-                        {table.label}
-                      </h4>
-                      <span className='text-xs text-gray-400 flex-shrink-0'>
-                        {table.seats} seats
-                      </span>
-                    </div>
-
-                    <div className='flex items-center gap-2 mt-1'>
-                      <span className='text-xs text-gray-500'>
-                        {Math.round(table.width)}×{Math.round(table.height)}
-                      </span>
-
-                      {table.rotation && table.rotation !== 0 && (
-                        <span className='text-xs text-gray-500'>
-                          {Math.round(table.rotation)}°
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className='flex-shrink-0'>
-                  {getStatusBadge(table.status)}
-                </div>
-              </div>
+                table={table}
+                isSelected={selectedTable?.id === table.id}
+                onSelect={onSelectTable}
+              />
             ))}
           </div>
         ) : (
@@ -124,4 +149,6 @@ export function TableList({
       </CardContent>
     </Card>
   )
-}
+})
+
+TableList.displayName = 'TableList'

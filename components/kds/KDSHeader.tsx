@@ -67,7 +67,7 @@ const StationSelector = memo(() => {
   return (
     <div className="flex items-center gap-2">
       <MapPin className="h-4 w-4 text-blue-400" />
-      <Select value={kdsState.selectedStation || 'all'} onValueChange={kdsState.setSelectedStation}>
+      <Select value={'all'} onValueChange={(value) => console.log('Station select:', value)}>
         <SelectTrigger className="w-40 bg-gray-800 border-gray-600">
           <SelectValue placeholder="Select station" />
         </SelectTrigger>
@@ -151,7 +151,7 @@ const AudioControls = memo(() => {
     <Button
       variant="ghost"
       size="sm"
-      onClick={() => kdsState.setSoundEnabled(!kdsState.soundEnabled)}
+      onClick={() => kdsState.toggleSound()}
       className={cn(
         "h-8 w-8 p-0",
         kdsState.soundEnabled ? "text-blue-400" : "text-gray-500"
@@ -167,14 +167,22 @@ const AudioControls = memo(() => {
 })
 AudioControls.displayName = 'AudioControls'
 
+// Helper function to derive order status from KDS routing fields
+const getOrderStatus = (order: any) => {
+  if (order.completed_at) return 'ready'
+  if (order.started_at) return 'preparing'
+  return 'new'
+}
+
 // Order metrics display
 const OrderMetrics = memo(() => {
   const kdsState = useKDSState()
   
   const totalOrders = kdsState.orders?.length || 0
-  const activeOrders = kdsState.orders?.filter(
-    order => order.status === 'new' || order.status === 'in_progress'
-  ).length || 0
+  const activeOrders = kdsState.orders?.filter(order => {
+    const status = getOrderStatus(order)
+    return status === 'new' || status === 'preparing'
+  }).length || 0
   
   return (
     <div className="flex items-center gap-4 text-sm">

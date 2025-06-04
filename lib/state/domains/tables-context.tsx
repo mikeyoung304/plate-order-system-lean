@@ -18,7 +18,7 @@ import React, {
   useRef,
 } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { deleteTable, getTables, updateTable } from '@/lib/modassembly/supabase/database/tables'
+import { deleteTable, fetchTables, updateTable } from '@/lib/modassembly/supabase/database/tables'
 import type { Table } from '@/lib/floor-plan-utils'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -174,7 +174,7 @@ export function TablesProvider({
     dispatch({ type: 'SET_LOADING', payload: true })
     
     try {
-      const tables = await getTables(floorPlanId)
+      const tables = await fetchTables()
       
       if (mountedRef.current) {
         dispatch({ type: 'SET_TABLES', payload: tables })
@@ -193,7 +193,7 @@ export function TablesProvider({
   // Save table to database
   const saveTable = useCallback(async (table: Table) => {
     try {
-      await updateTable(table)
+      await updateTable(table.id, table)
       
       if (mountedRef.current) {
         dispatch({ type: 'UPDATE_TABLE', payload: table })

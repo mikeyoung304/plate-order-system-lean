@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -48,7 +48,7 @@ interface CanvasProps extends CanvasInteractions {
   onAddToUndoStack: (tables: Table[]) => void
 }
 
-export function Canvas({
+export const Canvas = memo(function Canvas({
   tables,
   canvasSize,
   isLoading,
@@ -538,4 +538,6 @@ export function Canvas({
       </div>
     </div>
   )
-}
+})
+
+Canvas.displayName = 'Canvas'

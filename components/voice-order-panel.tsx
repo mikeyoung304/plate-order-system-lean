@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -27,7 +27,7 @@ type VoiceOrderPanelProps = {
   testMode?: boolean
 }
 
-export function VoiceOrderPanel({
+export const VoiceOrderPanel = memo(function VoiceOrderPanel({
   tableId,
   tableName,
   seatNumber,
@@ -293,4 +293,6 @@ export function VoiceOrderPanel({
       )}
     </div>
   )
-}
+})
+
+VoiceOrderPanel.displayName = 'VoiceOrderPanel'

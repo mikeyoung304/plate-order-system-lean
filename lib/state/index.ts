@@ -16,8 +16,8 @@
 // Export new domain-specific contexts (recommended)
 export * from './domains'
 
-// Export legacy context for backward compatibility
-export { default as RestaurantStateContext } from './restaurant-state-context'
+// Export legacy context for backward compatibility  
+export { useServerState as RestaurantStateContext } from './restaurant-state-context'
 
 // Export other state utilities
 export { OrderFlowProvider, useOrderFlow } from './order-flow-context'
