@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     let formData: FormData
     try {
       formData = await request.formData()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid form data' },
         {
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Log large files for optimization tracking
     if (audioFile.size > targetFileSize) {
-      console.log('Large audio file detected, will optimize:', {
+      // console.log('Large audio file detected, will optimize:', {
         userId: session.user.id,
         originalSize: audioFile.size,
         fileName: Security.sanitize.sanitizeIdentifier(audioFile.name || 'unknown'),
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
       .slice(0, 20) // Limit to 20 items for security
 
     // 8. Enhanced Logging with Optimization Metrics
-    console.log('Optimized transcription completed:', {
+    // console.log('Optimized transcription completed:', {
       userId: session.user.id,
       itemCount: safeItems.length,
       transcriptionLength: safeTranscription.length,

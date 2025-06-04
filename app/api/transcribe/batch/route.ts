@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     let formData: FormData
     try {
       formData = await request.formData()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid form data' },
         {
@@ -214,9 +214,9 @@ export async function POST(request: NextRequest) {
           } : undefined,
         })
 
-        if (result.result.metadata?.cached) cacheHits++
-        if (result.result.metadata?.cost) totalCost += result.result.metadata.cost
-        if (result.result.metadata?.latency) totalLatency += result.result.metadata.latency
+        if (result.result.metadata?.cached) {cacheHits++}
+        if (result.result.metadata?.cost) {totalCost += result.result.metadata.cost}
+        if (result.result.metadata?.latency) {totalLatency += result.result.metadata.latency}
         successfulJobs++
       } else {
         sanitizedResults.push({
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Enhanced Logging
-    console.log('Batch transcription completed:', {
+    // console.log('Batch transcription completed:', {
       userId: session.user.id,
       batchSize: audioFiles.length,
       summary,

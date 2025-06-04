@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/modassembly/supabase/server'
-import { env, assertServerEnv } from '@/lib/env'
+import { assertServerEnv } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,7 +181,7 @@ export async function GET() {
     })
     
     // Mock cache performance data (would be calculated from actual cache metrics)
-    const cachePerformance = dailyCostTrends.slice(-7).map((day, index) => ({
+    const cachePerformance = dailyCostTrends.slice(-7).map((day, _index) => ({
       date: day.date,
       hitRate: Math.max(30, Math.min(90, 60 + Math.random() * 30)), // Mock data
       savings: day.cost * (Math.random() * 0.3) // Mock savings

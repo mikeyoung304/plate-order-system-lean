@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       ])
 
       // 5. Generate Trend Data
-      const trends = await generateTrendData(tracker, userId)
+      const trends = await generateTrendData(_tracker, _userId)
 
       // 6. Sanitize Data for Response
       const analyticsData: AnalyticsData = {
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         headers: Security.headers.getHeaders(),
       })
 
-    } catch (error) {
+    } catch {
       console.error('Analytics data fetch failed:', {
         error: error instanceof Error ? error.message : error,
         userId: session.user.id,
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     let body
     try {
       body = await request.json()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid JSON body' },
         {
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Store Budget Limits (in a real app, would save to database)
-    console.log('Budget limits updated:', {
+    // console.log('Budget limits updated:', {
       updatedBy: session.user.id,
       limits: validatedLimits,
       timestamp: new Date().toISOString(),

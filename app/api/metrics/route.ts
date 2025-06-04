@@ -76,7 +76,7 @@ async function getDatabaseMetrics() {
       queryTime,
       slowQueries: queryTime > 500 ? 1 : 0
     }
-  } catch (error) {
+  } catch {
     return {
       connections: 0,
       queryTime: Date.now() - start,
@@ -104,7 +104,7 @@ async function getOpenAIMetrics() {
     const costToday = usage?.reduce((sum, record) => sum + (record.cost_cents || 0), 0) || 0
     
     // Get cache hit rate from transcription cache
-    const { data: cacheData, error: cacheError } = await supabase
+    const { data: cacheData, error: _cacheError } = await supabase
       .from('transcription_cache')
       .select('created_at')
       .gte('created_at', `${today}T00:00:00.000Z`)
@@ -117,7 +117,7 @@ async function getOpenAIMetrics() {
       costToday,
       cacheHitRate
     }
-  } catch (error) {
+  } catch {
     return {
       requestsToday: 0,
       costToday: 0,
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response)
     
-  } catch (error) {
+  } catch {
     errorCounter++
     console.error('Metrics collection error:', error)
     
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       recorded_at: new Date().toISOString()
     })
     
-  } catch (error) {
+  } catch {
     errorCounter++
     console.error('Custom metrics recording error:', error)
     

@@ -22,7 +22,7 @@ async function cleanGuestData(userId: string) {
       .eq('server_id', userId)
       .lt('created_at', twoHoursAgo)
   } catch (error) {
-    console.log('Guest cleanup failed:', error)
+    // console.log('Guest cleanup failed:', error)
   }
 }
 
