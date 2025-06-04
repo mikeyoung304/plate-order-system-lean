@@ -1,0 +1,534 @@
+
+> my-v0-project@0.1.0 lint
+> next lint --fix
+
+
+./app/(auth)/admin/page.tsx
+28:23  Error: 'setFloorPlanId' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+29:10  Error: 'activeTab' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+29:21  Error: 'setActiveTab' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+30:10  Error: 'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./app/(auth)/expo/page.tsx
+3:10  Error: 'useCallback' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+22:3  Error: 'Clock' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+24:3  Error: 'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+26:3  Error: 'TrendingUp' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+78:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+91:9  Error: 'markAsDelivered' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./app/(auth)/kitchen/page.tsx
+3:10  Error: 'useCallback' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+3:23  Error: 'useEffect' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+61:5  Error: 'selectedStation' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+63:5  Error: 'sortBy' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+64:5  Error: 'connectionStatus' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+66:5  Error: 'errors' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+254:14  Error: 'error' is defined but never used.  no-unused-vars
+
+./app/(auth)/server/page.tsx
+180:9  Warning: The 'handleBackToFloorPlan' function makes the dependencies of useCallback Hook (at line 321) change on every render. Move it inside the useCallback callback. Alternatively, wrap the definition of 'handleBackToFloorPlan' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+
+./app/api/health/route.ts
+75:19  Error: 'error' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+232:12  Error: 'error' is defined but never used.  no-unused-vars
+
+./app/api/metrics/route.ts
+3:27  Error: 'env' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+79:12  Error: 'error' is defined but never used.  no-unused-vars
+107:37  Error: 'cacheError' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+120:12  Error: 'error' is defined but never used.  no-unused-vars
+
+./app/api/openai/usage/route.ts
+3:27  Error: 'env' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+184:66  Error: 'index' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./app/api/transcribe/analytics/route.ts
+203:14  Error: 'error' is defined but never used.  no-unused-vars
+257:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+288:34  Error: 'tracker' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+288:48  Error: 'userId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./app/api/transcribe/batch/route.ts
+92:14  Error: 'error' is defined but never used.  no-unused-vars
+240:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./app/api/transcribe/route.ts
+92:14  Error: 'error' is defined but never used.  no-unused-vars
+140:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+246:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./app/auth/actions.ts
+25:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./app/dashboard/page.tsx
+13:3  Error: 'ArrowRight' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+14:3  Error: 'BarChart3' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+28:9  Error: 'userRole' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+29:9  Error: 'isServer' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+30:9  Error: 'isCook' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+31:9  Error: 'isAdmin' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./components/analytics/live-restaurant-metrics.tsx
+328:45  Error: 'index' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/error-boundaries.tsx
+395:29  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+447:29  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+494:29  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+541:29  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+541:36  Error: 'resetErrorBoundary' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan/canvas-optimized.tsx
+13:33  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+58:19  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+58:36  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+59:19  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+60:23  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+61:26  Error: 'mode' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+62:21  Error: 'offset' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+63:26  Error: 'direction' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+64:22  Error: 'start' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+65:22  Error: 'start' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+66:26  Error: 'rotation' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+67:19  Error: 'start' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+68:15  Error: 'level' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+69:20  Error: 'offset' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+70:22  Error: 'tables' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+134:11  Error: 'calculateSeatPositions' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+145:9  Error: 'snapToGridValue' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+177:15  Error: 'currentAngle' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+186:15  Error: 'MIN_SIZE' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+213:5  Warning: React Hook useCallback has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+361:6  Warning: React Hook useCallback has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+390:5  Warning: React Hook useMemo has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/floor-plan/canvas.tsx
+12:33  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+47:19  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+47:36  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+48:22  Error: 'tables' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+107:11  Error: 'calculateSeatPositions' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+306:5  Warning: React Hook useCallback has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+459:6  Warning: React Hook useCallback has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+488:5  Warning: React Hook useMemo has a missing dependency: 'canvasRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/floor-plan/display-options.tsx
+15:14  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+23:22  Error: 'size' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan/side-panel.tsx
+12:19  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:19  Error: 'property' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:42  Error: 'value' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+24:25  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+25:27  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+33:22  Error: 'size' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan/table-list.tsx
+12:19  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+23:14  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan/table-properties.tsx
+21:10  Error: 'cn' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+27:14  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+28:19  Error: 'property' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+28:42  Error: 'value' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan/toolbar.tsx
+38:16  Error: 'type' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/floor-plan-view.tsx
+5:1  Error: 'react' import is duplicated.  no-duplicate-imports
+16:19  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+21:3  Error: 'floorPlanId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+124:24  Error: 'time' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/KDSHeader.tsx
+14:3  Error: 'AlertCircle' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+65:9  Error: 'kdsState' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+70:55  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./components/kds/KDSLayoutRefactored.tsx
+19:3  Error: 'addOrderNotes' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+23:3  Error: 'updateOrderPriority' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+151:9  Error: 'handleBulkAction' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./components/kds/KDSMainContent.tsx
+79:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+83:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+87:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+91:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+95:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+119:9  Error: 'kdsState' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+124:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+128:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+132:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+136:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./components/kds/kds-layout.tsx
+503:5  Warning: React Hook useCallback has a missing dependency: 'kdsState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/kds/order-card.tsx
+25:12  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+26:15  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+27:18  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+28:23  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+28:42  Error: 'priority' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+29:17  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+29:36  Error: 'notes' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+48:13  Error: 'timeElapsed' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./components/kds/stations/BarStation.tsx
+9:10  Error: 'OrderCard' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+13:19  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:35  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+102:14  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+102:30  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/stations/ExpoStation.tsx
+7:50  Error: 'Timer' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+9:10  Error: 'OrderCard' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+13:19  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:35  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+49:14  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+49:30  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/stations/FryerStation.tsx
+9:10  Error: 'OrderCard' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+13:19  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:35  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+65:14  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+65:30  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/stations/GrillStation.tsx
+9:10  Error: 'OrderCard' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+13:19  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:35  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+56:14  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+56:30  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/stations/SaladStation.tsx
+9:10  Error: 'OrderCard' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+13:19  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+13:35  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+75:14  Error: 'action' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+75:30  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/table-group-card.tsx
+32:17  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+33:17  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+33:34  Error: 'orderIds' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+34:17  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+35:19  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+67:20  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+69:17  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+70:19  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+73:17  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+74:19  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/kds/voice-command-panel.tsx
+16:3  Error: 'AlertTriangle' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+33:18  Error: 'orderNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+34:20  Error: 'orderNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+35:19  Error: 'orderNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+36:20  Error: 'orderNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+36:41  Error: 'priority' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+37:15  Error: 'filter' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/loading-states.tsx
+13:3  Error: 'Coffee' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+272:3  Error: 'onComplete' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/printer-settings.tsx
+15:30  Error: 'Info' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./components/seat-picker-overlay.tsx
+17:18  Error: 'seatNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+51:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./components/server/seat-navigation.tsx
+19:18  Error: 'seatNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/shell.tsx
+4:1  Error: 'react' import is duplicated.  no-duplicate-imports
+
+./components/sidebar.tsx
+19:3  Error: 'X' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+21:31  Error: 'SheetTrigger' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+22:34  Error: 'AvatarImage' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+50:9  Error: 'router' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+52:10  Error: 'notifications' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+52:25  Error: 'setNotifications' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+91:14  Error: 'error' is defined but never used.  no-unused-vars
+
+./components/simple-resident-selector.tsx
+29:24  Error: 'residentId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+29:44  Error: 'residentName' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/table-view.tsx
+23:18  Error: 'seatNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+36:14  Error: 'seatNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+37:13  Error: 'seatNumber' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+205:48  Warning: React Hook useMemo has a missing dependency: 'generateSeats'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/theme-provider.tsx
+5:1  Error: 'react' import is duplicated.  no-duplicate-imports
+16:14  Error: 'theme' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/ui/calendar.tsx
+57:37  Error: 'props' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/ui/sidebar.tsx
+32:13  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+34:19  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+55:21  Error: 'open' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+78:27  Error: 'value' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/ui/use-toast.ts
+129:25  Error: 'state' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./components/voice-order-panel.tsx
+22:23  Error: 'orderData' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+37:3  Error: 'testMode' is assigned a value but never used. Allowed unused args must match /^_/u.  no-unused-vars
+86:24  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+92:32  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+96:31  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+100:30  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+105:36  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+
+./lib/accessibility/hooks.ts
+1:23  Error: 'useEffect' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+1:34  Error: 'useRef' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+31:18  Error: 'direction' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/accessibility/index.ts
+1:10  Error: 'useCallback' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+1:23  Error: 'useEffect' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+1:34  Error: 'useRef' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./lib/hooks/use-auth-form-state.ts
+1:46  Error: 'useState' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+27:13  Error: 'mode' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+28:14  Error: 'email' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+29:17  Error: 'password' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+30:13  Error: 'name' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+31:13  Error: 'role' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+32:15  Error: 'status' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+32:35  Error: 'message' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/hooks/use-kds-state.ts
+34:5  Error: 'routingId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+35:5  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+39:17  Error: 'mode' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+40:15  Error: 'sort' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+41:17  Error: 'filter' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/hooks/use-server-page-data.ts
+118:6  Warning: React Hook useCallback has an unnecessary dependency: 'floorPlanId'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+122:12  Error: 'residentId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+122:32  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/hooks/use-voice-recording-state.ts
+146:16  Error: 'items' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+147:14  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/initialization.ts
+16:40  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+19:8  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/kds/voice-commands.ts
+160:24  Error: 'command' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+161:25  Error: 'message' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+162:28  Error: 'state' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+166:20  Error: 'command' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+167:21  Error: 'message' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+168:24  Error: 'state' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+249:13  Error: 'audioFile' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+306:16  Error: 'command' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+307:17  Error: 'message' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/logger.ts
+4:3  Error: 'DEBUG' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+5:3  Error: 'INFO' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+6:3  Error: 'WARN' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+7:3  Error: 'ERROR' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+64:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+69:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+144:11  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+146:8  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+155:11  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+157:8  Error: 'args' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/modassembly/audio-recording/audio-optimization.ts
+201:39  Error: 'maxDurationMs' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/modassembly/openai/batch-processor.ts
+374:15  Error: 'value' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+375:14  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/modassembly/openai/optimized-transcribe.ts
+8:15  Error: 'CacheEntry' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+104:5  Error: Expected an error object to be thrown.  no-throw-literal
+
+./lib/modassembly/openai/transcription-cache.ts
+382:53  Error: 'userId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/modassembly/supabase/auth/auth-context.tsx
+36:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+58:9  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+70:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+189:3  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+196:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+203:3  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./lib/modassembly/supabase/auth/enhanced-protected-route.tsx
+5:19  Error: 'useHasRole' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+56:9  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+75:9  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+94:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+104:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+113:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+125:13  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+150:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+165:11  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+186:6  Warning: React Hook useEffect has missing dependencies: 'hasRoleCheck', 'maxRetries', 'profile', 'redirectTo', 'retryDelay', and 'user'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/modassembly/supabase/database/kds.ts
+9:3  Error: 'KDSOrderWithJoins' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./lib/modassembly/supabase/database/orders.ts
+10:3  Error: 'Database' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+12:3  Error: 'OrderFilters' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+15:3  Error: 'OrderType' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+16:3  Error: 'OrderUpdate' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+17:3  Error: 'OrderWithJoins' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./lib/modassembly/supabase/database/tables.ts
+11:3  Error: 'Database' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+14:3  Error: 'TableStatus' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+
+./lib/performance/realtime-stress-test.ts
+126:56  Error: 'options' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+226:41  Error: 'payload' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+266:37  Error: 'options' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+268:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+272:37  Error: 'options' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+274:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+278:35  Error: 'options' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+280:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+293:7  Error: 'totalMessages' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+315:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+349:9  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+352:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+378:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./lib/performance-utils.ts
+15:38  Error: 'componentName' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/state/domains/connection-context.tsx
+50:25  Error: 'status' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+145:13  Error: 'subscription' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+168:6  Warning: React Hook useCallback has a missing dependency: 'scheduleReconnect'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/state/domains/optimized-orders-context.tsx
+310:16  Error: 'filters' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+311:17  Error: 'orderData' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+312:17  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+312:34  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+313:17  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+316:22  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+316:39  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+319:18  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+320:23  Error: 'status' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+321:22  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+322:25  Error: 'residentId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+357:3  Error: 'userRole' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+358:3  Error: 'userId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/state/domains/orders-context.tsx
+28:1  Error: '@/lib/modassembly/supabase/database/orders' import is duplicated.  no-duplicate-imports
+31:26  Error: 'filters' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+35:28  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+35:40  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+151:16  Error: 'filters' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+152:20  Error: 'orderData' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+153:21  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+153:38  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+154:17  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+157:22  Error: 'orderId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+157:39  Error: 'updates' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+160:18  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+161:23  Error: 'status' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+162:22  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+163:25  Error: 'residentId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+./lib/state/domains/restaurant-provider.tsx
+56:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+137:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+138:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+139:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+140:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+141:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+142:7  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./lib/state/domains/server-context.tsx
+294:13  Error: 'step' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+297:17  Error: 'step' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+300:17  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+301:16  Error: 'seat' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+304:18  Error: 'type' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+305:20  Error: 'resident' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+306:19  Error: 'items' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+307:18  Error: 'item' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+308:21  Error: 'item' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+309:28  Error: 'instructions' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+314:19  Error: 'transcript' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+317:22  Error: 'show' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+318:28  Error: 'show' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+319:22  Error: 'show' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+322:14  Error: 'field' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+322:29  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+323:16  Error: 'field' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+332:17  Error: 'step' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+367:6  Warning: React Hook useCallback has a missing dependency: 'stepOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+375:6  Warning: React Hook useCallback has a missing dependency: 'stepOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/state/domains/tables-context.tsx
+134:15  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+135:17  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+138:17  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+139:21  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+142:22  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+143:19  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+144:22  Error: 'tableId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+147:18  Error: 'id' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+148:23  Error: 'status' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+191:6  Warning: React Hook useCallback has an unnecessary dependency: 'floorPlanId'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/state/optimized-realtime-context.tsx
+32:3  Error: 'useMemo' is defined but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+66:14  Error: 'payload' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+106:15  Error: 'config' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+107:17  Error: 'subscriptionId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+118:17  Error: 'role' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+118:31  Error: 'userId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+121:18  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+121:33  Error: 'filter' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+208:17  Error: 'channelName' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+347:6  Warning: React Hook useCallback has missing dependencies: 'scheduleReconnect' and 'unsubscribe'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+384:11  Error: 'now' is assigned a value but never used. Allowed unused vars must match /^_/u.  no-unused-vars
+409:6  Warning: React Hook useCallback has a missing dependency: 'scheduleReconnect'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+492:6  Warning: React Hook useCallback has a missing dependency: 'reconnect'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/state/order-flow-context.tsx
+123:19  Error: 'table' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+124:18  Error: 'seat' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+125:20  Error: 'type' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+126:22  Error: 'residentId' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+127:24  Error: 'suggestion' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+128:16  Error: 'step' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+129:21  Error: 'processing' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+130:16  Error: 'error' is defined but never used. Allowed unused args must match /^_/u.  no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

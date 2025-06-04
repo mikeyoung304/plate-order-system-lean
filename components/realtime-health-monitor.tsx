@@ -98,7 +98,7 @@ export function RealtimeHealthMonitor({
   useEffect(() => {
     refreshHealthData()
     
-    if (!autoRefresh) return
+    if (!autoRefresh) {return}
 
     const interval = setInterval(refreshHealthData, refreshInterval)
     return () => clearInterval(interval)
@@ -141,19 +141,19 @@ export function RealtimeHealthMonitor({
   // Calculate overall health score
   const calculateHealthScore = () => {
     let score = 0
-    let maxScore = 100
+    const maxScore = 100
 
     // Connection status (40 points)
-    if (connectionStatus === 'connected') score += 40
-    else if (connectionStatus === 'degraded') score += 20
-    else if (connectionStatus === 'reconnecting') score += 10
+    if (connectionStatus === 'connected') {score += 40}
+    else if (connectionStatus === 'degraded') {score += 20}
+    else if (connectionStatus === 'reconnecting') {score += 10}
 
     // Latency (20 points)
     const avgLatency = healthData.connectionHealth.averageLatency
-    if (avgLatency < 100) score += 20
-    else if (avgLatency < 300) score += 15
-    else if (avgLatency < 500) score += 10
-    else if (avgLatency < 1000) score += 5
+    if (avgLatency < 100) {score += 20}
+    else if (avgLatency < 300) {score += 15}
+    else if (avgLatency < 500) {score += 10}
+    else if (avgLatency < 1000) {score += 5}
 
     // Cache hit rate (20 points)
     const ordersCacheHit = healthData.ordersMetrics.cacheHitRate
@@ -165,10 +165,10 @@ export function RealtimeHealthMonitor({
     const lastHeartbeat = healthData.connectionHealth.lastHeartbeat
     if (lastHeartbeat) {
       const timeSinceHeartbeat = Date.now() - lastHeartbeat.getTime()
-      if (timeSinceHeartbeat < 10000) score += 20 // 10 seconds
-      else if (timeSinceHeartbeat < 30000) score += 15 // 30 seconds
-      else if (timeSinceHeartbeat < 60000) score += 10 // 1 minute
-      else if (timeSinceHeartbeat < 120000) score += 5 // 2 minutes
+      if (timeSinceHeartbeat < 10000) {score += 20} // 10 seconds
+      else if (timeSinceHeartbeat < 30000) {score += 15} // 30 seconds
+      else if (timeSinceHeartbeat < 60000) {score += 10} // 1 minute
+      else if (timeSinceHeartbeat < 120000) {score += 5} // 2 minutes
     }
 
     return Math.round((score / maxScore) * 100)

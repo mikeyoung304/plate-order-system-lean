@@ -10,25 +10,22 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import {
-  ArrowRight,
-  BarChart3,
   ChefHat,
   Clock,
   LayoutGrid,
   Mic,
   Settings,
   Shield,
-  TrendingUp,
   User,
   Utensils,
 } from 'lucide-react'
 
 function DashboardContent() {
   const [currentTime, setCurrentTime] = useState(new Date())
-  const userRole = useRole()
-  const isServer = useIsRole('server')
-  const isCook = useIsRole('cook')
-  const isAdmin = useIsRole('admin')
+  const _userRole = useRole()
+  const _isServer = useIsRole('server')
+  const _isCook = useIsRole('cook')
+  const _isAdmin = useIsRole('admin')
 
   useEffect(() => {
     const timer = setInterval(() => {

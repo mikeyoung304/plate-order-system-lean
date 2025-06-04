@@ -61,7 +61,7 @@ export class TranscriptionCache {
    * Initialize cache with database entries
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return
+    if (this.initialized) {return}
 
     try {
       const supabase = await createClient()
@@ -139,7 +139,7 @@ export class TranscriptionCache {
    * Find similar transcriptions using fuzzy matching
    */
   async findSimilar(audioHash: string, audioBlob: Blob, userId: string): Promise<CacheEntry | null> {
-    if (!this.options.enableSimilarityMatching) return null
+    if (!this.options.enableSimilarityMatching) {return null}
 
     await this.initialize()
 

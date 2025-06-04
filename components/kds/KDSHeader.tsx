@@ -169,8 +169,8 @@ AudioControls.displayName = 'AudioControls'
 
 // Helper function to derive order status from KDS routing fields
 const getOrderStatus = (order: any) => {
-  if (order.completed_at) return 'ready'
-  if (order.started_at) return 'preparing'
+  if (order.completed_at) {return 'ready'}
+  if (order.started_at) {return 'preparing'}
   return 'new'
 }
 

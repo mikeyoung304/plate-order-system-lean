@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useMemo } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 // PERFORMANCE_OPTIMIZATION: Eliminated framer-motion completely

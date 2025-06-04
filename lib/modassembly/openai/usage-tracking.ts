@@ -370,7 +370,7 @@ export class UsageTracker {
   }
 
   private async flushBatch(): Promise<void> {
-    if (this.batchedMetrics.length === 0) return
+    if (this.batchedMetrics.length === 0) {return}
 
     try {
       const supabase = await createClient()
@@ -401,7 +401,7 @@ export class UsageTracker {
   }
 
   private calculateTranscriptionCost(durationMs: number, cached: boolean): number {
-    if (cached) return 0
+    if (cached) {return 0}
     const minutes = durationMs / 60000
     return minutes * PRICING['whisper-1']
   }
@@ -412,7 +412,7 @@ export class UsageTracker {
     outputTokens: number,
     cached: boolean
   ): number {
-    if (cached) return 0
+    if (cached) {return 0}
     
     const pricing = PRICING[model]
     const inputCost = (inputTokens / 1000) * pricing.input

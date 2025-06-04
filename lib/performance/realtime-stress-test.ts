@@ -10,7 +10,7 @@
  */
 
 import { createClient } from '@/lib/modassembly/supabase/client'
-import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
 interface StressTestOptions {
   userCount: number
@@ -238,7 +238,7 @@ export class RealtimeStressTester {
 
   // Simulate database updates to trigger real-time events
   private async simulateUpdates(options: StressTestOptions): Promise<void> {
-    if (!this.isRunning) return
+    if (!this.isRunning) {return}
 
     const updateTypes = ['order_status', 'table_status', 'kds_routing']
     const updateType = updateTypes[Math.floor(Math.random() * updateTypes.length)]

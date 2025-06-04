@@ -3,7 +3,7 @@
  * Handles multiple audio files efficiently with queuing and rate limiting
  */
 
-import { getOptimizedTranscriptionService, type TranscriptionResult, type TranscriptionError } from './optimized-transcribe'
+import { type TranscriptionError, type TranscriptionResult, getOptimizedTranscriptionService } from './optimized-transcribe'
 import { getUsageTracker } from './usage-tracking'
 
 export interface BatchJob {
@@ -112,7 +112,7 @@ export class BatchProcessor {
    */
   async cancelBatch(batchId: string): Promise<void> {
     const progress = this.batchProgress.get(batchId)
-    if (!progress) return
+    if (!progress) {return}
 
     // Mark as cancelled and stop processing new jobs
     progress.estimatedTimeRemaining = 0
@@ -280,7 +280,7 @@ export class BatchProcessor {
     const progress = this.batchProgress.get(batchId)
     const results = this.results.get(batchId)
     
-    if (!progress || !results) return
+    if (!progress || !results) {return}
 
     results.push(result)
     progress.results = [...results]
@@ -333,9 +333,9 @@ export class BatchProcessor {
   }
 
   private categorizeFileSize(size: number): string {
-    if (size < 50000) return 'small'        // < 50KB
-    if (size < 500000) return 'medium'      // < 500KB
-    if (size < 2000000) return 'large'      // < 2MB
+    if (size < 50000) {return 'small'}        // < 50KB
+    if (size < 500000) {return 'medium'}      // < 500KB
+    if (size < 2000000) {return 'large'}      // < 2MB
     return 'extra-large'                    // >= 2MB
   }
 

@@ -158,11 +158,11 @@ export class AudioOptimizer {
   }
 
   private detectFormat(mimeType: string): string {
-    if (mimeType.includes('mp3') || mimeType.includes('mpeg')) return 'mp3'
-    if (mimeType.includes('wav')) return 'wav'
-    if (mimeType.includes('webm')) return 'webm'
-    if (mimeType.includes('ogg')) return 'ogg'
-    if (mimeType.includes('mp4') || mimeType.includes('m4a')) return 'mp4'
+    if (mimeType.includes('mp3') || mimeType.includes('mpeg')) {return 'mp3'}
+    if (mimeType.includes('wav')) {return 'wav'}
+    if (mimeType.includes('webm')) {return 'webm'}
+    if (mimeType.includes('ogg')) {return 'ogg'}
+    if (mimeType.includes('mp4') || mimeType.includes('m4a')) {return 'mp4'}
     return 'unknown'
   }
 

@@ -370,7 +370,7 @@ export function OptimizedOrdersProvider({
   
   // Process batch updates
   const processBatchUpdates = useCallback(() => {
-    if (batchQueueRef.current.size === 0) return
+    if (batchQueueRef.current.size === 0) {return}
     
     const updates = Array.from(batchQueueRef.current.values())
     batchQueueRef.current.clear()
@@ -453,7 +453,7 @@ export function OptimizedOrdersProvider({
   
   // Load orders from database
   const loadOrders = useCallback(async (filters?: OrderFilters) => {
-    if (!mountedRef.current) return
+    if (!mountedRef.current) {return}
     
     dispatch({ type: 'SET_LOADING', payload: true })
     
@@ -500,7 +500,7 @@ export function OptimizedOrdersProvider({
       
       const { data, error } = await query
       
-      if (error) throw error
+      if (error) {throw error}
       
       if (mountedRef.current && data) {
         dispatch({ type: 'BATCH_UPDATE', payload: data })
@@ -526,8 +526,8 @@ export function OptimizedOrdersProvider({
       .select()
       .single()
     
-    if (error) throw error
-    if (!data) throw new Error('No data returned')
+    if (error) {throw error}
+    if (!data) {throw new Error('No data returned')}
     
     // Add to local state immediately
     if (mountedRef.current) {
@@ -548,7 +548,7 @@ export function OptimizedOrdersProvider({
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {throw error}
     
     // Update local state
     if (mountedRef.current && data) {
@@ -565,7 +565,7 @@ export function OptimizedOrdersProvider({
       .delete()
       .eq('id', orderId)
     
-    if (error) throw error
+    if (error) {throw error}
     
     // Remove from local state
     if (mountedRef.current) {
@@ -591,12 +591,12 @@ export function OptimizedOrdersProvider({
   
   const getOrdersByStatus = useCallback((status: OrderStatus): Order[] => {
     const orderIds = state.ordersByStatus.get(status)
-    if (!orderIds) return []
+    if (!orderIds) {return []}
     
     const orders: Order[] = []
     for (const id of orderIds) {
       const order = state.orders.get(id)
-      if (order) orders.push(order)
+      if (order) {orders.push(order)}
     }
     
     return orders
@@ -604,12 +604,12 @@ export function OptimizedOrdersProvider({
   
   const getOrdersByTable = useCallback((tableId: string): Order[] => {
     const orderIds = state.ordersByTable.get(tableId)
-    if (!orderIds) return []
+    if (!orderIds) {return []}
     
     const orders: Order[] = []
     for (const id of orderIds) {
       const order = state.orders.get(id)
-      if (order) orders.push(order)
+      if (order) {orders.push(order)}
     }
     
     return orders
@@ -617,12 +617,12 @@ export function OptimizedOrdersProvider({
   
   const getOrdersByResident = useCallback((residentId: string): Order[] => {
     const orderIds = state.ordersByResident.get(residentId)
-    if (!orderIds) return []
+    if (!orderIds) {return []}
     
     const orders: Order[] = []
     for (const id of orderIds) {
       const order = state.orders.get(id)
-      if (order) orders.push(order)
+      if (order) {orders.push(order)}
     }
     
     return orders
@@ -663,7 +663,7 @@ export function OptimizedOrdersProvider({
   
   // Set up real-time subscription
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected) {return}
     
     // Subscribe to orders table with role-based filtering
     const unsubscribe = subscribe({

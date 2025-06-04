@@ -4,8 +4,8 @@
  */
 
 import OpenAI from 'openai'
-import { createAudioOptimizer, type OptimizationResult } from '../audio-recording/audio-optimization'
-import { getTranscriptionCache, generateAudioHash, type CacheEntry } from './transcription-cache'
+import { type OptimizationResult, createAudioOptimizer } from '../audio-recording/audio-optimization'
+import { type CacheEntry, generateAudioHash, getTranscriptionCache } from './transcription-cache'
 import { getUsageTracker } from './usage-tracking'
 
 export interface TranscriptionOptions {
@@ -170,7 +170,7 @@ export class OptimizedTranscriptionService {
   ): Promise<TranscriptionResult> {
     let optimizationResult: OptimizationResult | null = null
     let workingBlob = audioBlob
-    let cached = false
+    const cached = false
     let cacheHit = false
 
     // Step 1: Generate audio hash for caching
