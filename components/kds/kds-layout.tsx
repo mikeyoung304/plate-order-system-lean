@@ -36,8 +36,9 @@ import { TableGroupCard } from './table-group-card'
 import { useKDSAudio, useKDSState } from '@/lib/hooks/use-kds-state'
 import { useTableGroupedOrders } from '@/hooks/use-table-grouped-orders'
 import { useToast } from '@/hooks/use-toast'
+import { getClientUser } from '@/lib/modassembly/supabase/auth/session'
 import {
-  type KDSOrderRouting,
+  // type KDSOrderRouting, // Unused for now
   addOrderNotes,
   bumpOrder,
   recallOrder,
@@ -174,8 +175,10 @@ export function KDSLayout({
       })
 
       try {
-        // TODO: Get actual user ID from auth context
-        await bumpOrder(routingId, 'current-user-id')
+        // Get current user for audit trail
+        const user = await getClientUser()
+        const userId = user?.id || 'unknown-user'
+        await bumpOrder(routingId, userId)
 
         // Play success sound
         if (kdsState.soundEnabled) {

@@ -716,6 +716,19 @@ export function RestaurantStateProvider({
         dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' })
       } catch (error) {
         console.error('Failed to setup real-time subscriptions:', error)
+        
+        // Clean up any partially created channels
+        channelsRef.current.forEach(channel => {
+          if (channel && supabaseRef.current) {
+            try {
+              supabaseRef.current.removeChannel(channel)
+            } catch (cleanupError) {
+              console.error('Error cleaning up channel:', cleanupError)
+            }
+          }
+        })
+        channelsRef.current = []
+        
         dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' }) // Still mark as connected for basic functionality
         dispatch({
           type: 'SET_ERROR',
@@ -730,9 +743,14 @@ export function RestaurantStateProvider({
     setupRealtimeSubscriptions()
 
     return () => {
+      isMountedRef.current = false // Set BEFORE cleanup
       channelsRef.current.forEach(channel => {
         if (supabaseRef.current) {
-          supabaseRef.current.removeChannel(channel)
+          try {
+            supabaseRef.current.removeChannel(channel)
+          } catch (cleanupError) {
+            console.error('Error removing channel:', cleanupError)
+          }
         }
       })
       channelsRef.current = []

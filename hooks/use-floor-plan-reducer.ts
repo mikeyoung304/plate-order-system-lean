@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer, useCallback, useEffect, useMemo } from 'react'
+import { useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import type { Table } from '@/lib/floor-plan-utils'
 import {
@@ -552,6 +552,7 @@ export function useFloorPlanReducer(floorPlanId: string) {
     floorPlanReducer,
     createInitialState(floorPlanId)
   )
+  const isMountedRef = useRef(true)
 
   // Memoized selectors
   const selectors = useMemo(() => createSelectors(state), [state])
@@ -777,6 +778,12 @@ export function useFloorPlanReducer(floorPlanId: string) {
 
       logger.info(`Retrieved ${frontendTables.length} tables for floor plan`)
 
+      // Check if component is still mounted before dispatching
+      if (!isMountedRef.current) {
+        logger.info('Component unmounted, skipping table state update')
+        return
+      }
+
       dispatch({ type: 'SET_TABLES', payload: frontendTables })
       dispatch({
         type: 'SET_ASYNC_STATE',
@@ -849,6 +856,13 @@ export function useFloorPlanReducer(floorPlanId: string) {
   useEffect(() => {
     loadTables()
   }, [loadTables])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   return {
     state,

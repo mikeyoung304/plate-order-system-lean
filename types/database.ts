@@ -6,8 +6,8 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
-          id: string
-          name: string | null
+          user_id: string // Primary key, references auth.users
+          name: string
           role: 'admin' | 'cook' | 'server' | 'resident'
           email: string | null
           dietary_restrictions: string[] | null
@@ -16,8 +16,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id: string
-          name?: string | null
+          user_id: string // Primary key, references auth.users
+          name?: string
           role: 'admin' | 'cook' | 'server' | 'resident'
           email?: string | null
           dietary_restrictions?: string[] | null
@@ -26,13 +26,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          id?: string
-          name?: string | null
+          name?: string
           role?: 'admin' | 'cook' | 'server' | 'resident'
           email?: string | null
           dietary_restrictions?: string[] | null
           preferences?: Record<string, any> | null
-          created_at?: string
           updated_at?: string
         }
       }

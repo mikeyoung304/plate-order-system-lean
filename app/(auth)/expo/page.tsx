@@ -20,12 +20,12 @@ import {
   CheckCircle,
   ChefHat,
   Clock,
-  Utensils,
-  Timer,
-  Users,
   Package,
-  TrendingUp,
   RefreshCw,
+  Timer,
+  TrendingUp,
+  Users,
+  Utensils,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -158,7 +158,7 @@ export default function ExpoPage() {
   const readyTableGroups = useMemo(() => {
     const groups = new Map<string, Order[]>()
     readyOrders.forEach(order => {
-      if (!order.table) return
+      if (!order.table) {return}
       const key = order.table
       if (!groups.has(key)) {
         groups.set(key, [])

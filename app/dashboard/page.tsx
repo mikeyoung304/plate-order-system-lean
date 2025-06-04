@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { Shell } from '@/components/shell'
 import {
   ProtectedRoute,
-  useRole,
   useIsRole,
+  useRole,
 } from '@/lib/modassembly/supabase/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'

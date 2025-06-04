@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import dynamic from 'next/dynamic'
+import { sanitizeOrderItems, sanitizeText } from '@/lib/utils/security'
 
 // Dynamic imports for heavy components
 const FloorPlanView = dynamic(
@@ -247,13 +248,26 @@ export default function ServerPage() {
           transcript = orderData
         }
 
+        // Sanitize inputs before saving to database
+        const sanitizedItems = sanitizeOrderItems(items)
+        const sanitizedTranscript = sanitizeText(transcript)
+        
+        if (sanitizedItems.length === 0) {
+          toast({
+            title: 'Invalid Order',
+            description: 'Please provide valid order items.',
+            variant: 'destructive',
+          })
+          return
+        }
+
         const orderPayload = {
           table_id: orderFlow.selectedTable.id,
           seat_id: seatId,
           resident_id: orderFlow.selectedResident,
           server_id: data.user.id,
-          items: items,
-          transcript: transcript,
+          items: sanitizedItems,
+          transcript: sanitizedTranscript,
           type: orderFlow.orderType || 'food',
         }
 
