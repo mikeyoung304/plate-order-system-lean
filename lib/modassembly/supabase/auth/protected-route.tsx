@@ -77,6 +77,7 @@ export async function ServerProtectedRoute({
   children,
   roles,
 }: ServerProtectedRouteProps) {
+  const { redirect } = await import('next/navigation')
   const { getUserWithProfile } = await import('./session')
   const { hasRole } = await import('./roles')
 
