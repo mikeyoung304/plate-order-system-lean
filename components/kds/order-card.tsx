@@ -201,7 +201,8 @@ export const OrderCard = memo(
     return (
       <Card
         className={cn(
-          'transition-all duration-200 hover:shadow-lg',
+          'transition-all duration-200 hover:shadow-premium-lg hover:-translate-y-0.5',
+          'animate-in', // Subtle entrance animation
           colors.border,
           colors.bg,
           isOverdue && 'animate-pulse',
@@ -209,6 +210,10 @@ export const OrderCard = memo(
           className
         )}
       >
+        {/* Urgency indicator WITHOUT removing existing UI */}
+        {(order.priority >= 8 || isOverdue) && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500 animate-subtle-pulse" />
+        )}
         <CardHeader className={cn('pb-2', isCompact && 'p-3')}>
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-2'>
@@ -217,8 +222,13 @@ export const OrderCard = memo(
                 #{order.order?.id?.slice(-6) || 'N/A'}
               </Badge>
 
-              {/* Timing */}
-              <Badge className={`${colors.badge} flex items-center gap-1`}>
+              {/* Timing - Enhanced visual hierarchy */}
+              <Badge className={cn(
+                colors.badge, 
+                'flex items-center gap-1 tabular-nums font-semibold',
+                timeElapsed > 15 && 'text-red-600 animate-subtle-pulse',
+                timeElapsed > 10 && timeElapsed <= 15 && 'text-orange-600'
+              )}>
                 <Clock className='h-3 w-3' />
                 {formattedTime}
               </Badge>
@@ -317,26 +327,26 @@ export const OrderCard = memo(
           {/* Actions */}
           {showActions && (
             <div className='flex flex-wrap gap-2'>
-              {/* Start prep button */}
+              {/* Start prep button - Enhanced interaction */}
               {!order.started_at && onStartPrep && (
                 <Button
                   size='sm'
                   variant='outline'
                   onClick={handleStartPrep}
                   disabled={isLoading}
-                  className='flex-1'
+                  className='flex-1 hover:shadow-premium transition-all duration-200 active:scale-[0.98]'
                 >
                   <Play className='h-3 w-3 mr-1' />
                   Start
                 </Button>
               )}
 
-              {/* Bump button */}
+              {/* Bump button - Enhanced interaction */}
               <Button
                 size='sm'
                 onClick={handleBump}
                 disabled={isLoading}
-                className='flex-1 bg-green-600 hover:bg-green-700 text-white'
+                className='flex-1 bg-green-600 hover:bg-green-700 text-white active:scale-[0.98] transition-all duration-150'
               >
                 <CheckCircle className='h-3 w-3 mr-1' />
                 Ready
