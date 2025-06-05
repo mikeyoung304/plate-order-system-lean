@@ -839,7 +839,7 @@ export default function SimpleServerPage() {
                               className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
                               onClick={() => {
                                 // TODO: Handle record new order
-                                console.log('Record new order for', orderStep.selectedResident.name)
+                                console.log('Record new order for', orderStep.selectedResident?.name)
                                 handleCloseOrderForm()
                               }}
                             >

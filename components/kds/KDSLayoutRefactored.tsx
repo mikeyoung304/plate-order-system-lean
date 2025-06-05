@@ -176,14 +176,9 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
     setSelectedStation(station)
     toast({
       title: 'Station changed',
-      description: `Switched to ${station === 'all' ? 'all stations' : `${station  } station`}`,
+      description: `Switched to ${station === 'all' ? 'all stations' : `${station} station`}`,
     })
   }, [toast])
-  
-  // Handle station change
-  const handleStationChange = useCallback((station: StationType) => {
-    setSelectedStation(station)
-  }, [])
   
   // Render station-specific view
   const renderStationView = useCallback(() => {
@@ -211,7 +206,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
             className="h-full"
             orders={stationOrders}
             loading={kdsState.loading}
-            error={kdsState.error}
+            error={kdsState.error || undefined}
             viewMode={kdsState.viewMode}
             filterBy={kdsState.filterBy}
             sortBy={kdsState.sortBy}

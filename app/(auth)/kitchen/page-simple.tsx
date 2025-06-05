@@ -76,13 +76,13 @@ export default function SimpleKitchenPage() {
       const transformedOrders: OrderItem[] = kdsData.map(item => ({
         id: item.id,
         order_id: item.order_id,
-        station_name: item.station?.name || 'Unknown Station',
-        station_color: item.station?.color || '#6b7280',
-        table_label: item.order?.table?.label || 'Unknown Table',
-        items: Array.isArray(item.order?.items) ? item.order.items : [],
-        status: item.order?.status || 'pending',
-        type: item.order?.type || 'food',
-        created_at: item.order?.created_at || '',
+        station_name: (item.station as any)?.name || 'Unknown Station',
+        station_color: (item.station as any)?.color || '#6b7280',
+        table_label: (item.order as any)?.table?.label || 'Unknown Table',
+        items: Array.isArray((item.order as any)?.items) ? (item.order as any).items : [],
+        status: (item.order as any)?.status || 'pending',
+        type: (item.order as any)?.type || 'food',
+        created_at: (item.order as any)?.created_at || '',
         routed_at: item.routed_at || ''
       }))
 
