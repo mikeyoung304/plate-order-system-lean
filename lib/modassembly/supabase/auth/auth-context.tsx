@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { Session, User } from '@supabase/supabase-js'
 import { UserRole } from '@/types/database'
@@ -28,28 +28,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const supabase = createClient()
-
   const fetchUserProfile = async (
-    userId: string
+    userId: string,
+    supabaseClient: ReturnType<typeof createClient>
   ): Promise<UserProfile | null> => {
-    console.log('[AuthContext] Fetching profile for user ID:', userId)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AuthContext] Fetching profile for user ID:', userId)
+    }
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await supabaseClient
       .from('profiles')
       .select('user_id, role, name')
       .eq('user_id', userId)
       .single()
 
     if (error) {
-      console.error('[AuthContext] Error fetching profile by user_id:', error)
-      // Profiles table doesn't have an 'id' column, user_id is the primary key
-
-      console.error('[AuthContext] No profile found for user:', userId)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[AuthContext] Error fetching profile by user_id:', error)
+        console.error('[AuthContext] No profile found for user:', userId)
+      }
       return null
     }
 
-    console.log('[AuthContext] Found profile by user_id:', profile)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AuthContext] Found profile by user_id:', profile)
+    }
     return profile
       ? {
           user_id: profile.user_id || userId,
@@ -62,44 +65,116 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAuth = async () => {
     try {
       setIsLoading(true)
+      const supabase = createClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
-      setSession(session)
-      setUser(session?.user || null)
-
+      // Batch state updates to prevent multiple re-renders
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id)
-        setProfile(userProfile)
+        const userProfile = await fetchUserProfile(session.user.id, supabase)
+        // Use React 18's automatic batching
+        React.startTransition(() => {
+          setSession(session)
+          setUser(session.user)
+          setProfile(userProfile)
+        })
       } else {
-        setProfile(null)
+        // Clear all state at once
+        React.startTransition(() => {
+          setSession(null)
+          setUser(null)
+          setProfile(null)
+        })
       }
     } catch (error) {
       console.error('Error refreshing auth:', error)
-      setUser(null)
-      setProfile(null)
-      setSession(null)
+      // Clear all state at once on error
+      React.startTransition(() => {
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
   const signOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-    setSession(null)
+    // Clear all state at once
+    React.startTransition(() => {
+      setSession(null)
+      setUser(null)
+      setProfile(null)
+    })
   }
 
   useEffect(() => {
+    let mounted = true
+    const supabase = createClient()
+
     // Initial session check
-    refreshAuth()
+    const initializeAuth = async () => {
+      if (!mounted) {
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!mounted) {
+          return
+        }
+
+        if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user.id, supabase)
+          if (mounted) {
+            React.startTransition(() => {
+              setSession(session)
+              setUser(session.user)
+              setProfile(userProfile)
+            })
+          }
+        } else {
+          if (mounted) {
+            React.startTransition(() => {
+              setSession(null)
+              setUser(null)
+              setProfile(null)
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        if (mounted) {
+          React.startTransition(() => {
+            setSession(null)
+            setUser(null)
+            setProfile(null)
+          })
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) {
+        return
+      }
+
       if (process.env.NODE_ENV === 'development') {
         console.warn('Auth state change:', {
           event,
@@ -108,22 +183,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       }
 
-      setSession(session)
-      setUser(session?.user || null)
-
-      if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id)
-        setProfile(userProfile)
-      } else {
-        setProfile(null)
+      try {
+        if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user.id, supabase)
+          if (mounted) {
+            React.startTransition(() => {
+              setSession(session)
+              setUser(session.user)
+              setProfile(userProfile)
+            })
+          }
+        } else {
+          if (mounted) {
+            React.startTransition(() => {
+              setSession(null)
+              setUser(null)
+              setProfile(null)
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error handling auth state change:', error)
+        if (mounted) {
+          React.startTransition(() => {
+            setSession(null)
+            setUser(null)
+            setProfile(null)
+          })
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
       }
-
-      setIsLoading(false)
     })
 
-    return () => subscription.unsubscribe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, []) // Empty dependency array is correct here
 
   const value: AuthContextType = {
     user,
@@ -168,20 +267,26 @@ export function useIsRole(role: UserRole): boolean {
 export function useHasRole(roles: UserRole | UserRole[]): boolean {
   const userRole = useRole()
 
-  console.log('[useHasRole] Checking roles:', {
-    userRole,
-    requiredRoles: roles,
-    allowedRoles: Array.isArray(roles) ? roles : [roles],
-  })
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[useHasRole] Checking roles:', {
+      userRole,
+      requiredRoles: roles,
+      allowedRoles: Array.isArray(roles) ? roles : [roles],
+    })
+  }
 
   if (!userRole) {
-    console.log('[useHasRole] No user role found')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[useHasRole] No user role found')
+    }
     return false
   }
 
   const allowedRoles = Array.isArray(roles) ? roles : [roles]
   const hasRole = allowedRoles.includes(userRole)
 
-  console.log('[useHasRole] Role check result:', hasRole)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[useHasRole] Role check result:', hasRole)
+  }
   return hasRole
 }
