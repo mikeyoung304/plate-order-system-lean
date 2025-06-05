@@ -18,6 +18,7 @@ import {
   User,
 } from 'lucide-react'
 import { useOrderTiming } from '@/hooks/use-kds-orders'
+import { useSimpleSwipe } from '@/hooks/use-simple-swipe'
 import type { KDSOrderRouting } from '@/lib/modassembly/supabase/database/kds'
 
 interface OrderCardProps {
@@ -50,6 +51,13 @@ export const OrderCard = memo(
     const [isLoading, setIsLoading] = useState(false)
     const [showNotes, setShowNotes] = useState(false)
     const [notes, setNotes] = useState(order.notes || '')
+    
+    // Simple swipe to complete (mobile only)
+    const { handleTouchStart, handleTouchEnd } = useSimpleSwipe(() => {
+      if (!isLoading) {
+        handleBump()
+      }
+    })
 
     // Handle bump action
     const handleBump = useCallback(async () => {
@@ -207,8 +215,11 @@ export const OrderCard = memo(
           colors.bg,
           isOverdue && 'animate-pulse',
           order.started_at && 'ring-2 ring-blue-500',
+          'scroll-container', // Smooth scrolling on iOS
           className
         )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Urgency indicator WITHOUT removing existing UI */}
         {(order.priority >= 8 || isOverdue) && (
@@ -324,29 +335,41 @@ export const OrderCard = memo(
             </div>
           )}
 
-          {/* Actions */}
+          {/* Actions - Mobile optimized */}
           {showActions && (
-            <div className='flex flex-wrap gap-2'>
-              {/* Start prep button - Enhanced interaction */}
+            <div className={cn(
+              'flex gap-2',
+              'mobile-stack md:flex-row', // Stack on mobile, row on desktop
+              'touch-safe' // Ensure proper touch targets
+            )}>
+              {/* Start prep button - Mobile optimized */}
               {!order.started_at && onStartPrep && (
                 <Button
                   size='sm'
                   variant='outline'
                   onClick={handleStartPrep}
                   disabled={isLoading}
-                  className='flex-1 hover:shadow-premium transition-all duration-200 active:scale-[0.98]'
+                  className={cn(
+                    'flex-1 hover:shadow-premium transition-all duration-200 active:scale-[0.98]',
+                    'touch-safe-mobile', // Larger touch targets on mobile
+                    'min-h-[44px]' // iOS touch target compliance
+                  )}
                 >
                   <Play className='h-3 w-3 mr-1' />
                   Start
                 </Button>
               )}
 
-              {/* Bump button - Enhanced interaction */}
+              {/* Bump button - Mobile optimized */}
               <Button
                 size='sm'
                 onClick={handleBump}
                 disabled={isLoading}
-                className='flex-1 bg-green-600 hover:bg-green-700 text-white active:scale-[0.98] transition-all duration-150'
+                className={cn(
+                  'flex-1 bg-green-600 hover:bg-green-700 text-white active:scale-[0.98] transition-all duration-150',
+                  'touch-safe-mobile min-h-[44px]', // Mobile touch compliance
+                  'font-semibold' // Better readability on mobile
+                )}
               >
                 <CheckCircle className='h-3 w-3 mr-1' />
                 Ready

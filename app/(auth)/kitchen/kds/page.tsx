@@ -15,10 +15,13 @@ const KDSLayout = dynamic(
     import('@/components/kds').then(m => ({ default: m.KDSLayout })),
   {
     loading: () => (
-      <PageLoadingState
-        message='Loading kitchen display...'
-        showProgress={false}
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen animate-in">
+        <div className="skeleton-loading rounded-lg w-full max-w-6xl h-96 mb-4"></div>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium">Loading kitchen display...</p>
+          <p className="text-sm text-muted-foreground">Connecting to real-time orders</p>
+        </div>
+      </div>
     ),
     ssr: false, // Real-time updates don't work on server
   }

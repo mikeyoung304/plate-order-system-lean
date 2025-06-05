@@ -7,18 +7,21 @@ import { cn } from "@/lib/utils"
 export interface EnhancedButtonProps extends ButtonProps {
   loading?: boolean
   success?: boolean
+  pulseOnHover?: boolean
 }
 
 // Wrapper around existing button - ensures compatibility
 export const ButtonEnhanced = React.forwardRef<HTMLButtonElement, EnhancedButtonProps>(
-  ({ className, loading, success, children, disabled, ...props }, ref) => {
+  ({ className, loading, success, pulseOnHover, children, disabled, ...props }, ref) => {
     return (
       <Button
         ref={ref}
         className={cn(
           "transition-all duration-200 active:scale-[0.98]",
+          "hover:shadow-premium",
           loading && "opacity-70 cursor-wait",
           success && "bg-green-600 hover:bg-green-700",
+          pulseOnHover && "hover:animate-subtle-pulse",
           className
         )}
         disabled={disabled || loading}

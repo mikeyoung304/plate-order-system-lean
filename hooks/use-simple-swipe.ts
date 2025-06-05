@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef } from 'react'
+import type { TouchEvent } from 'react'
 
 // Only for order completion - simple and stable
 export const useSimpleSwipe = (onSwipeRight: () => void) => {

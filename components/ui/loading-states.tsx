@@ -55,3 +55,38 @@ export const ListItemSkeleton = ({ className }: SkeletonProps) => (
     </div>
   </div>
 )
+
+// Premium loading spinner
+export const LoadingSpinner = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) => {
+  const sizeClasses = {
+    sm: "h-4 w-4",
+    default: "h-6 w-6", 
+    lg: "h-8 w-8"
+  }
+  
+  return (
+    <div className={cn("animate-spin rounded-full border-2 border-primary border-t-transparent", sizeClasses[size])} />
+  )
+}
+
+// Enhanced page loading with skeleton
+export const PageLoadingSkeleton = ({ title }: { title?: string }) => (
+  <div className="space-y-6 animate-in">
+    {title && (
+      <div className="space-y-2">
+        <div className="skeleton-loading h-8 w-64 rounded"></div>
+        <div className="skeleton-loading h-4 w-96 rounded"></div>
+      </div>
+    )}
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="space-y-3">
+          <div className="skeleton-loading h-48 rounded-lg shadow-premium"></div>
+          <div className="skeleton-loading h-4 w-3/4 rounded"></div>
+          <div className="skeleton-loading h-3 w-1/2 rounded"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+)
