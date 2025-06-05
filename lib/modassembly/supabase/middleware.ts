@@ -142,12 +142,27 @@ export async function updateSession(request: NextRequest) {
   if (
     user &&
     request.nextUrl.pathname === '/' &&
-    !request.nextUrl.searchParams.has('redirected')
+    !request.nextUrl.searchParams.has('redirected') &&
+    !request.headers.get('x-middleware-rewrite')
   ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    url.searchParams.set('redirected', 'true')
-    return NextResponse.redirect(url)
+    // Check if user has a profile before redirecting
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (profile) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        url.searchParams.set('redirected', 'true')
+        return NextResponse.redirect(url)
+      }
+    } catch (error) {
+      // If profile check fails, allow access to home page
+      console.warn('Profile check failed during redirect:', error)
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

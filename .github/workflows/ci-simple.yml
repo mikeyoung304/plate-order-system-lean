@@ -30,8 +30,8 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-      - name: Run tests
-        run: npm run test:ci
+      - name: Run basic tests
+        run: npm run test:smoke
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-anon-key

@@ -241,9 +241,15 @@ export function useKDSOrders(
     return () => {
       if (channelRef.current && supabaseRef.current) {
         supabaseRef.current.removeChannel(channelRef.current)
+        channelRef.current = null
       }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = null
+      }
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = null
       }
     }
   }, [setupRealtimeSubscription])

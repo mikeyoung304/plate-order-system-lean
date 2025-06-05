@@ -37,31 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, user_id, role, name')
+      .select('user_id, role, name')
       .eq('user_id', userId)
       .single()
 
     if (error) {
       console.error('[AuthContext] Error fetching profile by user_id:', error)
-      // Try with id instead of user_id
-      const { data: profileById, error: error2 } = await supabase
-        .from('profiles')
-        .select('id, user_id, role, name')
-        .eq('id', userId)
-        .single()
-
-      if (error2) {
-        console.error('[AuthContext] Error fetching profile by id:', error2)
-      }
-
-      if (profileById) {
-        console.log('[AuthContext] Found profile by id:', profileById)
-        return {
-          user_id: profileById.user_id || userId,
-          role: profileById.role,
-          name: profileById.name,
-        }
-      }
+      // Profiles table doesn't have an 'id' column, user_id is the primary key
 
       console.error('[AuthContext] No profile found for user:', userId)
       return null

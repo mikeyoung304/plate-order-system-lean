@@ -1,625 +1,465 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Shell } from '@/components/shell'
-import { ProtectedRoute } from '@/lib/modassembly/supabase/auth'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useState } from 'react'
+import { createClient } from '@/lib/modassembly/supabase/client'
+import { useAuth } from '@/lib/modassembly/supabase/auth/auth-context'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
-import {
-  CheckCircle,
-  ChefHat,
-  Clock,
-  Coffee,
-  Filter,
-  Grid3x3,
-  List,
-  MapPin,
-  Package,
-  RefreshCw,
-  Users,
-  Utensils,
-  Volume2,
-  VolumeX,
-} from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import {
-  type Order,
-  updateOrderStatus,
-} from '@/lib/modassembly/supabase/database/orders'
-import { useConnection, useOrders } from '@/lib/state/domains'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Shell } from '@/components/shell'
+import { AlertCircle, CheckCircle, Clock, Coffee, Utensils } from 'lucide-react'
 
-interface TableGroup {
-  tableId: string
-  tableLabel: string
-  orders: Order[]
-  earliestTime: Date
-  latestTime: Date
-  totalItems: number
-  seatCount: number
-  status: 'new' | 'preparing' | 'mixed' | 'ready'
-  isOverdue: boolean
-  maxElapsedMinutes: number
+interface OrderItem {
+  id: string
+  order_id: string
+  station_name: string
+  station_color: string
+  table_label: string
+  seat_id: string
+  items: string[]
+  status: string
+  type: string
+  created_at: string
+  routed_at: string
 }
 
-type ViewMode = 'table' | 'grid' | 'list'
-type FilterBy = 'all' | 'new' | 'preparing' | 'ready'
-
 export default function KitchenPage() {
-  // NEW DOMAIN-SPECIFIC STATE MANAGEMENT
-  const { isConnected: _isConnected } = useConnection()
-  const { state: ordersState, loadOrders } = useOrders()
+  const { profile, isLoading: authLoading } = useAuth()
+  const [orders, setOrders] = useState<OrderItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting')
 
-  // Local UI state
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
-  const [soundEnabled, setSoundEnabled] = useState(true)
-  const [filterBy, setFilterBy] = useState<FilterBy>('all')
-  const { toast } = useToast()
+  const supabase = createClient()
 
-  // Extract loading state
-  const loading = { orders: ordersState.loading || false }
+  const loadKitchenOrders = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-  // Get filtered orders (remove delivered orders)
-  const activeOrders = useMemo(() => {
-    const orders = ordersState.orders || []
-    return orders.filter(order => order.status !== 'delivered')
-  }, [ordersState.orders])
+      // Loading kitchen orders
 
-  // Group orders by table
-  const tableGroups = useMemo(() => {
-    const groups = new Map<string, Order[]>()
+      // Query to get all active orders with seat information  
+      const { data: kdsData, error: kdsError } = await supabase
+        .from('kds_order_routing')
+        .select(`
+          id,
+          order_id,
+          station_id,
+          routed_at,
+          completed_at,
+          order:orders!inner (
+            id, 
+            items, 
+            status, 
+            type, 
+            created_at,
+            seat_id,
+            table:tables!table_id (label),
+            seat:seats!seat_id (label)
+          ),
+          station:kds_stations!station_id (
+            id, 
+            name, 
+            type, 
+            color
+          )
+        `)
+        .is('completed_at', null)
+        .order('routed_at', { ascending: true })
 
-    activeOrders.forEach(order => {
-      if (!order.table) {
+      if (kdsError) {
+        console.error('[Kitchen] KDS query error:', kdsError)
+        setError(`Database error: ${kdsError.message}`)
         return
       }
 
-      const key = order.table
-      if (!groups.has(key)) {
-        groups.set(key, [])
-      }
-      groups.get(key)!.push(order)
-    })
+      // Raw KDS data loaded
 
-    const tableGroups: TableGroup[] = []
+      // Transform data for display
+      const transformedOrders: OrderItem[] = kdsData.map(item => ({
+        id: item.id,
+        order_id: item.order_id,
+        station_name: item.station?.name || 'Unknown Station',
+        station_color: item.station?.color || '#6b7280',
+        table_label: item.order?.table?.label || 'Unknown Table',
+        seat_id: item.order?.seat?.label?.toString() || 'Unknown Seat',
+        items: Array.isArray(item.order?.items) ? item.order.items : [],
+        status: item.order?.status || 'pending',
+        type: item.order?.type || 'food',
+        created_at: item.order?.created_at || '',
+        routed_at: item.routed_at || ''
+      }))
 
-    groups.forEach((tableOrders, tableKey) => {
-      const sortedOrders = tableOrders.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      )
+      // Orders transformed for display
 
-      const earliestTime = new Date(sortedOrders[0].created_at)
-      const latestTime = new Date(
-        sortedOrders[sortedOrders.length - 1].created_at
-      )
-      const totalItems = sortedOrders.reduce(
-        (sum, order) => sum + (order.items?.length || 0),
-        0
-      )
-      const seatCount = new Set(sortedOrders.map(order => order.seat)).size
+      setOrders(transformedOrders)
+      setConnectionStatus('connected')
 
-      // Determine status
-      const newCount = sortedOrders.filter(o => o.status === 'new').length
-      const preparingCount = sortedOrders.filter(
-        o => o.status === 'in_progress'
-      ).length
-      const readyCount = sortedOrders.filter(o => o.status === 'ready').length
-
-      let status: TableGroup['status'] = 'new'
-      if (readyCount === sortedOrders.length) {
-        status = 'ready'
-      } else if (preparingCount > 0 || readyCount > 0) {
-        status = 'mixed'
-      } else if (newCount === sortedOrders.length) {
-        status = 'new'
-      } else {
-        status = 'preparing'
-      }
-
-      // Calculate timing
-      const maxElapsedMinutes = Math.max(
-        ...sortedOrders.map(order => {
-          const elapsed =
-            (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60
-          return elapsed
-        })
-      )
-
-      const isOverdue = maxElapsedMinutes > 15 // Over 15 minutes
-
-      tableGroups.push({
-        tableId: tableKey,
-        tableLabel: tableKey,
-        orders: sortedOrders,
-        earliestTime,
-        latestTime,
-        totalItems,
-        seatCount,
-        status,
-        isOverdue,
-        maxElapsedMinutes,
-      })
-    })
-
-    return tableGroups.sort(
-      (a, b) => a.earliestTime.getTime() - b.earliestTime.getTime()
-    )
-  }, [activeOrders])
-
-  // Filter orders/tables
-  const filteredItems = useMemo(() => {
-    if (viewMode === 'table') {
-      return tableGroups.filter(group => {
-        switch (filterBy) {
-          case 'new':
-            return group.status === 'new'
-          case 'preparing':
-            return group.status === 'preparing' || group.status === 'mixed'
-          case 'ready':
-            return group.status === 'ready'
-          default:
-            return true
-        }
-      })
-    } else {
-      return activeOrders.filter(order => {
-        switch (filterBy) {
-          case 'new':
-            return order.status === 'new'
-          case 'preparing':
-            return order.status === 'in_progress'
-          case 'ready':
-            return order.status === 'ready'
-          default:
-            return true
-        }
-      })
+    } catch (err) {
+      console.error('[Kitchen] Load error:', err)
+      setError(`Failed to load orders: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setConnectionStatus('error')
+    } finally {
+      setLoading(false)
     }
-  }, [viewMode, filterBy, tableGroups, activeOrders])
+  }, [supabase])
 
-  // Update order status
-  const handleStatusUpdate = async (
-    orderId: string,
-    newStatus: Order['status']
-  ) => {
+  const completeOrder = async (routingId: string, orderId: string) => {
     try {
-      await updateOrderStatus(orderId, newStatus)
-      // Intelligent state will auto-refresh via real-time subscriptions
+      console.log('[Kitchen] Completing order:', { routingId, orderId })
+      
+      // Mark the KDS routing as completed (removes from kitchen view)
+      const { error: routingError } = await supabase
+        .from('kds_order_routing')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('id', routingId)
 
-      if (soundEnabled) {
-        // Simple beep sound
-        const audioContext = new (window.AudioContext ||
-          (window as any).webkitAudioContext)()
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        oscillator.frequency.value = 800
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(
-          0.01,
-          audioContext.currentTime + 0.1
+      if (routingError) {
+        console.error('Error completing KDS routing:', routingError)
+        return
+      }
+
+      // Update order status to 'ready' (sends to expo)
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: 'ready' })
+        .eq('id', orderId)
+
+      if (orderError) {
+        console.error('Error updating order status:', orderError)
+        return
+      }
+
+      // Remove from local state with animation
+      setOrders(prev => prev.filter(order => order.id !== routingId))
+      
+      // Order completed and sent to expo
+    } catch (err) {
+      console.error('Complete order error:', err)
+    }
+  }
+
+  const completeTable = async (tableOrders: OrderItem[]) => {
+    try {
+      // Completing entire table
+      
+      // Complete all KDS routing entries for this table
+      const routingPromises = tableOrders.map(order => 
+        supabase
+          .from('kds_order_routing')
+          .update({ completed_at: new Date().toISOString() })
+          .eq('id', order.id)
+      )
+
+      // Update all order statuses to 'ready'
+      const orderPromises = tableOrders.map(order => 
+        supabase
+          .from('orders')
+          .update({ status: 'ready' })
+          .eq('id', order.order_id)
+      )
+
+      await Promise.all([...routingPromises, ...orderPromises])
+
+      // Remove all table orders from local state
+      const completedIds = tableOrders.map(order => order.id)
+      setOrders(prev => prev.filter(order => !completedIds.includes(order.id)))
+      
+      // Entire table completed and sent to expo
+    } catch (err) {
+      console.error('Complete table error:', err)
+    }
+  }
+
+  const getTimeSinceCreated = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 1) {return 'Just now'}
+    if (diffInMinutes < 60) {return `${diffInMinutes}m ago`}
+    const hours = Math.floor(diffInMinutes / 60)
+    return `${hours}h ${diffInMinutes % 60}m ago`
+  }
+
+  const getUrgencyColor = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes > 20) {return 'bg-red-500'}
+    if (diffInMinutes > 10) {return 'bg-yellow-500'}
+    return 'bg-green-500'
+  }
+
+  // Setup real-time subscription
+  useEffect(() => {
+    let mounted = true
+
+    const setupRealtimeSubscription = () => {
+      // Setting up real-time subscription
+      
+      const channel = supabase
+        .channel('kitchen-orders')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'kds_order_routing'
+          },
+          payload => {
+            // Real-time KDS update received
+            if (mounted) {
+              loadKitchenOrders()
+            }
+          }
         )
-        oscillator.start(audioContext.currentTime)
-        oscillator.stop(audioContext.currentTime + 0.1)
-      }
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          payload => {
+            // Orders table update received
+            if (mounted) {
+              loadKitchenOrders()
+            }
+          }
+        )
+        .subscribe()
 
-      toast({
-        title: 'Order Updated',
-        description: `Order marked as ${newStatus.replace('_', ' ')}`,
-        duration: 2000,
-      })
-    } catch (error) {
-      console.error('Error updating order:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to update order status',
-        variant: 'destructive',
-      })
+      return () => {
+        // Cleaning up subscription
+        supabase.removeChannel(channel)
+      }
     }
+
+    // Initial load
+    loadKitchenOrders()
+
+    // Setup real-time
+    const cleanup = setupRealtimeSubscription()
+
+    return () => {
+      mounted = false
+      cleanup()
+    }
+  }, [loadKitchenOrders, supabase])
+
+  // Group orders by table and then by seat within each table
+  const ordersByTable = orders.reduce((acc, order) => {
+    const tableId = order.table_label
+    if (!acc[tableId]) {
+      acc[tableId] = []
+    }
+    acc[tableId].push(order)
+    return acc
+  }, {} as Record<string, OrderItem[]>)
+
+  // Sort orders within each table by seat number
+  Object.keys(ordersByTable).forEach(tableId => {
+    ordersByTable[tableId].sort((a, b) => {
+      const seatA = parseInt(a.seat_id) || 0
+      const seatB = parseInt(b.seat_id) || 0
+      return seatA - seatB
+    })
+  })
+
+  // Loading state
+  if (authLoading || loading) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <span className="text-white text-lg">Loading kitchen orders...</span>
+          </div>
+        </div>
+      </Shell>
+    )
   }
 
-  // Bulk table operations
-  const handleBumpTable = async (tableOrders: Order[]) => {
-    try {
-      await Promise.all(
-        tableOrders
-          .filter(order => order.status !== 'ready')
-          .map(order => updateOrderStatus(order.id, 'ready'))
-      )
-      // Real-time state updates automatically
-      toast({
-        title: 'Table Complete',
-        description: `All ${tableOrders.length} orders marked as ready`,
-      })
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to complete table',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  // Get color classes based on timing
-  const getTimingColors = (minutes: number) => {
-    if (minutes <= 5) {
-      return {
-        border: 'border-green-500',
-        bg: 'bg-green-50 dark:bg-green-950',
-        text: 'text-green-700 dark:text-green-300',
-      }
-    }
-    if (minutes <= 10) {
-      return {
-        border: 'border-yellow-500',
-        bg: 'bg-yellow-50 dark:bg-yellow-950',
-        text: 'text-yellow-700 dark:text-yellow-300',
-      }
-    }
-    return {
-      border: 'border-red-500',
-      bg: 'bg-red-50 dark:bg-red-950',
-      text: 'text-red-700 dark:text-red-300',
-    }
+  // Auth check
+  if (!profile) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+            <p className="text-gray-400">Please log in to access the kitchen display.</p>
+          </div>
+        </div>
+      </Shell>
+    )
   }
 
   return (
-    <ProtectedRoute roles={['cook', 'admin']}>
-      <Shell className='bg-gray-900 min-h-screen'>
-        <div className='container py-6'>
-          {/* Header */}
-          <div className='flex items-center justify-between mb-6'>
+    <Shell>
+      <div className="p-6 h-full overflow-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className='text-3xl font-bold text-white'>
-                Kitchen Display System
-              </h1>
-              <p className='text-gray-400 mt-1'>
-                Manage orders and track preparation
+              <h1 className="text-3xl font-bold text-white mb-2">Kitchen Display System</h1>
+              <p className="text-gray-300">Unified view - all stations</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${
+                  connectionStatus === 'connected' ? 'bg-green-500' : 
+                  connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                }`} />
+                <span className="text-sm text-gray-300 capitalize">{connectionStatus}</span>
+              </div>
+              <Badge variant="outline" className="border-gray-600 text-gray-300">
+                {orders.length} Active Order{orders.length !== 1 ? 's' : ''}
+              </Badge>
+              <Button 
+                onClick={loadKitchenOrders}
+                variant="outline"
+                size="sm"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <span className="text-red-300">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Orders by Table */}
+        {Object.keys(ordersByTable).length === 0 ? (
+          <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-12">
+            <div className="text-center">
+              <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">All Caught Up!</h2>
+              <p className="text-gray-300">No pending orders in the kitchen.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Orders will appear here automatically when they come in.
               </p>
             </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Object.entries(ordersByTable).map(([tableLabel, tableOrders]) => (
+              <Card key={tableLabel} className="bg-gray-800/40 border-gray-700 hover:bg-gray-800/60 transition-colors">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl text-white flex items-center gap-2">
+                      <Utensils className="h-5 w-5" />
+                      Table {tableLabel}
+                    </CardTitle>
+                    <Badge variant="secondary" className="bg-blue-600/20 text-blue-300 border-blue-600">
+                      {tableOrders.length} order{tableOrders.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {tableOrders.map((order) => (
+                    <div 
+                      key={order.id} 
+                      className="bg-gray-900/50 border border-gray-600 rounded-lg p-4 transition-all duration-300 hover:bg-gray-900/70"
+                      style={{ borderLeftWidth: '4px', borderLeftColor: order.station_color }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <Badge variant="outline" className="bg-blue-600/20 text-blue-300 border-blue-600 font-semibold">
+                            Seat {order.seat_id}
+                          </Badge>
+                          <Badge 
+                            variant="secondary" 
+                            className="text-xs px-2 py-1"
+                            style={{ backgroundColor: `${order.station_color  }20`, color: order.station_color }}
+                          >
+                            {order.station_name}
+                          </Badge>
+                          <div className="flex items-center space-x-1">
+                            {order.type === 'food' ? (
+                              <Utensils className="h-4 w-4 text-orange-400" />
+                            ) : (
+                              <Coffee className="h-4 w-4 text-blue-400" />
+                            )}
+                            <span className="text-xs text-gray-400">{order.type}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div 
+                            className={`w-2 h-2 rounded-full ${getUrgencyColor(order.created_at)}`}
+                            title="Order urgency indicator"
+                          />
+                          <div className="flex items-center text-xs text-gray-400">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {getTimeSinceCreated(order.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        {order.items.length > 0 ? (
+                          order.items.map((item, index) => (
+                            <div key={index} className="bg-gray-800/50 rounded px-3 py-2">
+                              <span className="text-sm text-white font-medium">{item}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500 italic">No items listed</div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={() => completeOrder(order.id, order.order_id)}
+                        size="sm"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors"
+                      >
+                        Complete & Send to Expo
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {/* Complete Table Button */}
+                  <div className="pt-4 border-t border-gray-600">
+                    <Button
+                      onClick={() => completeTable(tableOrders)}
+                      size="lg"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors"
+                    >
+                      Complete Entire Table ({tableOrders.length} orders)
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-            <div className='flex items-center gap-2'>
-              <Badge variant='secondary'>
-                {viewMode === 'table'
-                  ? `${filteredItems.length} tables`
-                  : `${filteredItems.length} orders`}
-              </Badge>
+        {/* Debug Info for Development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-300 mb-2">Debug Info</h3>
+            <div className="text-xs text-gray-400 space-y-1">
+              <div>User Role: {profile?.role || 'null'}</div>
+              <div>Orders Loaded: {orders.length}</div>
+              <div>Tables: {Object.keys(ordersByTable).length}</div>
+              <div>Connection: {connectionStatus}</div>
+              <div>Last Updated: {new Date().toLocaleTimeString()}</div>
             </div>
           </div>
-
-          {/* Controls */}
-          <div className='flex items-center justify-between mb-6 gap-4 flex-wrap'>
-            <div className='flex items-center gap-2'>
-              {/* Filter */}
-              <Select
-                value={filterBy}
-                onValueChange={(value: FilterBy) => setFilterBy(value)}
-              >
-                <SelectTrigger className='w-32'>
-                  <Filter className='h-4 w-4 mr-1' />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>All</SelectItem>
-                  <SelectItem value='new'>New</SelectItem>
-                  <SelectItem value='preparing'>Preparing</SelectItem>
-                  <SelectItem value='ready'>Ready</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='flex items-center gap-2'>
-              {/* View Mode */}
-              <div className='flex border rounded'>
-                <Button
-                  variant={viewMode === 'table' ? 'default' : 'ghost'}
-                  size='sm'
-                  onClick={() => setViewMode('table')}
-                  className='rounded-r-none'
-                >
-                  <MapPin className='h-4 w-4' />
-                </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size='sm'
-                  onClick={() => setViewMode('grid')}
-                  className='rounded-none'
-                >
-                  <Grid3x3 className='h-4 w-4' />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size='sm'
-                  onClick={() => setViewMode('list')}
-                  className='rounded-l-none'
-                >
-                  <List className='h-4 w-4' />
-                </Button>
-              </div>
-
-              {/* Sound Toggle */}
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                title={soundEnabled ? 'Disable sounds' : 'Enable sounds'}
-              >
-                {soundEnabled ? (
-                  <Volume2 className='h-4 w-4' />
-                ) : (
-                  <VolumeX className='h-4 w-4' />
-                )}
-              </Button>
-
-              {/* Refresh */}
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => loadOrders()}
-                disabled={loading.orders}
-                title='Refresh orders'
-              >
-                <RefreshCw
-                  className={cn('h-4 w-4', loading.orders && 'animate-spin')}
-                />
-              </Button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <ScrollArea className='h-[calc(100vh-250px)]'>
-            {loading.orders && activeOrders.length === 0 ? (
-              <div className='grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className='animate-pulse'>
-                    <CardContent className='h-48 bg-gray-200 dark:bg-gray-700' />
-                  </Card>
-                ))}
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className='flex items-center justify-center h-64 text-gray-500'>
-                <div className='text-center'>
-                  <div className='text-6xl mb-4'>🍽️</div>
-                  <h3 className='text-xl font-medium mb-2'>No orders</h3>
-                  <p className='text-gray-400'>
-                    All caught up! No pending orders.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  'grid gap-4',
-                  viewMode === 'list'
-                    ? 'grid-cols-1'
-                    : viewMode === 'grid'
-                      ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                      : 'grid-cols-1 md:grid-cols-2'
-                )}
-              >
-                {viewMode === 'table'
-                  ? // Table view
-                    (filteredItems as TableGroup[]).map(group => {
-                      const colors = getTimingColors(group.maxElapsedMinutes)
-                      return (
-                        <Card
-                          key={group.tableId}
-                          className={cn(
-                            'transition-all duration-200',
-                            colors.border,
-                            colors.bg,
-                            group.isOverdue && 'animate-pulse'
-                          )}
-                        >
-                          <CardHeader className='pb-3'>
-                            <div className='flex items-center justify-between'>
-                              <div className='flex items-center gap-3'>
-                                <div className='flex items-center gap-2'>
-                                  <MapPin className='h-5 w-5' />
-                                  <span className='text-xl font-bold'>
-                                    {group.tableLabel}
-                                  </span>
-                                </div>
-                                <Badge
-                                  variant='secondary'
-                                  className='flex items-center gap-1'
-                                >
-                                  <Users className='h-3 w-3' />
-                                  {group.seatCount} seats
-                                </Badge>
-                                <Badge
-                                  variant='secondary'
-                                  className='flex items-center gap-1'
-                                >
-                                  <Package className='h-3 w-3' />
-                                  {group.totalItems} items
-                                </Badge>
-                              </div>
-                              <Badge className={cn(colors.text)}>
-                                <Clock className='h-3 w-3 mr-1' />
-                                {Math.round(group.maxElapsedMinutes)}m
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className='space-y-3'>
-                            {group.orders.map(order => (
-                              <div
-                                key={order.id}
-                                className='p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg'
-                              >
-                                <div className='flex items-center justify-between mb-2'>
-                                  <div className='flex items-center gap-2'>
-                                    <span className='font-medium'>
-                                      Seat {order.seat}
-                                    </span>
-                                    {order.type === 'food' ? (
-                                      <Utensils className='h-4 w-4 text-teal-500' />
-                                    ) : (
-                                      <Coffee className='h-4 w-4 text-amber-500' />
-                                    )}
-                                    <Badge
-                                      variant='outline'
-                                      className={`status-${order.status}`}
-                                    >
-                                      {order.status === 'new'
-                                        ? 'New'
-                                        : order.status === 'in_progress'
-                                          ? 'Preparing'
-                                          : order.status === 'ready'
-                                            ? 'Ready'
-                                            : order.status}
-                                    </Badge>
-                                  </div>
-                                </div>
-
-                                <div className='text-sm space-y-1 mb-3'>
-                                  {order.items?.map((item, idx) => (
-                                    <div key={idx} className='pl-4'>
-                                      • {item}
-                                    </div>
-                                  ))}
-                                </div>
-
-                                <div className='flex gap-2'>
-                                  {order.status === 'new' && (
-                                    <Button
-                                      size='sm'
-                                      onClick={() =>
-                                        handleStatusUpdate(
-                                          order.id,
-                                          'in_progress'
-                                        )
-                                      }
-                                      className='bg-blue-600 hover:bg-blue-700'
-                                    >
-                                      <ChefHat className='h-4 w-4 mr-1' />
-                                      Start
-                                    </Button>
-                                  )}
-                                  {order.status === 'in_progress' && (
-                                    <Button
-                                      size='sm'
-                                      onClick={() =>
-                                        handleStatusUpdate(order.id, 'ready')
-                                      }
-                                      className='bg-green-600 hover:bg-green-700'
-                                    >
-                                      <CheckCircle className='h-4 w-4 mr-1' />
-                                      Ready
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-
-                            <Button
-                              className='w-full'
-                              onClick={() => handleBumpTable(group.orders)}
-                              disabled={group.orders.every(
-                                o => o.status === 'ready'
-                              )}
-                            >
-                              Complete Entire Table
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      )
-                    })
-                  : // Individual order view
-                    (filteredItems as Order[]).map(order => {
-                      const elapsed =
-                        (Date.now() - new Date(order.created_at).getTime()) /
-                        1000 /
-                        60
-                      const colors = getTimingColors(elapsed)
-                      return (
-                        <Card
-                          key={order.id}
-                          className={cn(
-                            'transition-all duration-200',
-                            colors.border,
-                            colors.bg,
-                            elapsed > 15 && 'animate-pulse'
-                          )}
-                        >
-                          <CardContent className='p-4'>
-                            <div className='flex justify-between items-start mb-3'>
-                              <div>
-                                <div className='text-lg font-semibold text-white'>
-                                  {order.table}, Seat {order.seat}
-                                </div>
-                                <div className='text-sm space-y-1 mt-2'>
-                                  {order.items?.map((item, i) => (
-                                    <div key={i}>• {item}</div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className='text-right'>
-                                <Badge
-                                  variant='outline'
-                                  className={`status-${order.status}`}
-                                >
-                                  {order.status === 'new'
-                                    ? 'New'
-                                    : order.status === 'in_progress'
-                                      ? 'Preparing'
-                                      : order.status === 'ready'
-                                        ? 'Ready'
-                                        : order.status}
-                                </Badge>
-                                <div className='text-xs text-gray-400 flex items-center gap-1 mt-1'>
-                                  <Clock className='h-4 w-4' />
-                                  {Math.round(elapsed)}m
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className='flex gap-2'>
-                              {order.status === 'new' && (
-                                <Button
-                                  size='sm'
-                                  onClick={() =>
-                                    handleStatusUpdate(order.id, 'in_progress')
-                                  }
-                                  className='bg-blue-600 hover:bg-blue-700'
-                                >
-                                  <ChefHat className='h-4 w-4 mr-1' />
-                                  Start Cooking
-                                </Button>
-                              )}
-                              {order.status === 'in_progress' && (
-                                <Button
-                                  size='sm'
-                                  onClick={() =>
-                                    handleStatusUpdate(order.id, 'ready')
-                                  }
-                                  className='bg-green-600 hover:bg-green-700'
-                                >
-                                  <CheckCircle className='h-4 w-4 mr-1' />
-                                  Mark Ready
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
-      </Shell>
-    </ProtectedRoute>
+        )}
+      </div>
+    </Shell>
   )
 }

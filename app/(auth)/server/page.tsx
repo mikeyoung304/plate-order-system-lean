@@ -1,921 +1,861 @@
-// File: frontend/app/server/page.tsx
 'use client'
 
-import { useCallback, useState } from 'react'
-import { Shell } from '@/components/shell'
-import { EnhancedProtectedRoute as ProtectedRoute } from '@/lib/modassembly/supabase/auth/enhanced-protected-route'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useState } from 'react'
+import { createClient } from '@/lib/modassembly/supabase/client'
+import { useAuth } from '@/lib/modassembly/supabase/auth/auth-context'
 import { Badge } from '@/components/ui/badge'
-import dynamic from 'next/dynamic'
-import { sanitizeOrderItems, sanitizeText } from '@/lib/utils/security'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Shell } from '@/components/shell'
+import { CheckCircle, ChevronLeft, ChevronRight, Clock, Coffee, Plus, User, Utensils } from 'lucide-react'
 
-// Dynamic imports for heavy components
-const FloorPlanView = dynamic(
-  () =>
-    import('@/components/floor-plan-view').then(m => ({
-      default: m.FloorPlanView,
-    })),
-  {
-    loading: () => (
-      <PageLoadingState message='Loading floor plan...' showProgress={false} />
-    ),
-    ssr: false,
-  }
-)
-
-const VoiceOrderPanel = dynamic(
-  () =>
-    import('@/components/voice-order-panel').then(m => ({
-      default: m.VoiceOrderPanel,
-    })),
-  {
-    loading: () => (
-      <PageLoadingState
-        message='Loading voice controls...'
-        showProgress={false}
-      />
-    ),
-    ssr: false,
-  }
-)
-
-import { useToast } from '@/hooks/use-toast'
-import {
-  FloorPlanErrorBoundary,
-  VoiceErrorBoundary,
-} from '@/components/error-boundaries'
-import { PageLoadingState } from '@/components/loading-states'
-import {
-  ChevronLeft,
-  Clock,
-  Coffee,
-  Edit3,
-  History,
-  Info,
-  Trash2,
-  User,
-  Utensils,
-} from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-// PERFORMANCE OPTIMIZATION: Removed framer-motion imports (24 instances eliminated)
-// All animations now use optimized CSS classes for better performance
-import {
-  createOrder,
-  deleteOrder,
-} from '@/lib/modassembly/supabase/database/orders'
-import { fetchSeatId } from '@/lib/modassembly/supabase/database/seats'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { SeatNavigation } from '@/components/server/seat-navigation'
-import { useSeatNavigation } from '@/hooks/use-seat-navigation'
-import { useOrderFlowState } from '@/lib/hooks/use-order-flow-state'
-import { useServerPageData } from '@/lib/hooks/use-server-page-data'
-import { useConnection, useOrders, useServer, useTables } from '@/lib/state/domains'
-
-type Order = {
+interface Table {
   id: string
-  table: string
-  seat?: number
-  items: string[]
+  label: string
   status: string
-  created_at: string
+  seat_count: number
+  orders: Order[]
+  position: { x: number; y: number }
+  shape: 'round' | 'square' | 'rectangle'
+  size: { width: number; height: number }
 }
 
-export default function ServerPage() {
-  // DOMAIN-SPECIFIC STATE MANAGEMENT
-  const { isConnected, connectionState: _connectionState } = useConnection()
-  const { state: tablesState, selectTable } = useTables()
-  const { state: ordersState, createNewOrder: _createNewOrder, removeOrder: _removeOrder } = useOrders()
-  const { 
-    state: serverState,
-    setStep: _setStep,
-    setOrderType: _setOrderType,
-    selectSeat: _selectSeat,
-    resetOrder
-  } = useServer()
-  
-  // Extract commonly used values
-  const tables = tablesState.tables
-  const _selectedTable = tablesState.selectedTable
-  const orders = ordersState.orders
-  const _currentView = serverState.currentStep // Maps to workflow step
-  const _orderType = serverState.orderType
-  const _selectedSeat = serverState.selectedSeat
-  const loading = { tables: tablesState.loading, orders: ordersState.loading }
-  const _errors = { tables: tablesState.error, orders: ordersState.error }
+interface Order {
+  id: string
+  items: string[]
+  status: string
+  type: string
+  created_at: string
+  seat_label: string
+}
 
-  // Legacy state hooks (minimal usage for compatibility)
-  const orderFlow = useOrderFlowState()
-  const data = useServerPageData('default')
-  const { toast } = useToast()
-  
-  // Data from legacy hooks
-  const residents = data.residents
-  const _connectionStatus = isConnected ? 'connected' : 'disconnected'
+interface Resident {
+  id: string
+  name: string
+  dietaryRestrictions?: string[]
+  favoriteSeats: string[] // table-seat combinations like "1-2"
+  mealPreferences: MealPreference[]
+}
 
-  // Minimal remaining state
-  const [_floorPlanId, _setFloorPlanId] = useState('default')
+interface MealPreference {
+  dish: string
+  mealTime: 'breakfast' | 'lunch' | 'dinner'
+  frequency: number // how often they order this (1-10)
+  lastOrdered?: string
+}
 
-  // Seat navigation state
-  const seatNav = useSeatNavigation({
-    tableId: orderFlow.selectedTable?.label || '1',
-    maxSeats: 8,
-    onSeatComplete: _seatNumber => {
-      // Seat order completed callback - future logging implementation
+interface OrderStep {
+  step: 'resident' | 'meal'
+  selectedResident?: Resident
+}
+
+export default function SimpleServerPage() {
+  const { profile, isLoading: authLoading } = useAuth()
+  const [tables, setTables] = useState<Table[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null)
+  const [showOrderForm, setShowOrderForm] = useState(false)
+  const [orderFormData, setOrderFormData] = useState<{tableId: string, seatNumber: number, tableName: string} | null>(null)
+  const [orderStep, setOrderStep] = useState<OrderStep>({ step: 'resident' })
+  const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0)
+
+  const supabase = createClient()
+
+  // Mock resident data for demo
+  const mockResidents: Resident[] = [
+    {
+      id: '1',
+      name: 'Salazar Saladbar',
+      dietaryRestrictions: ['vegetarian'],
+      favoriteSeats: ['5-1', '5-2'],
+      mealPreferences: [
+        { dish: 'Grilled Chicken Caesar Salad', mealTime: 'dinner', frequency: 9 },
+        { dish: 'Mediterranean Quinoa Bowl', mealTime: 'lunch', frequency: 7 },
+        { dish: 'Avocado Toast with Eggs', mealTime: 'breakfast', frequency: 8 }
+      ]
     },
-    onTableComplete: () => {
-      toast({
-        title: 'Table Complete! 🎉',
-        description: 'All seats have placed their orders',
-        duration: 3000,
-      })
-      orderFlow.resetFlow()
+    {
+      id: '2', 
+      name: 'Margaret Meatloaf',
+      favoriteSeats: ['1-1', '1-3', '2-1'],
+      mealPreferences: [
+        { dish: 'Classic Meatloaf with Mashed Potatoes', mealTime: 'dinner', frequency: 10 },
+        { dish: 'Beef Stew', mealTime: 'lunch', frequency: 8 },
+        { dish: 'Pancakes with Bacon', mealTime: 'breakfast', frequency: 9 }
+      ]
     },
-  })
-
-  // Load suggestions when resident is selected
-  const loadSuggestions = useCallback(
-    async (residentId: string) => {
-      if (residentId) {
-        data.loadOrderSuggestions(residentId, orderFlow.selectedTable?.id)
-      }
+    {
+      id: '3',
+      name: 'Frank Fisherman',
+      favoriteSeats: ['3-2', '4-1'],
+      mealPreferences: [
+        { dish: 'Grilled Salmon with Rice', mealTime: 'dinner', frequency: 9 },
+        { dish: 'Fish and Chips', mealTime: 'lunch', frequency: 8 },
+        { dish: 'Tuna Sandwich', mealTime: 'breakfast', frequency: 6 }
+      ]
     },
-    [data, orderFlow.selectedTable]
-  )
-
-  // --- Navigation and Selection Handlers ---
-
-  const handleSelectTable = (table: any) => {
-    // Use intelligent state management
-    selectTable(table)
-
-    // Legacy compatibility
-    orderFlow.selectTable(table)
-
-    if (navigator.vibrate) {
-      navigator.vibrate(50)
+    {
+      id: '4',
+      name: 'Betty Burger',
+      favoriteSeats: ['2-2', '3-1'],
+      mealPreferences: [
+        { dish: 'Cheeseburger with Fries', mealTime: 'dinner', frequency: 8 },
+        { dish: 'Chicken Burger', mealTime: 'lunch', frequency: 7 },
+        { dish: 'Breakfast Burger', mealTime: 'breakfast', frequency: 5 }
+      ]
     }
-    toast({
-      title: `Table ${table.label} selected`,
-      description: 'Navigate between seats',
-      duration: 1500,
+  ]
+
+  const getCurrentMealTime = (): 'breakfast' | 'lunch' | 'dinner' => {
+    const hour = new Date().getHours()
+    if (hour < 11) {return 'breakfast'}
+    if (hour < 17) {return 'lunch'}
+    return 'dinner'
+  }
+
+  const getSuggestedResidents = (tableLabel: string, seatNumber: number): Resident[] => {
+    const seatKey = `${tableLabel}-${seatNumber}`
+    
+    // Find residents who frequently sit in this seat
+    const primaryResidents = mockResidents.filter(r => 
+      r.favoriteSeats.includes(seatKey)
+    ).sort((a, b) => {
+      const aIndex = a.favoriteSeats.indexOf(seatKey)
+      const bIndex = b.favoriteSeats.indexOf(seatKey)
+      return aIndex - bIndex
     })
+    
+    // Add other residents from the same table as secondary options
+    const tableResidents = mockResidents.filter(r => 
+      r.favoriteSeats.some(seat => seat.startsWith(`${tableLabel}-`)) && 
+      !primaryResidents.includes(r)
+    )
+    
+    return [...primaryResidents, ...tableResidents].slice(0, 3)
   }
 
-  const _handleSeatSelected = (_seatNumber: number) => {
-    // Legacy seat selection handler - now handled by SeatNavigation
+  const getSuggestedMeals = (resident: Resident): MealPreference[] => {
+    const currentMeal = getCurrentMealTime()
+    return resident.mealPreferences
+      .filter(pref => pref.mealTime === currentMeal)
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 3)
   }
 
-  const _handleCloseSeatPicker = () => {
-    // Legacy seat picker close handler - now handled by SeatNavigation
-  }
-
-  // Reset selection fully when going back
-  const handleBackToFloorPlan = useCallback(() => {
-    resetOrder()
-    orderFlow.resetFlow()
-    seatNav.resetTable()
-  }, [resetOrder, orderFlow, seatNav])
-
-  // Go back from Order Type selection to Seat Picker
-  const handleBackFromOrderType = () => {
-    orderFlow.goToStep('seatPicker')
-  }
-
-  // Go back from Resident Selection to Order Type selection
-  const handleBackFromResidentSelect = () => {
-    orderFlow.goToStep('orderType')
-  }
-
-  // Go back from Voice Order to Resident Selection
-  const handleBackFromVoiceOrder = () => {
-    orderFlow.hideVoiceOrder()
-  }
-
-  // Called by VoiceOrderPanel upon successful transcription
-  const handleOrderSubmitted = useCallback(
-    async (
-      orderData: string | string[] | { items: string[]; transcription: string }
-    ) => {
-      if (
-        !orderFlow.selectedTable ||
-        orderFlow.selectedSeat === null ||
-        !data.user ||
-        !orderFlow.selectedResident
-      ) {
-        toast({
-          title: 'Error',
-          description: 'Missing required information.',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      // Get the seat ID using the fetchSeatId function
-      const seatId = await fetchSeatId(
-        orderFlow.selectedTable.id,
-        orderFlow.selectedSeat
-      )
-
-      if (!seatId) {
-        toast({
-          title: 'Error',
-          description: 'Invalid seat selection.',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      try {
-        // Handle different input formats
-        let items: string[]
-        let transcript: string
-
-        if (orderFlow.selectedSuggestion) {
-          // If using a suggestion, use the suggestion items
-          items = orderFlow.selectedSuggestion.items
-          transcript = orderFlow.selectedSuggestion.items.join(', ')
-        } else if (typeof orderData === 'object' && 'items' in orderData) {
-          // New format with items and transcription from API
-          items = orderData.items
-          transcript = orderData.transcription || orderData.items.join(', ')
-        } else if (Array.isArray(orderData)) {
-          // If we have an array of items (legacy format), use them directly
-          items = orderData
-          transcript = orderData.join(', ')
-        } else {
-          // If we have a string (legacy format), split it into items
-          items = orderData
-            .split(',')
-            .map(item => item.trim())
-            .filter(item => item)
-          transcript = orderData
-        }
-
-        // Sanitize inputs before saving to database
-        const sanitizedItems = sanitizeOrderItems(items)
-        const sanitizedTranscript = sanitizeText(transcript)
-        
-        if (sanitizedItems.length === 0) {
-          toast({
-            title: 'Invalid Order',
-            description: 'Please provide valid order items.',
-            variant: 'destructive',
-          })
-          return
-        }
-
-        const orderPayload = {
-          table_id: orderFlow.selectedTable.id,
-          seat_id: seatId,
-          resident_id: orderFlow.selectedResident,
-          server_id: data.user.id,
-          items: sanitizedItems,
-          transcript: sanitizedTranscript,
-          type: orderFlow.orderType || 'food',
-        }
-
-        const _order = await createOrder(orderPayload)
-
-        // Mark seat as complete in navigation
-        if (orderFlow.selectedSeat) {
-          seatNav.markSeatComplete(orderFlow.selectedSeat)
-        }
-
-        toast({
-          title: 'Order Submitted',
-          description: 'Your order has been sent to the kitchen.',
-          variant: 'default',
-        })
-
-        // Check if we should continue to next seat or finish table
-        if (seatNav.nextAvailableSeat) {
-          // Auto-advance to next seat
-          setTimeout(() => {
-            if (seatNav.nextAvailableSeat) {
-              seatNav.setCurrentSeat(seatNav.nextAvailableSeat)
-            }
-            orderFlow.goToStep('seatPicker')
-          }, 1000)
-        } else {
-          // All seats complete, go back to floor plan
-          setTimeout(() => {
-            handleBackToFloorPlan()
-          }, 1500)
-        }
-      } catch (err) {
-        console.error('Order submission error:', err)
-        toast({
-          title: 'Submission Failed',
-          description: 'Could not submit order. Please retry.',
-          variant: 'destructive',
-        })
-      }
-    },
-    [orderFlow, data, toast, handleBackToFloorPlan, seatNav]
-  )
-
-  // Resident selection handler
-  const handleResidentSelected = useCallback(
-    (residentId: string) => {
-      orderFlow.selectResident(residentId)
-      loadSuggestions(residentId)
-    },
-    [orderFlow, loadSuggestions]
-  )
-
-  // Suggestion selection handler
-  const handleSuggestionSelected = (suggestion: any) => {
-    if (orderFlow.selectedSuggestion === suggestion) {
-      // If clicking the same suggestion, unselect it
-      orderFlow.selectSuggestion(null)
-    } else {
-      // Otherwise select the new suggestion
-      orderFlow.selectSuggestion(suggestion)
-    }
-  }
-
-  // Proceed to voice order handler
-  const handleProceedToVoiceOrder = () => {
-    if (orderFlow.selectedSuggestion) {
-      // If a suggestion is selected, submit it with the items array directly
-      handleOrderSubmitted(orderFlow.selectedSuggestion.items)
-    } else {
-      // If no suggestion selected, show voice order panel
-      orderFlow.showVoiceOrder()
-    }
-  }
-
-  // Order modification functions
-  const handleEditOrder = (_order: Order) => {
-    // TODO: Implement edit order dialog/modal
-    toast({
-      title: 'Edit Order',
-      description: 'Order editing feature coming soon',
-      duration: 2000,
-    })
-  }
-
-  const handleCancelOrder = async (order: Order) => {
+  const loadTables = useCallback(async () => {
     try {
-      await deleteOrder(order.id)
+      setLoading(true)
+      setError(null)
 
-      // Refresh orders list
-      await data.refreshRecentOrders()
+      // Loading tables and orders
 
-      toast({
-        title: 'Order Cancelled',
-        description: `Order for ${order.table} has been cancelled`,
-        duration: 2000,
+      // Get tables with orders
+      const { data: tablesData, error: tablesError } = await supabase
+        .from('tables')
+        .select(`
+          id,
+          label,
+          status,
+          orders:orders!table_id (
+            id,
+            items,
+            status,
+            type,
+            created_at,
+            seat:seats!seat_id (label)
+          )
+        `)
+        .order('label', { ascending: true })
+
+      if (tablesError) {
+        console.error('[ServerPage] Tables query error:', tablesError)
+        setError(`Database error: ${tablesError.message}`)
+        return
+      }
+
+      // Raw tables data loaded successfully
+
+      // Demo restaurant layout positions - Fixed Table 8 visibility
+      const demoPositions = [
+        { x: 50, y: 80, shape: 'round' as const, size: { width: 80, height: 80 }, seats: 4 },
+        { x: 180, y: 80, shape: 'round' as const, size: { width: 80, height: 80 }, seats: 4 },
+        { x: 310, y: 80, shape: 'square' as const, size: { width: 90, height: 90 }, seats: 4 },
+        { x: 450, y: 80, shape: 'square' as const, size: { width: 80, height: 80 }, seats: 2 },
+        { x: 50, y: 220, shape: 'rectangle' as const, size: { width: 120, height: 80 }, seats: 6 },
+        { x: 220, y: 220, shape: 'rectangle' as const, size: { width: 120, height: 80 }, seats: 6 },
+        { x: 390, y: 220, shape: 'round' as const, size: { width: 100, height: 100 }, seats: 8 },
+        { x: 150, y: 380, shape: 'round' as const, size: { width: 100, height: 100 }, seats: 8 }
+      ]
+
+      // Transform tables data with demo positioning
+      const transformedTables: Table[] = tablesData.map((table, index) => {
+        const demoPos = demoPositions[index] || demoPositions[0]
+        return {
+          id: table.id,
+          label: table.label,
+          status: table.status || 'available',
+          seat_count: demoPos.seats,
+          position: { x: demoPos.x, y: demoPos.y },
+          shape: demoPos.shape,
+          size: demoPos.size,
+          orders: (table.orders || [])
+            .filter((order: any) => order.status !== 'delivered')
+            .map((order: any) => ({
+              id: order.id,
+              items: Array.isArray(order.items) ? order.items : [],
+              status: order.status,
+              type: order.type,
+              created_at: order.created_at,
+              seat_label: order.seat?.label?.toString() || 'Unknown'
+            }))
+        }
       })
-    } catch (error) {
-      console.error('Error cancelling order:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to cancel order',
-        variant: 'destructive',
+
+      // Tables transformed with positioning
+      setTables(transformedTables)
+
+    } catch (err) {
+      console.error('[ServerPage] Load error:', err)
+      setError(`Failed to load tables: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  const getTableStatusColor = (table: Table) => {
+    if (table.orders.length === 0) {return 'bg-gray-600'}
+    
+    const hasNew = table.orders.some(o => o.status === 'new')
+    const hasInProgress = table.orders.some(o => o.status === 'in_progress')
+    const allReady = table.orders.every(o => o.status === 'ready')
+    
+    if (hasNew) {return 'bg-blue-600'}
+    if (hasInProgress) {return 'bg-yellow-600'}
+    if (allReady) {return 'bg-green-600'}
+    return 'bg-gray-600'
+  }
+
+  const getTimeSinceCreated = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 1) {return 'Just now'}
+    if (diffInMinutes < 60) {return `${diffInMinutes}m ago`}
+    const hours = Math.floor(diffInMinutes / 60)
+    return `${hours}h ${diffInMinutes % 60}m ago`
+  }
+
+  const createNewOrder = async (tableId: string, seatNumber: number) => {
+    try {
+      const table = tables.find(t => t.id === tableId)
+      if (!table) {return}
+      
+      // Opening order form
+      setOrderFormData({
+        tableId,
+        seatNumber,
+        tableName: table.label
       })
+      setShowOrderForm(true)
+    } catch (err) {
+      console.error('Error opening order form:', err)
     }
   }
 
-  // Use the order flow state machine for current view
-  const resolvedView = orderFlow.currentStep
+  const handleCloseOrderForm = () => {
+    setShowOrderForm(false)
+    setOrderFormData(null)
+    setOrderStep({ step: 'resident' })
+    setCurrentSuggestionIndex(0)
+  }
 
-  return (
-    <ProtectedRoute roles={['server', 'admin']}>
-      <Shell className='bg-gradient-to-br from-gray-900/95 via-gray-900/98 to-gray-900/95'>
-        <div className='container py-6 page-container'>
-          {/* Header - PERFORMANCE: Replaced motion.div with CSS class */}
-          <div className='header-animate flex items-center justify-between mb-6'>
-            <div>
-              <h1 className='text-3xl font-bold tracking-tight text-white'>
-                Server View
-              </h1>
-              <p className='text-gray-400 mt-1'>Take and manage orders</p>
-            </div>
-            <div className='flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700/30'>
-              <Clock className='h-4 w-4 text-teal-400' />
-              <span className='text-gray-300 font-medium'>
-                {' '}
-                {new Date().toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}{' '}
-              </span>
-            </div>
+  const handleSelectResident = (resident: Resident) => {
+    setOrderStep({ step: 'meal', selectedResident: resident })
+    setCurrentSuggestionIndex(0)
+  }
+
+  const handleSelectMeal = async (meal: string) => {
+    if (!orderFormData || !orderStep.selectedResident) {return}
+    
+    try {
+      // TODO: Create actual order in database
+      // Creating order for resident
+      
+      // For now, just close the modal
+      handleCloseOrderForm()
+      
+      // Refresh tables to show new order
+      loadTables()
+    } catch (err) {
+      console.error('Error creating order:', err)
+    }
+  }
+
+  // Setup real-time subscription
+  useEffect(() => {
+    let mounted = true
+
+    const setupRealtimeSubscription = () => {
+      // Setting up real-time subscription
+      
+      const channel = supabase
+        .channel('server-orders')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          payload => {
+            // Orders updated via real-time
+            if (mounted) {
+              loadTables()
+            }
+          }
+        )
+        .subscribe()
+
+      return () => {
+        // Cleaning up subscription
+        supabase.removeChannel(channel)
+      }
+    }
+
+    // Initial load
+    loadTables()
+
+    // Setup real-time
+    const cleanup = setupRealtimeSubscription()
+
+    return () => {
+      mounted = false
+      cleanup()
+    }
+  }, [loadTables, supabase])
+
+  // Loading state
+  if (authLoading || loading) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <span className="text-white text-lg">Loading restaurant floor...</span>
           </div>
-
-          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-            {/* Main Content Area - PERFORMANCE: Replaced motion.div with CSS class */}
-            <div className='lg:col-span-2 stagger-container'>
-              {/* PERFORMANCE: Replaced AnimatePresence with conditional rendering + CSS transitions */}
-              {/* Floor Plan View */}
-              {resolvedView === 'floorPlan' && (
-                <div className='floor-plan-view stagger-item'>
-                  <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden'>
-                    <CardContent className='p-0'>
-                      <div className='p-6 border-b border-gray-700/30'>
-                        <h2 className='text-xl font-medium text-white'>
-                          Select a Table
-                        </h2>
-                        <p className='text-gray-400 text-sm mt-1'>
-                          Choose a table to place an order
-                        </p>
-                      </div>
-                      <div className='p-6'>
-                        {loading.tables ? (
-                          <PageLoadingState
-                            message='Loading floor plan...'
-                            showProgress={false}
-                          />
-                        ) : (
-                          <FloorPlanErrorBoundary>
-                            <div className='floor-plan-container'>
-                              <FloorPlanView
-                                floorPlanId={_floorPlanId}
-                                onSelectTable={handleSelectTable}
-                                tables={tables} // Use intelligent state tables
-                              />
-                            </div>
-                          </FloorPlanErrorBoundary>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Seat Navigation View */}
-              {resolvedView === 'seatPicker' && orderFlow.selectedTable && (
-                <div className='seat-nav-view stagger-item'>
-                  <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden'>
-                    <CardContent className='p-0'>
-                      <div className='p-6 border-b border-gray-700/30 flex items-center justify-between'>
-                        <div>
-                          <h2 className='text-xl font-medium text-white'>
-                            Table {orderFlow.selectedTable.label}
-                          </h2>
-                          <p className='text-gray-400 text-sm mt-1'>
-                            Navigate between seats to take orders
-                          </p>
-                        </div>
-                        <Button
-                          variant='ghost'
-                          onClick={() => orderFlow.goToStep('floorPlan')}
-                          className='text-gray-400 hover:text-white'
-                        >
-                          <ChevronLeft className='h-4 w-4 mr-2' />
-                          Back to Tables
-                        </Button>
-                      </div>
-                      <div className='p-6'>
-                        <SeatNavigation
-                          tableId={orderFlow.selectedTable.label}
-                          currentSeat={seatNav.currentSeat}
-                          maxSeats={seatNav.maxSeats}
-                          onSeatChange={seatNumber => {
-                            seatNav.setCurrentSeat(seatNumber)
-                            orderFlow.selectSeat(seatNumber)
-                          }}
-                          seats={seatNav.seatOrders.map(seat => ({
-                            id: seat.seatNumber,
-                            hasOrder: seat.hasOrder,
-                            orderCount: seat.orderCount,
-                          }))}
-                        />
-
-                        <div className='mt-6 flex gap-3'>
-                          <Button
-                            onClick={() => {
-                              orderFlow.selectSeat(seatNav.currentSeat)
-                            }}
-                            className='flex-1 bg-blue-600 hover:bg-blue-700'
-                          >
-                            Take Order for Seat {seatNav.currentSeat}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Order Type Selection View */}
-              {resolvedView === 'orderType' &&
-                orderFlow.selectedTable &&
-                orderFlow.selectedSeat && (
-                  <div className='order-type-view stagger-item'>
-                    <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden'>
-                      <CardContent className='p-0'>
-                        <div className='p-6 border-b border-gray-700/30 flex items-center justify-between'>
-                          <div>
-                            <h2 className='text-xl font-medium text-white'>
-                              {' '}
-                              Table {orderFlow.selectedTable.label}, Seat{' '}
-                              {orderFlow.selectedSeat}{' '}
-                            </h2>
-                            <p className='text-gray-400 text-sm mt-1'>
-                              Select order type
-                            </p>
-                          </div>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={handleBackFromOrderType}
-                            className='h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50'
-                          >
-                            <ChevronLeft className='h-4 w-4' /> Back
-                          </Button>
-                        </div>
-                        <div className='p-8'>
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                            {/* PERFORMANCE: Replaced motion.div hover animations with CSS classes */}
-                            <div className='interactive-button'>
-                              <Button
-                                className='w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-teal-600/90 to-teal-700/90 hover:from-teal-500/90 hover:to-teal-600/90 border-0 rounded-xl shadow-lg'
-                                onClick={() => {
-                                  orderFlow.selectOrderType('food')
-                                }}
-                              >
-                                <div className='w-20 h-20 rounded-full bg-teal-500/20 flex items-center justify-center'>
-                                  {' '}
-                                  <Utensils className='h-10 w-10 text-teal-300' />{' '}
-                                </div>
-                                <span className='text-2xl font-medium'>
-                                  Food Order
-                                </span>
-                              </Button>
-                            </div>
-                            <div className='interactive-button'>
-                              <Button
-                                className='w-full h-48 flex flex-col gap-4 bg-gradient-to-br from-amber-600/90 to-amber-700/90 hover:from-amber-500/90 hover:to-amber-600/90 border-0 rounded-xl shadow-lg'
-                                onClick={() => {
-                                  orderFlow.selectOrderType('drink')
-                                }}
-                              >
-                                <div className='w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center'>
-                                  {' '}
-                                  <Coffee className='h-10 w-10 text-amber-300' />{' '}
-                                </div>
-                                <span className='text-2xl font-medium'>
-                                  Drink Order
-                                </span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-              {/* Resident Selection View */}
-              {resolvedView === 'residentSelect' &&
-                orderFlow.selectedTable &&
-                orderFlow.selectedSeat &&
-                orderFlow.orderType && (
-                  <div className='resident-select-view stagger-item'>
-                    <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden'>
-                      <CardContent className='p-0'>
-                        <div className='p-6 border-b border-gray-700/30 flex items-center justify-between'>
-                          <div className='flex items-center gap-3'>
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400`}
-                            >
-                              <User className='h-5 w-5' />
-                            </div>
-                            <div>
-                              <h2 className='text-xl font-medium text-white flex items-center gap-2'>
-                                Select Resident
-                                <Badge
-                                  variant='outline'
-                                  className='ml-2 text-xs font-normal'
-                                >
-                                  {' '}
-                                  Table {orderFlow.selectedTable.label}, Seat{' '}
-                                  {orderFlow.selectedSeat}{' '}
-                                </Badge>
-                              </h2>
-                              <p className='text-gray-400 text-sm mt-1'>
-                                Choose a resident to place an order
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={handleBackFromResidentSelect}
-                            className='h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50'
-                          >
-                            <ChevronLeft className='h-4 w-4' /> Back
-                          </Button>
-                        </div>
-                        <div className='p-6 space-y-6'>
-                          <div className='space-y-4'>
-                            <label className='text-sm font-medium text-gray-200'>
-                              Select Resident{' '}
-                              <span className='text-red-400'>*</span>
-                            </label>
-                            <Select
-                              value={orderFlow.selectedResident || ''}
-                              onValueChange={handleResidentSelected}
-                            >
-                              <SelectTrigger className='w-full'>
-                                <SelectValue placeholder='Choose a resident' />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {residents.map((resident: any) => (
-                                  <SelectItem
-                                    key={resident.id}
-                                    value={resident.id}
-                                  >
-                                    {resident.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {orderFlow.selectedResident && (
-                            <div className='space-y-4'>
-                              <div className='flex items-center justify-between'>
-                                <label className='text-sm font-medium text-gray-200'>
-                                  Previous Orders
-                                </label>
-                                {data.orderSuggestions.length > 0 && (
-                                  <span className='text-xs text-gray-400'>
-                                    Optional - Select a previous order or place
-                                    a new one
-                                  </span>
-                                )}
-                              </div>
-
-                              {data.orderSuggestions.length > 0 ? (
-                                <div className='space-y-3'>
-                                  {data.orderSuggestions.map(
-                                    (suggestion: any, index: number) => (
-                                      <div
-                                        key={index}
-                                        className={`suggestion-card-${Math.min(index + 1, 5)}`}
-                                      >
-                                        <Button
-                                          variant='outline'
-                                          className={`w-full justify-start text-left p-4 h-auto ${
-                                            orderFlow.selectedSuggestion ===
-                                            suggestion
-                                              ? 'border-teal-500'
-                                              : 'border-gray-700'
-                                          }`}
-                                          onClick={() =>
-                                            handleSuggestionSelected(suggestion)
-                                          }
-                                        >
-                                          <div className='space-y-1'>
-                                            <div className='flex items-center justify-between'>
-                                              <span className='font-medium'>
-                                                Order #{index + 1}
-                                              </span>
-                                              <Badge variant='secondary'>
-                                                Ordered {suggestion.frequency}x
-                                              </Badge>
-                                            </div>
-                                            {suggestion.items.map(
-                                              (item: string, i: number) => (
-                                                <div
-                                                  key={i}
-                                                  className='text-sm text-gray-400'
-                                                >
-                                                  • {item}
-                                                </div>
-                                              )
-                                            )}
-                                          </div>
-                                        </Button>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              ) : (
-                                <div className='text-center py-8 text-gray-400'>
-                                  <Info className='h-12 w-12 mx-auto mb-3 opacity-50' />
-                                  <p>No previous orders found</p>
-                                </div>
-                              )}
-
-                              <Button
-                                className='w-full mt-6'
-                                size='lg'
-                                onClick={handleProceedToVoiceOrder}
-                              >
-                                {orderFlow.selectedSuggestion
-                                  ? 'Place Selected Order'
-                                  : 'Place New Voice Order'}
-                              </Button>
-                            </div>
-                          )}
-
-                          {!orderFlow.selectedResident && (
-                            <div className='text-center py-8 text-gray-400'>
-                              <User className='h-12 w-12 mx-auto mb-3 opacity-50' />
-                              <p>Please select a resident to place an order</p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-              {/* Voice Order Panel View */}
-              {resolvedView === 'voiceOrder' &&
-                orderFlow.selectedTable &&
-                orderFlow.selectedSeat &&
-                orderFlow.orderType && (
-                  <div className='voice-order-view stagger-item'>
-                    <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden'>
-                      <CardContent className='p-0'>
-                        <div className='p-6 border-b border-gray-700/30 flex items-center justify-between'>
-                          <div className='flex items-center gap-3'>
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center ${orderFlow.orderType === 'food' ? 'bg-teal-500/20 text-teal-400' : 'bg-amber-500/20 text-amber-400'}`}
-                            >
-                              {orderFlow.orderType === 'food' ? (
-                                <Utensils className='h-5 w-5' />
-                              ) : (
-                                <Coffee className='h-5 w-5' />
-                              )}
-                            </div>
-                            <div>
-                              <h2 className='text-xl font-medium text-white flex items-center gap-2'>
-                                Voice Order
-                                <Badge
-                                  variant='outline'
-                                  className='ml-2 text-xs font-normal'
-                                >
-                                  Table {orderFlow.selectedTable.label}, Seat{' '}
-                                  {orderFlow.selectedSeat}
-                                  {orderFlow.selectedResident &&
-                                    ` • Resident Selected`}
-                                </Badge>
-                              </h2>
-                              <p className='text-gray-400 text-sm mt-1'>
-                                Speak your order clearly
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={handleBackFromVoiceOrder}
-                            className='h-9 gap-1 text-gray-300 hover:text-white hover:bg-gray-700/50'
-                          >
-                            <ChevronLeft className='h-4 w-4' /> Back
-                          </Button>
-                        </div>
-                        <div className='p-6'>
-                          <VoiceErrorBoundary>
-                            <div className='voice-order-container'>
-                              <VoiceOrderPanel
-                                tableId={orderFlow.selectedTable.id}
-                                tableName={orderFlow.selectedTable.label}
-                                seatNumber={orderFlow.selectedSeat}
-                                orderType={orderFlow.orderType}
-                                onOrderSubmitted={handleOrderSubmitted}
-                                onCancel={handleBackFromVoiceOrder}
-                              />
-                            </div>
-                          </VoiceErrorBoundary>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-            </div>
-
-            {/* Recent Orders Panel - PERFORMANCE: Replaced motion.div with CSS class */}
-            <div className='sidebar-animate'>
-              <Card className='bg-gray-800/40 border-gray-700/30 backdrop-blur-sm overflow-hidden h-full'>
-                <CardContent className='p-0 h-full flex flex-col'>
-                  <div className='p-6 border-b border-gray-700/30 flex items-center gap-3'>
-                    <div className='w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center'>
-                      {' '}
-                      <History className='h-5 w-5 text-gray-300' />{' '}
-                    </div>
-                    <div>
-                      <h2 className='text-xl font-medium text-white'>
-                        Recent Orders
-                      </h2>
-                      <p className='text-gray-400 text-sm'>
-                        Latest orders you've submitted
-                      </p>
-                    </div>
-                  </div>
-                  <ScrollArea className='flex-1 p-6'>
-                    {orders.length === 0 ? (
-                      <div className='flex flex-col items-center justify-center h-full text-center p-4'>
-                        <div className='w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center mb-3'>
-                          {' '}
-                          <Info className='h-6 w-6 text-gray-400' />{' '}
-                        </div>
-                        <p className='text-gray-400 font-medium'>
-                          No recent orders
-                        </p>
-                        <p className='text-sm text-gray-500 mt-1'>
-                          Orders will appear here after submission
-                        </p>
-                      </div>
-                    ) : (
-                      <div className='space-y-4'>
-                        {/* PERFORMANCE: Replaced AnimatePresence with conditional rendering + CSS transitions */}
-                        {orders
-                          .slice(0, 10)
-                          .map((order: any, index: number) => (
-                            <div
-                              key={order.id}
-                              className={`order-card-enter stagger-item-${Math.min(index + 1, 5)}`}
-                            >
-                              <div className='p-4 rounded-xl bg-gray-800/70 border border-gray-700/30 backdrop-blur-sm hover:bg-gray-800/90 transition-colors'>
-                                <div className='flex justify-between items-center mb-2'>
-                                  <div className='font-medium text-white'>
-                                    Table {order.table}{' '}
-                                    {order.seat ? `(Seat ${order.seat})` : ''}
-                                  </div>
-                                  <Badge
-                                    variant='outline'
-                                    className={`status-badge status-${order.status}`}
-                                  >
-                                    {order.status.charAt(0).toUpperCase() +
-                                      order.status.slice(1).replace('_', ' ')}
-                                  </Badge>
-                                </div>
-                                <div className='space-y-1 mb-2'>
-                                  {order.items.map(
-                                    (item: string, i: number) => (
-                                      <div
-                                        key={i}
-                                        className='text-sm text-gray-300'
-                                      >
-                                        • {item}
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                                <div className='flex items-center justify-between mt-3'>
-                                  <div className='text-xs text-gray-500 flex items-center gap-1'>
-                                    <Clock className='h-3 w-3' />
-                                    {new Date(
-                                      order.created_at
-                                    ).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </div>
-                                  {/* Only show edit/cancel for pending orders */}
-                                  {(order.status === 'in_progress' ||
-                                    order.status === 'new') && (
-                                    <div className='flex gap-2'>
-                                      <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => handleEditOrder(order)}
-                                        className='h-7 px-2 text-xs'
-                                      >
-                                        <Edit3 className='h-3 w-3 mr-1' />
-                                        Edit
-                                      </Button>
-                                      <Button
-                                        size='sm'
-                                        variant='destructive'
-                                        onClick={() => handleCancelOrder(order)}
-                                        className='h-7 px-2 text-xs'
-                                      >
-                                        <Trash2 className='h-3 w-3 mr-1' />
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Seat Picker Overlay - Rendered conditionally outside the main grid */}
-          {/* Seat picker overlay removed - now using integrated seat navigation */}
         </div>
       </Shell>
-    </ProtectedRoute>
+    )
+  }
+
+  // Auth check
+  if (!profile) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+            <p className="text-gray-400">Please log in to access the server interface.</p>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
+  return (
+    <Shell>
+      <div className="p-6 h-full overflow-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Server Station</h1>
+              <p className="text-gray-300">Table management and order taking</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Badge variant="outline" className="border-gray-600 text-gray-300">
+                {tables.length} Tables
+              </Badge>
+              <Button 
+                onClick={loadTables}
+                variant="outline"
+                size="sm"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <span className="text-red-300">{error}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Restaurant Floor Plan - Overhead View */}
+          <div>
+            <h2 className="text-xl font-bold text-white mb-4">Restaurant Floor Plan</h2>
+            <div className="relative bg-gradient-to-br from-gray-800/30 to-gray-900/30 border border-gray-700 rounded-lg p-6" style={{ minHeight: '500px', minWidth: '600px' }}>
+              {/* Restaurant Elements */}
+              
+              {/* Kitchen Area */}
+              <div className="absolute top-4 right-4 bg-red-900/30 border border-red-700 rounded-lg p-3">
+                <div className="text-xs text-red-300 font-semibold">KITCHEN</div>
+              </div>
+              
+              {/* Bar Area */}
+              <div className="absolute bottom-4 left-4 bg-amber-900/30 border border-amber-700 rounded-lg p-2 w-32 h-12">
+                <div className="text-xs text-amber-300 font-semibold">BAR</div>
+              </div>
+              
+              {/* Entrance */}
+              <div className="absolute bottom-4 right-4 bg-green-900/30 border border-green-700 rounded-lg p-2">
+                <div className="text-xs text-green-300 font-semibold">ENTRANCE</div>
+              </div>
+              
+              {/* Tables with Overhead Positioning */}
+              {tables.map((table) => {
+                const isSelected = selectedTable?.id === table.id
+                const statusColor = getTableStatusColor(table)
+                
+                return (
+                  <div
+                    key={table.id}
+                    className={`absolute cursor-pointer transition-all duration-200 hover:scale-110 ${
+                      isSelected ? 'ring-2 ring-blue-400 ring-opacity-75' : ''
+                    }`}
+                    style={{
+                      left: table.position.x,
+                      top: table.position.y,
+                      width: table.size.width,
+                      height: table.size.height,
+                    }}
+                    onClick={() => setSelectedTable(table)}
+                  >
+                    {/* Table Shape */}
+                    <div
+                      className={`w-full h-full flex items-center justify-center border-2 border-gray-600 ${statusColor} shadow-lg hover:shadow-xl transition-all duration-200 ${
+                        table.shape === 'round' ? 'rounded-full' : 
+                        table.shape === 'square' ? 'rounded-lg' : 'rounded-xl'
+                      }`}
+                    >
+                      {/* Table Number */}
+                      <div className="text-center">
+                        <div className="text-white font-bold text-lg">{table.label}</div>
+                        <div className="text-xs text-gray-200">{table.seat_count} seats</div>
+                      </div>
+                    </div>
+                    
+                    {/* Order Count Badge */}
+                    {table.orders.length > 0 && (
+                      <div className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {table.orders.length}
+                      </div>
+                    )}
+                    
+                    {/* Chair/Seat Indicators */}
+                    {table.shape === 'round' && (
+                      <>
+                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-gray-700 rounded-t"></div>
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-gray-700 rounded-b"></div>
+                        <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 w-2 h-3 bg-gray-700 rounded-l"></div>
+                        <div className="absolute top-1/2 -right-1 transform -translate-y-1/2 w-2 h-3 bg-gray-700 rounded-r"></div>
+                      </>
+                    )}
+                    
+                    {table.shape === 'rectangle' && (
+                      <>
+                        <div className="absolute -top-1 left-2 w-3 h-2 bg-gray-700 rounded-t"></div>
+                        <div className="absolute -top-1 right-2 w-3 h-2 bg-gray-700 rounded-t"></div>
+                        <div className="absolute -bottom-1 left-2 w-3 h-2 bg-gray-700 rounded-b"></div>
+                        <div className="absolute -bottom-1 right-2 w-3 h-2 bg-gray-700 rounded-b"></div>
+                        <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 w-2 h-3 bg-gray-700 rounded-l"></div>
+                        <div className="absolute top-1/2 -right-1 transform -translate-y-1/2 w-2 h-3 bg-gray-700 rounded-r"></div>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+              
+              {/* Floor Plan Legend */}
+              <div className="absolute top-4 left-4 bg-gray-800/50 border border-gray-600 rounded-lg p-3 text-xs">
+                <div className="text-white font-semibold mb-2">Status Legend</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-gray-600"></div>
+                    <span className="text-gray-300">Available</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-blue-600"></div>
+                    <span className="text-gray-300">New Orders</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-yellow-600"></div>
+                    <span className="text-gray-300">Cooking</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-green-600"></div>
+                    <span className="text-gray-300">Ready</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Table Details */}
+          <div>
+            {selectedTable ? (
+              <div>
+                <h2 className="text-xl font-bold text-white mb-4">
+                  Table {selectedTable.label} Details
+                </h2>
+                
+                {selectedTable.orders.length === 0 ? (
+                  <Card className="bg-gray-800/40 border-gray-700">
+                    <CardContent className="p-6 text-center">
+                      <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-white mb-2">Table Available</h3>
+                      <p className="text-gray-400 mb-4">No active orders</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[1, 2, 3, 4].map(seatNum => (
+                          <Button
+                            key={seatNum}
+                            onClick={() => createNewOrder(selectedTable.id, seatNum)}
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Seat {seatNum}
+                          </Button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedTable.orders.map((order) => (
+                      <Card key={order.id} className="bg-gray-800/40 border-gray-700">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg text-white flex items-center gap-2">
+                              Seat {order.seat_label}
+                              {order.type === 'food' ? (
+                                <Utensils className="h-4 w-4 text-orange-400" />
+                              ) : (
+                                <Coffee className="h-4 w-4 text-blue-400" />
+                              )}
+                            </CardTitle>
+                            <div className="flex items-center space-x-2">
+                              <Badge 
+                                variant={
+                                  order.status === 'new' ? 'default' :
+                                  order.status === 'in_progress' ? 'secondary' :
+                                  order.status === 'ready' ? 'default' : 'outline'
+                                }
+                                className={
+                                  order.status === 'new' ? 'bg-blue-600' :
+                                  order.status === 'in_progress' ? 'bg-yellow-600' :
+                                  order.status === 'ready' ? 'bg-green-600' : ''
+                                }
+                              >
+                                {order.status === 'new' ? 'New' :
+                                 order.status === 'in_progress' ? 'Cooking' :
+                                 order.status === 'ready' ? 'Ready' : order.status}
+                              </Badge>
+                              <div className="flex items-center text-xs text-gray-400">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {getTimeSinceCreated(order.created_at)}
+                              </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {order.items.map((item, index) => (
+                              <div key={index} className="bg-gray-900/50 rounded px-3 py-2">
+                                <span className="text-sm text-white">{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Card className="bg-gray-800/40 border-gray-700">
+                <CardContent className="p-12 text-center">
+                  <h3 className="text-lg font-semibold text-white mb-2">Select a Table</h3>
+                  <p className="text-gray-400">Click on a table to view details and take orders</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Debug Info for Development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-300 mb-2">Debug Info</h3>
+            <div className="text-xs text-gray-400 space-y-1">
+              <div>User Role: {profile?.role || 'null'}</div>
+              <div>Tables Loaded: {tables.length}</div>
+              <div>Selected Table: {selectedTable?.label || 'none'}</div>
+              <div>Last Updated: {new Date().toLocaleTimeString()}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Order Form Modal with Suggestions */}
+        {showOrderForm && orderFormData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="bg-gray-800 border-gray-700 w-full max-w-lg mx-4">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center justify-between">
+                  {orderStep.step === 'resident' && (
+                    <>Who is sitting at Table {orderFormData.tableName}, Seat {orderFormData.seatNumber}?</>
+                  )}
+                  {orderStep.step === 'meal' && orderStep.selectedResident && (
+                    <>What would {orderStep.selectedResident.name} like for {getCurrentMealTime()}?</>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCloseOrderForm}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {orderStep.step === 'resident' && (
+                  <div className="space-y-4">
+                    {(() => {
+                      const suggestions = getSuggestedResidents(orderFormData.tableName, orderFormData.seatNumber)
+                      
+                      if (suggestions.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <div className="text-gray-300 mb-4">No resident suggestions for this seat</div>
+                            <Button 
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              onClick={() => {
+                                // TODO: Handle guest option
+                                console.log('Guest selected')
+                                handleCloseOrderForm()
+                              }}
+                            >
+                              👤 Guest
+                            </Button>
+                          </div>
+                        )
+                      }
+
+                      const currentSuggestion = suggestions[currentSuggestionIndex]
+                      
+                      return (
+                        <>
+                          {/* Main Suggestion Display */}
+                          <div className="bg-gray-900/50 rounded-lg p-6 text-center">
+                            <div className="mb-4">
+                              <User className="h-16 w-16 text-blue-400 mx-auto mb-3" />
+                              <h3 className="text-xl font-bold text-white mb-2">{currentSuggestion.name}</h3>
+                              <div className="text-sm text-gray-400">
+                                Usually sits in: {currentSuggestion.favoriteSeats.join(', ')}
+                              </div>
+                              {currentSuggestion.dietaryRestrictions && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                  Dietary: {currentSuggestion.dietaryRestrictions.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <Button
+                              onClick={() => handleSelectResident(currentSuggestion)}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+                              size="lg"
+                            >
+                              Select {currentSuggestion.name}
+                            </Button>
+                          </div>
+
+                          {/* Navigation */}
+                          {suggestions.length > 1 && (
+                            <div className="flex items-center justify-between">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentSuggestionIndex(Math.max(0, currentSuggestionIndex - 1))}
+                                disabled={currentSuggestionIndex === 0}
+                                className="border-gray-600 text-gray-300"
+                              >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Previous
+                              </Button>
+                              
+                              <div className="text-gray-400 text-sm">
+                                {currentSuggestionIndex + 1} of {suggestions.length}
+                              </div>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentSuggestionIndex(Math.min(suggestions.length - 1, currentSuggestionIndex + 1))}
+                                disabled={currentSuggestionIndex === suggestions.length - 1}
+                                className="border-gray-600 text-gray-300"
+                              >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Guest Option */}
+                          <div className="pt-4 border-t border-gray-600">
+                            <Button 
+                              variant="outline"
+                              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
+                              onClick={() => {
+                                // TODO: Handle guest option
+                                console.log('Guest selected')
+                                handleCloseOrderForm()
+                              }}
+                            >
+                              👤 Guest (Unknown Resident)
+                            </Button>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {orderStep.step === 'meal' && orderStep.selectedResident && (
+                  <div className="space-y-4">
+                    {(() => {
+                      const mealSuggestions = getSuggestedMeals(orderStep.selectedResident)
+                      
+                      if (mealSuggestions.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <div className="text-gray-300 mb-4">No meal suggestions for {getCurrentMealTime()}</div>
+                            <Button 
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              onClick={() => {
+                                // TODO: Handle record new order
+                                console.log('Record new order')
+                                handleCloseOrderForm()
+                              }}
+                            >
+                              🎤 Record New Order
+                            </Button>
+                          </div>
+                        )
+                      }
+
+                      const currentMeal = mealSuggestions[currentSuggestionIndex]
+                      
+                      return (
+                        <>
+                          {/* Back Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOrderStep({ step: 'resident' })}
+                            className="text-gray-400 hover:text-white mb-4"
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Back to resident selection
+                          </Button>
+
+                          {/* Main Meal Suggestion Display */}
+                          <div className="bg-gray-900/50 rounded-lg p-6 text-center">
+                            <div className="mb-4">
+                              <Utensils className="h-16 w-16 text-orange-400 mx-auto mb-3" />
+                              <h3 className="text-xl font-bold text-white mb-2">{currentMeal.dish}</h3>
+                              <div className="text-sm text-gray-400 mb-2">
+                                {orderStep.selectedResident.name}'s #{currentMeal.frequency}/10 favorite for {getCurrentMealTime()}
+                              </div>
+                              <div className="text-xs text-green-400">
+                                Perfect for {getCurrentMealTime()} time
+                              </div>
+                            </div>
+                            
+                            <Button
+                              onClick={() => handleSelectMeal(currentMeal.dish)}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+                              size="lg"
+                            >
+                              Order {currentMeal.dish}
+                            </Button>
+                          </div>
+
+                          {/* Navigation */}
+                          {mealSuggestions.length > 1 && (
+                            <div className="flex items-center justify-between">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentSuggestionIndex(Math.max(0, currentSuggestionIndex - 1))}
+                                disabled={currentSuggestionIndex === 0}
+                                className="border-gray-600 text-gray-300"
+                              >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Previous
+                              </Button>
+                              
+                              <div className="text-gray-400 text-sm">
+                                {currentSuggestionIndex + 1} of {mealSuggestions.length}
+                              </div>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentSuggestionIndex(Math.min(mealSuggestions.length - 1, currentSuggestionIndex + 1))}
+                                disabled={currentSuggestionIndex === mealSuggestions.length - 1}
+                                className="border-gray-600 text-gray-300"
+                              >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Record New Order Option */}
+                          <div className="pt-4 border-t border-gray-600">
+                            <Button 
+                              variant="outline"
+                              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
+                              onClick={() => {
+                                // TODO: Handle record new order
+                                console.log('Record new order for', orderStep.selectedResident.name)
+                                handleCloseOrderForm()
+                              }}
+                            >
+                              🎤 Record New Order
+                            </Button>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </Shell>
   )
 }

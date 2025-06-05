@@ -43,7 +43,7 @@ export default async function LandingPage() {
               <p className='text-xs text-blue-200/80'>
                 Email: guest@restaurant.plate
                 <br />
-                Password: guest123
+                Password: guest12345
               </p>
             </div>
           )}

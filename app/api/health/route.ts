@@ -43,9 +43,8 @@ async function checkDatabase(): Promise<HealthCheck> {
     // Test basic connectivity
     const { data, error } = await supabase
       .from('profiles')
-      .select('count')
+      .select('user_id')
       .limit(1)
-      .single()
     
     if (error) {throw error}
     
@@ -55,7 +54,7 @@ async function checkDatabase(): Promise<HealthCheck> {
       status: responseTime < 200 ? 'pass' : 'warn',
       message: `Database connected (${responseTime}ms)`,
       responseTime,
-      details: { recordCount: data?.count || 0 }
+      details: { recordCount: data?.length || 0 }
     }
   } catch (error) {
     return {

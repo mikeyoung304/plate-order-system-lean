@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic'
 
 const KDSLayout = dynamic(
   () =>
-    import('@/components/kds/kds-layout').then(m => ({ default: m.KDSLayout })),
+    import('@/components/kds').then(m => ({ default: m.KDSLayout })),
   {
     loading: () => (
       <PageLoadingState

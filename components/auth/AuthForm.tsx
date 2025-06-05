@@ -117,6 +117,13 @@ export function AuthForm() {
             placeholder='Enter your email address'
             value={state.email}
             onChange={e => actions.setEmail(e.target.value)}
+            onFocus={e => {
+              // Auto-fill demo credentials when clicking email field in development
+              if (process.env.NODE_ENV === 'development' && !state.email) {
+                actions.setEmail('guest@restaurant.plate')
+                actions.setPassword('guest12345')
+              }
+            }}
             disabled={state.isRateLimited || isLoading}
             maxLength={254}
             required

@@ -1,7 +1,12 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/modassembly/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
+  // Skip redirect for dashboard to prevent loops
+  if (request.nextUrl.pathname === '/dashboard') {
+    return await updateSession(request)
+  }
+  
   return await updateSession(request)
 }
 

@@ -13,6 +13,12 @@ import { useTableGroupedOrders } from '@/hooks/use-table-grouped-orders'
 
 interface KDSMainContentProps {
   className?: string
+  orders?: any[]
+  loading?: boolean
+  error?: string
+  viewMode?: string
+  filterBy?: string
+  sortBy?: string
 }
 
 // Loading skeleton component
@@ -198,11 +204,27 @@ function useFilteredAndSortedOrders() {
   }, [kdsState.orders, kdsState.filterBy, kdsState.sortBy])
 }
 
-export const KDSMainContent = memo<KDSMainContentProps>(({ className }) => {
+export const KDSMainContent = memo<KDSMainContentProps>(({ 
+  className, 
+  orders = [], 
+  loading = false, 
+  error = null, 
+  viewMode = 'table',
+  filterBy = 'all',
+  sortBy = 'time'
+}) => {
+  // Fall back to useKDSState if no props provided (for backwards compatibility)
   const kdsState = useKDSState()
-  const filteredAndSortedOrders = useFilteredAndSortedOrders()
+  const fallbackOrders = useFilteredAndSortedOrders()
   
-  if (kdsState.loading) {
+  // Use props if provided, otherwise fall back to hook
+  const actualOrders = orders.length > 0 ? orders : fallbackOrders
+  const actualLoading = loading || kdsState.loading
+  const actualError = error || kdsState.error
+  const actualViewMode = viewMode || kdsState.viewMode
+  const actualFilterBy = filterBy || kdsState.filterBy
+  
+  if (actualLoading) {
     return (
       <div className={cn("flex-1", className)}>
         <LoadingSkeleton />
@@ -210,18 +232,18 @@ export const KDSMainContent = memo<KDSMainContentProps>(({ className }) => {
     )
   }
   
-  if (kdsState.error) {
+  if (actualError) {
     return (
       <div className={cn("flex-1", className)}>
-        <ErrorDisplay error={kdsState.error} />
+        <ErrorDisplay error={actualError} />
       </div>
     )
   }
   
-  if (filteredAndSortedOrders.length === 0) {
+  if (actualOrders.length === 0) {
     return (
       <div className={cn("flex-1", className)}>
-        <EmptyState filterBy={kdsState.filterBy} />
+        <EmptyState filterBy={actualFilterBy} />
       </div>
     )
   }
@@ -231,12 +253,12 @@ export const KDSMainContent = memo<KDSMainContentProps>(({ className }) => {
       <ScrollArea className="h-full">
         <div className={cn(
           "p-4 grid gap-4",
-          getGridClasses(kdsState.viewMode, filteredAndSortedOrders.length)
+          getGridClasses(actualViewMode, actualOrders.length)
         )}>
-          {kdsState.viewMode === 'table' ? (
-            <TableGroupedView orders={filteredAndSortedOrders} />
+          {actualViewMode === 'table' ? (
+            <TableGroupedView orders={actualOrders} />
           ) : (
-            <IndividualOrderView orders={filteredAndSortedOrders} />
+            <IndividualOrderView orders={actualOrders} />
           )}
         </div>
       </ScrollArea>

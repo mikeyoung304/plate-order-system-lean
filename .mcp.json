@@ -2,10 +2,7 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
-      "env": {
-        "WORKSPACE_DIR": "/Users/mike/Plate-Restaurant-System-App"
-      }
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/mike/Plate-Restaurant-System-App"]
     },
     "github": {
       "command": "npx",
@@ -16,10 +13,7 @@
     },
     "postgres": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "DATABASE_URL": "postgresql://postgres.eiipozoogrrfudhjoqms:${SUPABASE_DB_PASSWORD}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
-      }
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres.eiipozoogrrfudhjoqms:${SUPABASE_DB_PASSWORD}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"]
     },
     "sequential-thinking": {
       "command": "npx",

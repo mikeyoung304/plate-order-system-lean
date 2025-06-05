@@ -100,12 +100,10 @@ export async function fetchStationOrders(
         `
         *,
         order:orders!inner (
-          *,
-          resident:profiles!resident_id (name),
-          server:profiles!server_id (name),
+          id, items, status, type, created_at, transcript,
           table:tables!table_id (label)
         ),
-        station:kds_stations!station_id (*)
+        station:kds_stations!station_id (id, name, type, color)
       `
       )
       .eq('station_id', sanitizedStationId)
@@ -153,12 +151,10 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
       `
       *,
       order:orders!inner (
-        *,
-        resident:profiles!resident_id (name),
-        server:profiles!server_id (name),
+        id, items, status, type, created_at, transcript,
         table:tables!table_id (label)
       ),
-      station:kds_stations!station_id (*)
+      station:kds_stations!station_id (id, name, type, color)
     `
     )
     .is('completed_at', null)

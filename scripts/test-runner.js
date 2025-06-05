@@ -441,7 +441,7 @@ Examples:
 }
 
 // Run the test suite
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const runner = new TestRunner()
   runner.run().catch((error) => {
     console.error('Test runner failed:', error)
@@ -449,4 +449,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = TestRunner
+export default TestRunner

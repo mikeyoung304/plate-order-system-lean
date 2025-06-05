@@ -180,6 +180,11 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
     })
   }, [toast])
   
+  // Handle station change
+  const handleStationChange = useCallback((station: StationType) => {
+    setSelectedStation(station)
+  }, [])
+  
   // Render station-specific view
   const renderStationView = useCallback(() => {
     const commonProps = {
@@ -204,10 +209,16 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
         return (
           <KDSMainContent 
             className="h-full"
+            orders={stationOrders}
+            loading={kdsState.loading}
+            error={kdsState.error}
+            viewMode={kdsState.viewMode}
+            filterBy={kdsState.filterBy}
+            sortBy={kdsState.sortBy}
           />
         )
     }
-  }, [selectedStation, stationOrders, handleOrderAction])
+  }, [selectedStation, stationOrders, handleOrderAction, kdsState.loading, kdsState.error, kdsState.viewMode, kdsState.filterBy, kdsState.sortBy])
   
   return (
     <div className={cn(
