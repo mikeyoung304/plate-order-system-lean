@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { redirect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth, useHasRole } from './auth-context'
 import type { AppRole } from './roles'
 
@@ -18,24 +18,30 @@ export function ProtectedRoute({
   redirectTo = '/',
   fallback,
 }: ProtectedRouteProps) {
+  const router = useRouter()
   const { user, isLoading } = useAuth()
-  // Always call hook to avoid conditional hook usage
-  const hasRoleCheck = useHasRole(roles || ('admin' as AppRole))
-  const hasRequiredRole = roles ? hasRoleCheck : true
+  // Always call hook to avoid conditional hook usage - use a default role if none specified
+  const roleToCheck = roles || ('server' as AppRole) // Default to server instead of admin
+  const hasRoleCheck = useHasRole(roleToCheck)
+  const hasRequiredRole = roles ? hasRoleCheck : true // If no roles specified, allow any authenticated user
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated - FIXED: Use router.push for client-side navigation
   useEffect(() => {
     if (!isLoading && !user) {
-      redirect(redirectTo)
+      console.log('[ProtectedRoute] No user found, redirecting to:', redirectTo)
+      router.push(redirectTo)
     }
-  }, [isLoading, user, redirectTo])
+  }, [isLoading, user, redirectTo, router])
 
   // Redirect if authenticated but doesn't have required role
   useEffect(() => {
     if (!isLoading && user && roles && !hasRequiredRole) {
-      redirect('/dashboard')
+      console.log(
+        '[ProtectedRoute] User lacks required role, redirecting to dashboard'
+      )
+      router.push('/dashboard')
     }
-  }, [isLoading, user, roles, hasRequiredRole])
+  }, [isLoading, user, roles, hasRequiredRole, router])
 
   // Show loading state
   if (isLoading) {
