@@ -45,11 +45,8 @@ export async function getClientUserRole(): Promise<AppRole | null> {
 export async function hasClientRole(
   roles: AppRole | AppRole[]
 ): Promise<boolean> {
-  // BETA TESTER OVERRIDE: All users have all permissions during beta
-  if (process.env.NEXT_PUBLIC_BETA_MODE === 'true') {
-    return true
-  }
-
+  // SECURITY FIX: Removed beta mode bypass to restore proper role checking
+  
   const userRole = await getClientUserRole()
   if (!userRole) {
     return false

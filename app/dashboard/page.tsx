@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Shell } from '@/components/shell'
 import {
-  ProtectedRoute,
+  useAuth,
   useIsRole,
   useRole,
 } from '@/lib/modassembly/supabase/auth'
@@ -325,9 +325,72 @@ function DashboardContent() {
 }
 
 export default function Dashboard() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  )
+  const { user, profile, isLoading } = useAuth()
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+
+  // Debug logging with more details
+  console.log('[Dashboard] Auth state:', {
+    isLoading,
+    hasUser: !!user,
+    hasProfile: !!profile,
+    role: profile?.role,
+    userId: user?.id,
+    timestamp: new Date().toISOString()
+  })
+
+  // Safety timeout for infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[Dashboard] Loading timeout reached, forcing render')
+        setLoadingTimeout(true)
+      }
+    }, 5000) // 5 second timeout (reduced from 10)
+
+    return () => clearTimeout(timer)
+  }, [isLoading])
+
+  // If loading for too long OR we have user but still loading, show content anyway
+  if (isLoading && !loadingTimeout && !user) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <span className="text-white text-lg">Loading dashboard...</span>
+            <p className="text-gray-400 text-sm mt-2">
+              User: {user ? '✓' : '✗'} | Profile: {profile ? '✓' : '✗'}
+            </p>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
+  // If we have a user, show dashboard (with or without profile)
+  if (user) {
+    console.log('[Dashboard] Rendering dashboard with user:', { 
+      hasUser: true, 
+      hasProfile: !!profile,
+      role: profile?.role 
+    })
+    return <DashboardContent />
+  }
+
+  // No user and not loading - show login required
+  if (!user && !isLoading) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+            <p className="text-gray-400">Please log in to access the dashboard.</p>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
+  // Default fallback
+  return <DashboardContent />
 }

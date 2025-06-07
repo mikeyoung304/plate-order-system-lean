@@ -30,45 +30,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (
     userId: string,
-    supabaseClient: ReturnType<typeof createClient>
+    supabaseClient: ReturnType<typeof createClient>,
+    retryCount = 0
   ): Promise<UserProfile | null> => {
+    const maxRetries = 3
+    const backoffDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+
     if (process.env.NODE_ENV === 'development') {
-      console.log('[AuthContext] Fetching profile for user ID:', userId)
+      console.log(`[AuthContext] Fetching profile for user ID: ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`)
     }
 
-    const { data: profile, error } = await supabaseClient
-      .from('profiles')
-      .select('user_id, role, name')
-      .eq('user_id', userId)
-      .single()
+    try {
+      const { data: profile, error } = await supabaseClient
+        .from('profiles')
+        .select('user_id, role, name')
+        .eq('user_id', userId)
+        .single()
 
-    if (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('[AuthContext] Error fetching profile by user_id:', error)
-        console.error('[AuthContext] No profile found for user:', userId)
+        console.log(`[AuthContext] Profile query result:`, {
+          userId,
+          hasProfile: !!profile,
+          profileData: profile,
+          error: error?.message,
+          errorCode: error?.code
+        })
       }
+
+      if (error) {
+        // Check if it's a network error and we should retry
+        if (retryCount < maxRetries && (
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('timeout') ||
+          error.code === 'PGRST301' // Connection error
+        )) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[AuthContext] Network error fetching profile, retrying in ${backoffDelay}ms:`, error.message)
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, backoffDelay))
+          return fetchUserProfile(userId, supabaseClient, retryCount + 1)
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[AuthContext] Error fetching profile by user_id:', error)
+          console.error('[AuthContext] No profile found for user:', userId)
+        }
+        return null
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[AuthContext] Found profile by user_id:', profile)
+      }
+      
+      return profile
+        ? {
+            user_id: profile.user_id || userId,
+            role: profile.role,
+            name: profile.name,
+          }
+        : null
+    } catch (networkError) {
+      // Handle unexpected network errors
+      if (retryCount < maxRetries) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[AuthContext] Unexpected error fetching profile, retrying in ${backoffDelay}ms:`, networkError)
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, backoffDelay))
+        return fetchUserProfile(userId, supabaseClient, retryCount + 1)
+      }
+      
+      console.error('[AuthContext] Max retries exceeded for profile fetch:', networkError)
       return null
     }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AuthContext] Found profile by user_id:', profile)
-    }
-    return profile
-      ? {
-          user_id: profile.user_id || userId,
-          role: profile.role,
-          name: profile.name,
-        }
-      : null
   }
 
-  const refreshAuth = async () => {
+  const refreshAuth = async (retryCount = 0) => {
+    const maxRetries = 2
+    const backoffDelay = Math.pow(2, retryCount) * 500 // Shorter backoff for auth refresh
+    
     try {
       setIsLoading(true)
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[AuthContext] Refreshing auth (attempt ${retryCount + 1}/${maxRetries + 1})`)
+      }
+      
       const supabase = createClient()
       const {
         data: { session },
+        error: sessionError
       } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error(`Session fetch error: ${sessionError.message}`)
+      }
 
       // Batch state updates to prevent multiple re-renders
       if (session?.user) {
@@ -79,6 +137,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user)
           setProfile(userProfile)
         })
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AuthContext] Auth refresh successful - user authenticated')
+        }
       } else {
         // Clear all state at once
         React.startTransition(() => {
@@ -86,9 +148,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
           setProfile(null)
         })
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AuthContext] Auth refresh successful - no active session')
+        }
       }
     } catch (error) {
-      console.error('Error refreshing auth:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Check if it's a retryable error
+      if (retryCount < maxRetries && (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('Connection')
+      )) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[AuthContext] Network error refreshing auth, retrying in ${backoffDelay}ms:`, errorMessage)
+        }
+        
+        setTimeout(() => {
+          refreshAuth(retryCount + 1)
+        }, backoffDelay)
+        return
+      }
+      
+      console.error('[AuthContext] Error refreshing auth:', error)
+      
       // Clear all state at once on error
       React.startTransition(() => {
         setSession(null)
@@ -139,6 +225,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(session.user)
               setProfile(userProfile)
             })
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[AuthContext] Auth initialization complete - user authenticated:', {
+                userId: session.user.id,
+                hasProfile: !!userProfile,
+                profileRole: userProfile?.role
+              })
+            }
           }
         } else {
           if (mounted) {
@@ -147,10 +241,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(null)
               setProfile(null)
             })
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[AuthContext] Auth initialization complete - no active session')
+            }
           }
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('[AuthContext] Error initializing auth:', {
+          error: errorMessage,
+          timestamp: new Date().toISOString()
+        })
         if (mounted) {
           React.startTransition(() => {
             setSession(null)
@@ -192,6 +294,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(session.user)
               setProfile(userProfile)
             })
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[AuthContext] Auth state change handled - user authenticated:', {
+                userId: session.user.id,
+                hasProfile: !!userProfile,
+                profileRole: userProfile?.role,
+                event
+              })
+            }
           }
         } else {
           if (mounted) {
@@ -200,10 +311,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(null)
               setProfile(null)
             })
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[AuthContext] Auth state change handled - user signed out, event:', event)
+            }
           }
         }
       } catch (error) {
-        console.error('Error handling auth state change:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('[AuthContext] Error handling auth state change:', {
+          error: errorMessage,
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id
+        })
+        
         if (mounted) {
           React.startTransition(() => {
             setSession(null)

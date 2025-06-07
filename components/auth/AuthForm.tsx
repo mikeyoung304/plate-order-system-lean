@@ -191,6 +191,27 @@ export function AuthForm() {
       </form>
 
       <div className='text-center space-y-4'>
+        {/* Quick Guest Login - Development Only */}
+        {process.env.NODE_ENV === 'development' && state.mode === 'signin' && (
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => {
+              actions.setEmail('guest@restaurant.plate')
+              actions.setPassword('guest12345')
+              // Auto-submit after brief delay to show the values
+              setTimeout(() => {
+                const form = document.querySelector('form') as HTMLFormElement
+                form?.requestSubmit()
+              }, 100)
+            }}
+            className='w-full'
+            disabled={isLoading}
+          >
+            🚀 Quick Demo Login
+          </Button>
+        )}
+
         <Button
           variant='outline'
           onClick={() =>

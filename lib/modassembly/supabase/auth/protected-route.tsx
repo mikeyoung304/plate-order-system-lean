@@ -19,11 +19,23 @@ export function ProtectedRoute({
   fallback,
 }: ProtectedRouteProps) {
   const router = useRouter()
-  const { user, isLoading } = useAuth()
+  const { user, profile, isLoading } = useAuth()
   // Always call hook to avoid conditional hook usage - use a default role if none specified
   const roleToCheck = roles || ('server' as AppRole) // Default to server instead of admin
   const hasRoleCheck = useHasRole(roleToCheck)
   const hasRequiredRole = roles ? hasRoleCheck : true // If no roles specified, allow any authenticated user
+
+  // Enhanced debugging
+  useEffect(() => {
+    console.log('[ProtectedRoute] Mount/Update:', {
+      isLoading,
+      user: !!user,
+      profile: !!profile,
+      role: profile?.role,
+      requiredRoles: roles,
+      hasRequiredRole
+    })
+  }, [isLoading, user, profile, roles, hasRequiredRole])
 
   // Redirect if not authenticated - FIXED: Use router.push for client-side navigation
   useEffect(() => {
@@ -43,8 +55,13 @@ export function ProtectedRoute({
     }
   }, [isLoading, user, roles, hasRequiredRole, router])
 
-  // Show loading state
-  if (isLoading) {
+  // CRITICAL FIX: Wait for profile when user exists - prevents race condition
+  if (isLoading || (user && !profile)) {
+    console.log('[ProtectedRoute] Waiting for profile load...', {
+      isLoading,
+      hasUser: !!user,
+      hasProfile: !!profile
+    })
     return (
       fallback || (
         <div className='flex items-center justify-center min-h-screen'>
@@ -54,13 +71,13 @@ export function ProtectedRoute({
     )
   }
 
-  // Don't render if not authenticated
-  if (!user) {
+  // Don't render if not authenticated AND loading is complete
+  if (!user && !isLoading) {
     return null
   }
 
-  // Don't render if doesn't have required role
-  if (roles && !hasRequiredRole) {
+  // Don't render if doesn't have required role AND loading is complete
+  if (roles && !hasRequiredRole && !isLoading) {
     return null
   }
 
