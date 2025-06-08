@@ -1,7 +1,6 @@
 'use client'
 
-import type React from 'react'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 import { DemoModeIndicator } from '@/components/demo-mode-indicator'
 import { useAuth } from '@/lib/modassembly/supabase/auth'

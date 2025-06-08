@@ -328,15 +328,10 @@ export default function Dashboard() {
   const { user, profile, isLoading } = useAuth()
   const [loadingTimeout, setLoadingTimeout] = useState(false)
 
-  // Debug logging with more details
-  console.log('[Dashboard] Auth state:', {
-    isLoading,
-    hasUser: !!user,
-    hasProfile: !!profile,
-    role: profile?.role,
-    userId: user?.id,
-    timestamp: new Date().toISOString()
-  })
+  // Only log if there's an issue
+  if (isLoading && process.env.NODE_ENV === 'development') {
+    console.log('[Dashboard] Still loading auth...', { hasUser: !!user, hasProfile: !!profile })
+  }
 
   // Safety timeout for infinite loading
   useEffect(() => {

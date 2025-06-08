@@ -70,10 +70,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id, supabase)
-        setSession(session)
-        setUser(session.user)
-        setProfile(userProfile)
+        // Inline profile fetching to avoid dependency loop
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('user_id, role, name')
+            .eq('user_id', session.user.id)
+            .single()
+
+          const userProfile = error || !profile ? null : {
+            user_id: profile.user_id || session.user.id,
+            role: profile.role,
+            name: profile.name,
+          }
+
+          setSession(session)
+          setUser(session.user)
+          setProfile(userProfile)
+        } catch (profileError) {
+          console.error('Profile fetch error:', profileError)
+          setSession(session)
+          setUser(session.user)
+          setProfile(null)
+        }
       } else {
         setSession(null)
         setUser(null)
@@ -87,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [fetchUserProfile])
+  }, [])
 
   const signOut = useCallback(async () => {
     const supabase = createClient()
@@ -117,12 +136,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) {return}
 
         if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id, supabase)
-          
-          if (mounted) {
-            setSession(session)
-            setUser(session.user)
-            setProfile(userProfile)
+          // Inline profile fetching to avoid dependency loop
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('user_id, role, name')
+              .eq('user_id', session.user.id)
+              .single()
+
+            const userProfile = error || !profile ? null : {
+              user_id: profile.user_id || session.user.id,
+              role: profile.role,
+              name: profile.name,
+            }
+
+            if (mounted) {
+              setSession(session)
+              setUser(session.user)
+              setProfile(userProfile)
+            }
+          } catch (profileError) {
+            console.error('Profile fetch error in init:', profileError)
+            if (mounted) {
+              setSession(session)
+              setUser(session.user)
+              setProfile(null)
+            }
           }
         } else {
           if (mounted) {
@@ -154,12 +193,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(true)
         
         if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id, supabase)
-          
-          if (mounted) {
-            setSession(session)
-            setUser(session.user)
-            setProfile(userProfile)
+          // Inline profile fetching to avoid dependency loop
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('user_id, role, name')
+              .eq('user_id', session.user.id)
+              .single()
+
+            const userProfile = error || !profile ? null : {
+              user_id: profile.user_id || session.user.id,
+              role: profile.role,
+              name: profile.name,
+            }
+
+            if (mounted) {
+              setSession(session)
+              setUser(session.user)
+              setProfile(userProfile)
+            }
+          } catch (profileError) {
+            console.error('Profile fetch error in auth change:', profileError)
+            if (mounted) {
+              setSession(session)
+              setUser(session.user)
+              setProfile(null)
+            }
           }
         } else {
           if (mounted) {
@@ -187,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchUserProfile])
+  }, []) // Remove fetchUserProfile dependency to prevent infinite loops
 
   const value: AuthContextType = {
     user,

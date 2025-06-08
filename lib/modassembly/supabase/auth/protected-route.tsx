@@ -22,8 +22,9 @@ export function ProtectedRoute({
   const { user, profile, isLoading } = useAuth()
   const [hasRedirected, setHasRedirected] = useState(false)
   
-  // Only call useHasRole when we have roles to check
-  const hasRequiredRole = roles ? useHasRole(roles) : true
+  // Always call useHasRole to avoid conditional hook usage
+  const hasRequiredRole = useHasRole(roles || 'server')
+  const finalHasRole = roles ? hasRequiredRole : true
 
   // Handle redirects with state to prevent loops
   useEffect(() => {
@@ -37,12 +38,12 @@ export function ProtectedRoute({
     }
 
     // Redirect if authenticated but doesn't have required role
-    if (roles && !hasRequiredRole && profile) {
+    if (roles && !finalHasRole && profile) {
       setHasRedirected(true)
       router.push('/dashboard')
       return
     }
-  }, [isLoading, user, profile, roles, hasRequiredRole, redirectTo, router, hasRedirected])
+  }, [isLoading, user, profile, roles, finalHasRole, redirectTo, router, hasRedirected])
 
   // Show loading state
   if (isLoading || (user && !profile) || hasRedirected) {
@@ -64,7 +65,7 @@ export function ProtectedRoute({
   }
 
   // Don't render if doesn't have required role
-  if (roles && !hasRequiredRole) {
+  if (roles && !finalHasRole) {
     return null
   }
 
