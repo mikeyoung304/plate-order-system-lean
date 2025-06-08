@@ -1,0 +1,147 @@
+'use client'
+
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth, useHasRole } from './auth-context'
+import type { AppRole } from './roles'
+
+interface ProtectedRouteProps {
+  children: React.ReactNode
+  roles?: AppRole | AppRole[]
+  redirectTo?: string
+  fallback?: React.ReactNode
+}
+
+export function ProtectedRoute({
+  children,
+  roles,
+  redirectTo = '/',
+  fallback,
+}: ProtectedRouteProps) {
+  const router = useRouter()
+  const { user, isLoading, profile } = useAuth()
+  // Always call hook to avoid conditional hook usage - use a default role if none specified
+  const roleToCheck = roles || ('server' as AppRole) // Default to server instead of admin
+  const hasRoleCheck = useHasRole(roleToCheck)
+  const hasRequiredRole = roles ? hasRoleCheck : true // If no roles specified, allow any authenticated user
+
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    console.log('[ProtectedRoute] Auth check:', {
+      isLoading,
+      hasUser: !!user,
+      currentPath: window.location.pathname,
+      redirectTo
+    })
+    
+    if (!isLoading && !user && window.location.pathname !== redirectTo) {
+      console.log('[ProtectedRoute] Redirecting unauthenticated user to:', redirectTo)
+      router.replace(redirectTo)
+    }
+  }, [isLoading, user, redirectTo, router])
+
+  // Redirect if authenticated but doesn't have required role
+  useEffect(() => {
+    if (!isLoading && user && roles && !hasRequiredRole && window.location.pathname !== '/dashboard') {
+      console.log('[ProtectedRoute] Redirecting user with wrong role to dashboard')
+      router.replace('/dashboard')
+    }
+  }, [isLoading, user, roles, hasRequiredRole, router])
+
+  // REMOVED: Timeout protection that was causing infinite reloads
+  // The timeout was preventing hydration by constantly refreshing the page
+  // TODO: Add back a safer timeout mechanism once hydration is working
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      fallback || (
+        <div className='flex items-center justify-center min-h-screen bg-black'>
+          <div className='flex flex-col items-center'>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-white'></div>
+            <div className='ml-4 text-white mt-4'>Authenticating...</div>
+            <div className='text-gray-400 text-sm mt-2'>Please wait</div>
+          </div>
+        </div>
+      )
+    )
+  }
+  
+  // EMERGENCY DEBUG: Show auth state info in development
+  if (process.env.NODE_ENV === 'development' && !user && !isLoading) {
+    console.error('[ProtectedRoute] Auth failed:', {
+      isLoading,
+      hasUser: !!user,
+      hasProfile: !!profile,
+      roles,
+      hasRequiredRole
+    })
+    
+    // Show helpful error message instead of blank page
+    return (
+      <div className='flex items-center justify-center min-h-screen bg-black text-white'>
+        <div className='text-center max-w-md p-8'>
+          <h1 className='text-2xl font-bold mb-4'>Authentication Issue</h1>
+          <p className='mb-4 text-gray-300'>The authentication system is not working properly.</p>
+          <div className='space-y-2'>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className='block w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded'
+            >
+              Return to Login
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className='block w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded'
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null
+  }
+
+  // Don't render if doesn't have required role
+  if (roles && !hasRequiredRole) {
+    return null
+  }
+
+  return <>{children}</>
+}
+
+// Server-side version for app router
+interface ServerProtectedRouteProps {
+  children: React.ReactNode
+  roles?: AppRole | AppRole[]
+}
+
+export async function ServerProtectedRoute({
+  children,
+  roles,
+}: ServerProtectedRouteProps) {
+  const { redirect } = await import('next/navigation')
+  const { getUserWithProfile } = await import('./session')
+  const { hasRole } = await import('./roles')
+
+  const userWithProfile = await getUserWithProfile()
+
+  if (!userWithProfile) {
+    redirect('/')
+  }
+
+  if (roles) {
+    const hasRequiredRole = await hasRole(roles)
+    if (!hasRequiredRole) {
+      redirect('/dashboard')
+    }
+  }
+
+  return <>{children}</>
+}

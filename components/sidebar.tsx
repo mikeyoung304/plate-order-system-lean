@@ -35,6 +35,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { signOut } from '@/app/auth/actions'
 import { useAuth } from '@/lib/modassembly/supabase/auth'
+import { DEMO_CONFIG } from '@/lib/demo'
 
 // Animation classes are now handled via CSS for better performance
 
@@ -61,6 +62,8 @@ export function Sidebar() {
     name: profile?.name || null,
     role: profile?.role || null,
   }
+  
+  const isDemoMode = user?.email === DEMO_CONFIG.EMAIL
 
   const handleSignOut = async () => {
     try {
@@ -158,9 +161,16 @@ export function Sidebar() {
             <AvatarFallback>{userData.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <p className='text-sm font-display font-semibold text-white'>
-              {userData.name || 'User'}
-            </p>
+            <div className='flex items-center gap-2'>
+              <p className='text-sm font-display font-semibold text-white'>
+                {userData.name || 'User'}
+              </p>
+              {isDemoMode && (
+                <Badge variant='outline' className='text-xs bg-purple-600/20 text-purple-300 border-purple-500/30'>
+                  DEMO
+                </Badge>
+              )}
+            </div>
             <p className='text-xs text-apple-gray-5 font-sans capitalize'>
               {userData.role || 'Loading...'}
             </p>
@@ -188,9 +198,16 @@ export function Sidebar() {
           </Avatar>
           {!collapsed && (
             <div className='min-w-0'>
-              <p className='text-sm font-medium sf-pro-text truncate'>
-                {userData.name || 'User'}
-              </p>
+              <div className='flex items-center gap-2'>
+                <p className='text-sm font-medium sf-pro-text truncate'>
+                  {userData.name || 'User'}
+                </p>
+                {isDemoMode && (
+                  <Badge variant='outline' className='text-xs bg-purple-600/20 text-purple-300 border-purple-500/30'>
+                    DEMO
+                  </Badge>
+                )}
+              </div>
               <p className='text-xs text-gray-400 sf-pro-text capitalize'>
                 {userData.role || 'Loading...'}
               </p>

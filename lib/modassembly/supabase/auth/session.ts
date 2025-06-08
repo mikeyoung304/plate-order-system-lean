@@ -4,11 +4,13 @@ import { createClient } from '@/lib/modassembly/supabase/server'
 import { createClient as createBrowserClient } from '@/lib/modassembly/supabase/client'
 import type { Session, User } from '@supabase/supabase-js'
 import type { AppRole } from './roles'
+import { isDemoUser } from '@/lib/demo'
 
 export type ServerUserProfile = {
   user_id: string
   role: AppRole
   name: string
+  is_demo?: boolean
 }
 
 export type UserWithProfile = {
@@ -57,6 +59,21 @@ export async function getUserWithProfile(): Promise<UserWithProfile | null> {
     .eq('user_id', session.user.id)
     .single()
 
+  // For demo users, enhance profile with demo flag
+  if (session.user.email && isDemoUser(session.user.email) && profile) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[getUserWithProfile] Enhancing demo user profile')
+    }
+    return {
+      user: session.user,
+      profile: {
+        ...profile,
+        is_demo: true,
+        // Keep actual role for display but auth bypasses will handle access
+      }
+    }
+  }
+
   return {
     user: session.user,
     profile: profile || null,
@@ -103,6 +120,20 @@ export async function getClientUserWithProfile(): Promise<UserWithProfile | null
     .select('user_id, role, name')
     .eq('user_id', session.user.id)
     .single()
+
+  // For demo users, enhance profile with demo flag
+  if (session.user.email && isDemoUser(session.user.email) && profile) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[getClientUserWithProfile] Enhancing demo user profile')
+    }
+    return {
+      user: session.user,
+      profile: {
+        ...profile,
+        is_demo: true,
+      }
+    }
+  }
 
   return {
     user: session.user,

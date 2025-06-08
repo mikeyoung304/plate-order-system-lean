@@ -21,8 +21,8 @@ async function cleanGuestData(userId: string) {
       .delete()
       .eq('server_id', userId)
       .lt('created_at', twoHoursAgo)
-  } catch (error) {
-    // console.log('Guest cleanup failed:', error)
+  } catch (_error) {
+    // Guest cleanup failed, but this is not critical
   }
 }
 
@@ -52,16 +52,11 @@ export async function signIn(
     await cleanGuestData(authData.user.id)
   }
 
-  // Vercel production fix - ensure session is ready before redirect
-  if (process.env.NODE_ENV === 'production') {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // Double-check session exists
-    const {
-      data: { session: finalSession },
-    } = await supabase.auth.getSession()
-    if (!finalSession) {
-      return { error: 'Session not ready. Please try again.' }
-    }
+  // Force a session refresh to ensure cookies are properly written
+  const { error: refreshError } = await supabase.auth.refreshSession()
+  
+  if (refreshError) {
+    return { error: 'Failed to establish session. Please try again.' }
   }
 
   revalidatePath('/', 'layout')

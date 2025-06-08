@@ -156,7 +156,7 @@ export default function SimpleKitchenPage() {
             schema: 'public',
             table: 'kds_order_routing'
           },
-          payload => {
+          _payload => {
             // Real-time update received
             if (mounted) {
               loadKitchenOrders()
@@ -170,7 +170,7 @@ export default function SimpleKitchenPage() {
             schema: 'public',
             table: 'orders'
           },
-          payload => {
+          _payload => {
             // Orders table update received
             if (mounted) {
               loadKitchenOrders()

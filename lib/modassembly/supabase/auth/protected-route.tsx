@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, useHasRole } from './auth-context'
 import type { AppRole } from './roles'
@@ -20,64 +20,51 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter()
   const { user, profile, isLoading } = useAuth()
-  // Always call hook to avoid conditional hook usage - use a default role if none specified
-  const roleToCheck = roles || ('server' as AppRole) // Default to server instead of admin
-  const hasRoleCheck = useHasRole(roleToCheck)
-  const hasRequiredRole = roles ? hasRoleCheck : true // If no roles specified, allow any authenticated user
+  const [hasRedirected, setHasRedirected] = useState(false)
+  
+  // Only call useHasRole when we have roles to check
+  const hasRequiredRole = roles ? useHasRole(roles) : true
 
-  // Enhanced debugging
+  // Handle redirects with state to prevent loops
   useEffect(() => {
-    console.log('[ProtectedRoute] Mount/Update:', {
-      isLoading,
-      user: !!user,
-      profile: !!profile,
-      role: profile?.role,
-      requiredRoles: roles,
-      hasRequiredRole
-    })
-  }, [isLoading, user, profile, roles, hasRequiredRole])
+    if (hasRedirected || isLoading) {return}
 
-  // Redirect if not authenticated - FIXED: Use router.push for client-side navigation
-  useEffect(() => {
-    if (!isLoading && !user) {
-      console.log('[ProtectedRoute] No user found, redirecting to:', redirectTo)
+    // Redirect if not authenticated
+    if (!user) {
+      setHasRedirected(true)
       router.push(redirectTo)
+      return
     }
-  }, [isLoading, user, redirectTo, router])
 
-  // Redirect if authenticated but doesn't have required role
-  useEffect(() => {
-    if (!isLoading && user && roles && !hasRequiredRole) {
-      console.log(
-        '[ProtectedRoute] User lacks required role, redirecting to dashboard'
-      )
+    // Redirect if authenticated but doesn't have required role
+    if (roles && !hasRequiredRole && profile) {
+      setHasRedirected(true)
       router.push('/dashboard')
+      return
     }
-  }, [isLoading, user, roles, hasRequiredRole, router])
+  }, [isLoading, user, profile, roles, hasRequiredRole, redirectTo, router, hasRedirected])
 
-  // CRITICAL FIX: Wait for profile when user exists - prevents race condition
-  if (isLoading || (user && !profile)) {
-    console.log('[ProtectedRoute] Waiting for profile load...', {
-      isLoading,
-      hasUser: !!user,
-      hasProfile: !!profile
-    })
+  // Show loading state
+  if (isLoading || (user && !profile) || hasRedirected) {
     return (
       fallback || (
         <div className='flex items-center justify-center min-h-screen'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
+          <div className='text-center'>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4'></div>
+            <p className='text-gray-600'>Loading...</p>
+          </div>
         </div>
       )
     )
   }
 
-  // Don't render if not authenticated AND loading is complete
-  if (!user && !isLoading) {
+  // Don't render if not authenticated
+  if (!user) {
     return null
   }
 
-  // Don't render if doesn't have required role AND loading is complete
-  if (roles && !hasRequiredRole && !isLoading) {
+  // Don't render if doesn't have required role
+  if (roles && !hasRequiredRole) {
     return null
   }
 

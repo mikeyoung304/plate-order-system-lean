@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import { AuthForm } from '@/components/auth/AuthForm'
 import { createClient } from '@/lib/modassembly/supabase/server'
+import { DEMO_CONFIG } from '@/lib/demo'
 
 export default async function LandingPage() {
   const supabase = await createClient()
@@ -34,16 +35,15 @@ export default async function LandingPage() {
             Streamlined Restaurant Systems
           </p>
 
-          {/* Demo Login Helper - Only show in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className='text-center mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl'>
-              <h3 className='text-sm font-medium text-blue-300 mb-2'>
-                Demo Account (Development Only)
+          {/* Demo Login Helper - Show when demo enabled */}
+          {DEMO_CONFIG.ENABLED && (
+            <div className='text-center mt-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl'>
+              <h3 className='text-sm font-medium text-purple-300 mb-2'>
+                🎮 Demo Account Available
               </h3>
-              <p className='text-xs text-blue-200/80'>
-                Email: guest@restaurant.plate
-                <br />
-                Password: guest12345
+              <p className='text-xs text-purple-200/80'>
+                Click the "Continue as Guest" button below<br />
+                or use: {DEMO_CONFIG.EMAIL}
               </p>
             </div>
           )}

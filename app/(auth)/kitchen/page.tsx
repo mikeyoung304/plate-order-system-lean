@@ -209,7 +209,7 @@ export default function KitchenPage() {
             schema: 'public',
             table: 'kds_order_routing'
           },
-          payload => {
+          _payload => {
             // Real-time KDS update received
             if (mounted) {
               loadKitchenOrders()
@@ -223,7 +223,7 @@ export default function KitchenPage() {
             schema: 'public',
             table: 'orders'
           },
-          payload => {
+          _payload => {
             // Orders table update received
             if (mounted) {
               loadKitchenOrders()

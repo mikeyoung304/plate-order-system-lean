@@ -49,6 +49,17 @@ interface OrderStep {
   selectedResident?: Resident
 }
 
+// Helper function to safely render order items
+const getItemDisplayName = (item: any): string => {
+  if (typeof item === 'string') {
+    return item;
+  }
+  if (item && typeof item === 'object') {
+    return item.name || item.title || `${item.category || ''} item`.trim() || 'Unknown item';
+  }
+  return String(item || 'Unknown item');
+};
+
 export default function SimpleServerPage() {
   const { profile, isLoading: authLoading } = useAuth()
   const [tables, setTables] = useState<Table[]>([])
@@ -276,7 +287,7 @@ export default function SimpleServerPage() {
     setCurrentSuggestionIndex(0)
   }
 
-  const handleSelectMeal = async (meal: string) => {
+  const handleSelectMeal = async (_meal: string) => {
     if (!orderFormData || !orderStep.selectedResident) {return}
     
     try {
@@ -309,7 +320,7 @@ export default function SimpleServerPage() {
             schema: 'public',
             table: 'orders'
           },
-          payload => {
+          _payload => {
             // Orders updated via real-time
             if (mounted) {
               loadTables()
@@ -582,7 +593,7 @@ export default function SimpleServerPage() {
                           <div className="space-y-2">
                             {order.items.map((item, index) => (
                               <div key={index} className="bg-gray-900/50 rounded px-3 py-2">
-                                <span className="text-sm text-white">{item}</span>
+                                <span className="text-sm text-white">{getItemDisplayName(item)}</span>
                               </div>
                             ))}
                           </div>

@@ -148,7 +148,7 @@ export default function SimpleServerPage() {
             schema: 'public',
             table: 'orders'
           },
-          payload => {
+          _payload => {
             // Orders updated via real-time
             if (mounted) {
               loadTables()
