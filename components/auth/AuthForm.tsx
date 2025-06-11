@@ -13,19 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { signIn, signUp } from '@/app/auth/actions'
+import { signIn, signUp } from '@/lib/modassembly/supabase/auth/actions'
 import { useAuthFormState } from '@/lib/hooks/use-auth-form-state'
-import { getDemoCredentials, isDemoEnabled } from '@/lib/demo'
 
 export function AuthForm() {
   const { state, actions } = useAuthFormState()
   const _router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
 
   // Initialize with the server actions
   const [signInState, signInAction] = useActionState(signIn, null)
@@ -122,14 +116,6 @@ export function AuthForm() {
             placeholder='Enter your email address'
             value={state.email}
             onChange={e => actions.setEmail(e.target.value)}
-            onFocus={() => {
-              // Auto-fill demo credentials when clicking email field (demo period)
-              if (isClient && !state.email && isDemoEnabled()) {
-                const demoCredentials = getDemoCredentials()
-                actions.setEmail(demoCredentials.email)
-                actions.setPassword(demoCredentials.password)
-              }
-            }}
             disabled={state.isRateLimited || isLoading}
             maxLength={254}
             required
@@ -197,43 +183,6 @@ export function AuthForm() {
       </form>
 
       <div className='text-center space-y-4'>
-        {/* Guest Demo Login - Always available during demo period */}
-        {state.mode === 'signin' && isClient && isDemoEnabled() && (
-          <>
-            <div className='relative'>
-              <div className='absolute inset-0 flex items-center'>
-                <span className='w-full border-t border-white/10' />
-              </div>
-              <div className='relative flex justify-center text-xs uppercase'>
-                <span className='bg-black/20 px-2 text-gray-400'>Or</span>
-              </div>
-            </div>
-            
-            <Button
-              type='button'
-              variant='secondary'
-              onClick={() => {
-                actions.setEmail('guest@restaurant.plate')
-                actions.setPassword('guest12345')
-                // Auto-submit after brief delay to show the values
-                setTimeout(() => {
-                  const form = document.querySelector('form') as HTMLFormElement
-                  form?.requestSubmit()
-                }, 100)
-              }}
-              className='w-full bg-purple-600/20 hover:bg-purple-600/30 border-purple-500/30 text-purple-200'
-              disabled={isLoading}
-            >
-              <span className='mr-2'>🎮</span>
-              Continue as Guest (Demo)
-            </Button>
-            
-            <p className='text-center text-sm text-gray-400 mt-2'>
-              Demo account for testing all features
-            </p>
-          </>
-        )}
-
         <Button
           variant='outline'
           onClick={() =>

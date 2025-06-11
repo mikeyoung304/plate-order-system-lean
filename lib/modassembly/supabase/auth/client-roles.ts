@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { AppRole } from './roles'
-import { isDemoUser } from '@/lib/demo'
+
 
 /**
  * Gets the current user's role from their profile (client-side)
@@ -46,24 +46,6 @@ export async function getClientUserRole(): Promise<AppRole | null> {
 export async function hasClientRole(
   roles: AppRole | AppRole[]
 ): Promise<boolean> {
-  // Check for demo user first
-  const supabase = createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  
-  if (session?.user?.email && isDemoUser(session.user.email)) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[hasClientRole] Demo user detected - granting access:', {
-        email: session.user.email,
-        requiredRoles: roles,
-        grantedAccess: true
-      })
-    }
-    return true
-  }
-  
-  // Normal role checking for non-demo users
   const userRole = await getClientUserRole()
   if (!userRole) {
     return false

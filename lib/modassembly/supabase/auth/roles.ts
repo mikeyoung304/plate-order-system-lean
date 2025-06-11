@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { UserRole } from '@/types/database'
-import { isDemoUser } from '@/lib/demo'
+
 
 export type AppRole = UserRole
 
@@ -41,17 +41,7 @@ export async function hasRole(roles: AppRole | AppRole[]): Promise<boolean> {
     data: { session },
   } = await supabase.auth.getSession()
   
-  // Check if this is the demo user
-  if (session?.user?.email && isDemoUser(session.user.email)) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[hasRole] Demo user detected - granting full server-side access:', {
-        email: session.user.email,
-        requiredRoles: roles,
-        grantedAccess: true
-      })
-    }
-    return true
-  }
+
 
   const userRole = await getUserRole()
   if (!userRole) {
@@ -75,10 +65,7 @@ export async function requireRole(roles: AppRole | AppRole[]): Promise<void> {
       data: { session },
     } = await supabase.auth.getSession()
     
-    // Demo users should always pass
-    if (session?.user?.email && isDemoUser(session.user.email)) {
-      return
-    }
+
 
     const userRole = await getUserRole()
     throw new Error(

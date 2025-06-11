@@ -19,8 +19,8 @@ const mockUpdateOrder = jest.fn()
 const mockDeleteOrder = jest.fn()
 const mockGetOrders = jest.fn()
 
-jest.mock('@/lib/modassembly/supabase/optimized-client', () => ({
-  createOptimizedClient: jest.fn(() => ({
+jest.mock('@/lib/modassembly/supabase/client', () => ({
+  createClient: jest.fn(() => ({
     channel: jest.fn(() => ({
       on: jest.fn().mockReturnThis(),
       subscribe: jest.fn().mockReturnValue(Promise.resolve()),

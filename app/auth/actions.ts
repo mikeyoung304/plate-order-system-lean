@@ -9,22 +9,6 @@ type ActionResult = {
   success?: boolean
 }
 
-async function cleanGuestData(userId: string) {
-  const supabase = await createClient()
-
-  try {
-    // Clean orders older than 2 hours for guest account
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-
-    await supabase
-      .from('orders')
-      .delete()
-      .eq('server_id', userId)
-      .lt('created_at', twoHoursAgo)
-  } catch (_error) {
-    // Guest cleanup failed, but this is not critical
-  }
-}
 
 export async function signIn(
   prevState: ActionResult | null,
@@ -48,15 +32,6 @@ export async function signIn(
   }
 
   console.log('🔍 [signIn] Login successful:', { userId: authData.user?.id, hasSession: !!authData.session })
-
-  // Clean guest data if this is a guest login
-  if (
-    (data.email === 'guest@demo.plate' ||
-      data.email === 'guest@restaurant.plate') &&
-    authData.user
-  ) {
-    await cleanGuestData(authData.user.id)
-  }
 
   // Force a session refresh to ensure cookies are properly written
   console.log('🔍 [signIn] Refreshing session...')

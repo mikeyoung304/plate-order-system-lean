@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { useAuth } from '@/lib/modassembly/supabase/auth/auth-context'
+import { useAuth } from '@/lib/modassembly/supabase/auth'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

@@ -2,7 +2,6 @@ import type React from 'react'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
-import { AuthProvider } from '@/lib/modassembly/supabase/auth'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { headers } from 'next/headers'
 import { FooterAttribution } from '@/components/footer-attribution'
@@ -46,14 +45,12 @@ export default async function RootLayout({
     <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider defaultTheme='dark'>
-          <AuthProvider>
-            <div className='min-h-screen flex flex-col'>
-              <main className='flex-grow pb-10'>{children}</main>
-              <FooterAttribution />
-            </div>
-            <Toaster />
-            <SecurityPerformanceInit />
-          </AuthProvider>
+          <div className='min-h-screen flex flex-col'>
+            <main className='flex-grow pb-10'>{children}</main>
+            <FooterAttribution />
+          </div>
+          <Toaster />
+          <SecurityPerformanceInit />
         </ThemeProvider>
       </body>
     </html>

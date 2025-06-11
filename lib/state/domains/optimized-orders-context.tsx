@@ -21,7 +21,7 @@ import React, {
   useReducer,
   useRef,
 } from 'react'
-import { createOptimizedClient } from '@/lib/modassembly/supabase/optimized-client'
+import { createClient } from '@/lib/modassembly/supabase/client'
 import { useOptimizedRealtime } from '@/lib/state/optimized-realtime-context'
 import type { Order } from '@/lib/modassembly/supabase/database/orders'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
@@ -361,7 +361,7 @@ export function OptimizedOrdersProvider({
   const { subscribe, isConnected } = useOptimizedRealtime()
   
   // Refs
-  const supabaseRef = useRef(createOptimizedClient())
+  const supabaseRef = useRef(createClient())
   const batchQueueRef = useRef<Map<string, Order>>(new Map())
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dedupeMapRef = useRef<Map<string, number>>(new Map())

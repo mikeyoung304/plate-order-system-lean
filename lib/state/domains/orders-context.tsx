@@ -18,7 +18,7 @@ import React, {
   useReducer,
   useRef,
 } from 'react'
-import { createOptimizedClient } from '@/lib/modassembly/supabase/optimized-client'
+import { createClient } from '@/lib/modassembly/supabase/client'
 import { 
   createOrder, 
   deleteOrder, 
@@ -201,7 +201,7 @@ export function OrdersProvider({
   refreshInterval = 30000 // 30 seconds
 }: OrdersProviderProps) {
   const [state, dispatch] = useReducer(ordersReducer, initialState)
-  const supabaseRef = useRef(createOptimizedClient())
+  const supabaseRef = useRef(createClient())
   const channelRef = useRef<RealtimeChannel | null>(null)
   const mountedRef = useRef(true)
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)

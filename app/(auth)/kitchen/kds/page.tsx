@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 // PERFORMANCE_OPTIMIZATION: Dynamic import for KDS Layout
 // Original: Static import loading heavy real-time component immediately
 // Changed to: Lazy loading for better initial page performance
@@ -105,23 +104,20 @@ export default function KDSPage() {
 
   if (stationsLoading) {
     return (
-      <ProtectedRoute roles={['cook', 'admin']}>
-        <PageLoadingState
-          message='Loading Kitchen Display System...'
-          showProgress={false}
-        />
-      </ProtectedRoute>
+      <PageLoadingState
+        message='Loading Kitchen Display System...'
+        showProgress={false}
+      />
     )
   }
 
   return (
-    <ProtectedRoute roles={['cook', 'admin']}>
-      <div
-        className={cn(
-          'h-screen flex flex-col bg-gray-100 dark:bg-gray-900',
-          isFullscreen && 'fixed inset-0 z-50'
-        )}
-      >
+    <div
+      className={cn(
+        'h-screen flex flex-col bg-gray-100 dark:bg-gray-900',
+        isFullscreen && 'fixed inset-0 z-50'
+      )}
+    >
         {/* Header - hidden in fullscreen */}
         {!isFullscreen && (
           <div className='flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b shadow-sm'>
@@ -344,7 +340,6 @@ export default function KDSPage() {
             </Button>
           </div>
         )}
-      </div>
-    </ProtectedRoute>
+    </div>
   )
 }
