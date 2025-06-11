@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -16,10 +16,9 @@ import {
   Settings,
   Shield,
   Utensils,
-  X,
 } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
@@ -33,9 +32,7 @@ import {
 // Impact: 100% reduction in motion-related bundle size for navigation
 // Risk: None - same visual effects, better performance
 import { useToast } from '@/components/ui/use-toast'
-import { signOut } from '@/app/auth/actions'
-import { useAuth } from '@/lib/modassembly/supabase/auth'
-
+import { signOut } from '@/lib/modassembly/supabase/auth/actions'
 
 // Animation classes are now handled via CSS for better performance
 
@@ -46,29 +43,33 @@ type NavItem = {
   badge?: number
 }
 
-export function Sidebar() {
+type SidebarProps = {
+  user: {
+    id: string
+    email?: string
+  } | null
+  profile: {
+    name: string | null
+    role: string | null
+  } | null
+}
+
+export function Sidebar({ _user, profile }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
-  const [notifications, setNotifications] = useState(3)
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { toast } = useToast()
-  
-  // Use auth context instead of manual auth logic
-  const { user, profile } = useAuth()
-  
+
   const userData = {
     name: profile?.name || null,
     role: profile?.role || null,
   }
-  
-
 
   const handleSignOut = async () => {
     try {
       await signOut()
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to sign out. Please try again.',
@@ -162,7 +163,7 @@ export function Sidebar() {
           </Avatar>
           <div>
             <p className='text-sm font-display font-semibold text-white'>
-            {userData.name || 'User'}
+              {userData.name || 'User'}
             </p>
             <p className='text-xs text-apple-gray-5 font-sans capitalize'>
               {userData.role || 'Loading...'}

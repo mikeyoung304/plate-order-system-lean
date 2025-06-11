@@ -1,0 +1,38 @@
+{
+  "scan_date": "2025-06-11T03:13:24.089Z",
+  "issues": {
+    "broken_imports": [],
+    "missing_auth": [
+      "app/(auth)/kitchen/page-simple.tsx",
+      "app/(auth)/kitchen/page.tsx",
+      "app/(auth)/server/page-simple.tsx",
+      "app/(auth)/server/page.tsx",
+      "app/dashboard/page.tsx",
+      "components/sidebar.tsx"
+    ],
+    "expecting_context": [],
+    "form_pattern_mismatch": ["components/auth/AuthForm.tsx"],
+    "orphaned_features": [],
+    "using_protected_route": [
+      "app/(auth)/admin/page.tsx",
+      "app/(auth)/expo/page.tsx",
+      "app/(auth)/kitchen/metrics/page.tsx",
+      "app/(auth)/kitchen/page-complex.tsx",
+      "app/(auth)/server/page-complex.tsx",
+      "app/(auth)/server/page-refactored.tsx"
+    ],
+    "client_side_auth": ["lib/modassembly/supabase/auth/client-roles.ts"]
+  },
+  "summary": {
+    "total_issues": 14,
+    "by_category": {
+      "broken_imports": 0,
+      "missing_auth": 6,
+      "expecting_context": 0,
+      "form_pattern_mismatch": 1,
+      "orphaned_features": 0,
+      "using_protected_route": 6,
+      "client_side_auth": 1
+    }
+  }
+}

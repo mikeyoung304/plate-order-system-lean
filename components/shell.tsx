@@ -12,9 +12,11 @@ import { cn } from '@/lib/utils'
 interface ShellProps {
   children: React.ReactNode
   className?: string
+  user?: { id: string; email?: string } | null
+  profile?: { role: string | null; name: string | null } | null
 }
 
-export function Shell({ children, className }: ShellProps) {
+export function Shell({ children, className, user, profile }: ShellProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -36,8 +38,8 @@ export function Shell({ children, className }: ShellProps) {
         <div className='absolute inset-0 bg-gradient-radial from-apple-blue/5 via-transparent to-transparent opacity-30'></div>
         <div className='absolute inset-0 bg-noise opacity-[0.02] pointer-events-none'></div>
 
-        <Sidebar />
-        
+        <Sidebar user={user || null} profile={profile || null} />
+
         <main className={cn('flex-1 overflow-auto relative', className)}>
           {/* Enhanced ambient lighting */}
           <div className='pointer-events-none absolute inset-0 bg-gradient-radial from-transparent via-apple-blue/[0.01] to-black/30 z-0'></div>

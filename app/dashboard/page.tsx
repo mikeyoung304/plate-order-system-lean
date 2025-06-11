@@ -1,12 +1,4 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import { Shell } from '@/components/shell'
-import {
-  useAuth,
-  useIsRole,
-  useRole,
-} from '@/lib/modassembly/supabase/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import {
@@ -20,30 +12,30 @@ import {
   User,
   Utensils,
 } from 'lucide-react'
+import { createClient } from '@/lib/modassembly/supabase/server'
+import { redirect } from 'next/navigation'
+import { DashboardClock } from '@/components/dashboard-clock'
 
-function DashboardContent() {
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const _userRole = useRole()
-  const _isServer = useIsRole('server')
-  const _isCook = useIsRole('cook')
-  const _isAdmin = useIsRole('admin')
+async function DashboardContent() {
+  // Server-side auth check using Luis's pattern
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (!user) {
+    redirect('/login')
   }
 
-  // Animation classes are now handled via CSS for better performance
+  // Get user profile for sidebar
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, name')
+    .eq('user_id', user.id)
+    .single()
 
   return (
-    <Shell>
+    <Shell user={user} profile={profile}>
       {/* Subtle texture overlay */}
       <div className='absolute inset-0 bg-noise opacity-5 pointer-events-none'></div>
 
@@ -58,12 +50,7 @@ function DashboardContent() {
             </p>
           </div>
 
-          <div className='mt-4 md:mt-0 flex items-center bg-gray-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-800/50 shadow-inner'>
-            <Clock className='w-4 h-4 text-gray-400 mr-2' />
-            <span className='text-gray-300 sf-pro-text'>
-              {formatTime(currentTime)}
-            </span>
-          </div>
+          <DashboardClock />
         </div>
 
         <div className='dashboard-container grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8'>
@@ -324,68 +311,7 @@ function DashboardContent() {
   )
 }
 
+// Luis's server-first pattern - simple and direct
 export default function Dashboard() {
-  const { user, profile, isLoading } = useAuth()
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-
-  // Only log if there's an issue
-  if (isLoading && process.env.NODE_ENV === 'development') {
-    console.log('[Dashboard] Still loading auth...', { hasUser: !!user, hasProfile: !!profile })
-  }
-
-  // Safety timeout for infinite loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isLoading) {
-        console.warn('[Dashboard] Loading timeout reached, forcing render')
-        setLoadingTimeout(true)
-      }
-    }, 5000) // 5 second timeout (reduced from 10)
-
-    return () => clearTimeout(timer)
-  }, [isLoading])
-
-  // If loading for too long OR we have user but still loading, show content anyway
-  if (isLoading && !loadingTimeout && !user) {
-    return (
-      <Shell>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <span className="text-white text-lg">Loading dashboard...</span>
-            <p className="text-gray-400 text-sm mt-2">
-              User: {user ? '✓' : '✗'} | Profile: {profile ? '✓' : '✗'}
-            </p>
-          </div>
-        </div>
-      </Shell>
-    )
-  }
-
-  // If we have a user, show dashboard (with or without profile)
-  if (user) {
-    console.log('[Dashboard] Rendering dashboard with user:', { 
-      hasUser: true, 
-      hasProfile: !!profile,
-      role: profile?.role 
-    })
-    return <DashboardContent />
-  }
-
-  // No user and not loading - show login required
-  if (!user && !isLoading) {
-    return (
-      <Shell>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
-            <p className="text-gray-400">Please log in to access the dashboard.</p>
-          </div>
-        </div>
-      </Shell>
-    )
-  }
-
-  // Default fallback
   return <DashboardContent />
 }
