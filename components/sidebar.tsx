@@ -54,7 +54,7 @@ type SidebarProps = {
   } | null
 }
 
-export function Sidebar({ _user, profile }: SidebarProps) {
+export function Sidebar({ user: _user, profile }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const isMobile = useMediaQuery('(max-width: 768px)')

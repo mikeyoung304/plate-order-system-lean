@@ -106,3 +106,92 @@ export async function updateOrderStatus(
     throw error
   }
 }
+
+// Additional CRUD functions following Luis's patterns
+export async function deleteOrder(orderId: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase.from('orders').delete().eq('id', orderId)
+
+  if (error) {
+    console.error('Error deleting order:', error)
+    throw new Error(`Failed to delete order: ${error.message}`)
+  }
+}
+
+export async function getOrders(filters?: {
+  status?: OrderRow['status']
+  tableId?: string
+  limit?: number
+}): Promise<Order[]> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('orders')
+    .select(
+      `
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `
+    )
+    .order('created_at', { ascending: false })
+
+  if (filters?.status) {
+    query = query.eq('status', filters.status)
+  }
+
+  if (filters?.tableId) {
+    query = query.eq('table_id', filters.tableId)
+  }
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching orders:', error)
+    throw new Error(`Failed to fetch orders: ${error.message}`)
+  }
+
+  return data.map((order: OrderRow) => ({
+    ...order,
+    table: `Table ${order.tables.label}`,
+    seat: order.seats.label,
+    items: order.items || [],
+  }))
+}
+
+export async function updateOrder(
+  orderId: string,
+  updates: Partial<OrderRow>
+): Promise<Order | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update(updates)
+    .eq('id', orderId)
+    .select(
+      `
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `
+    )
+    .single()
+
+  if (error) {
+    console.error('Error updating order:', error)
+    throw new Error(`Failed to update order: ${error.message}`)
+  }
+
+  return {
+    ...data,
+    table: `Table ${data.tables.label}`,
+    seat: data.seats.label,
+    items: data.items || [],
+  } as Order
+}
