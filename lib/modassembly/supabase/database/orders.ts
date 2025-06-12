@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { intelligentOrderRouting } from './kds'
 
 interface OrderRow {
   id: string
@@ -81,6 +82,15 @@ export async function createOrder(orderData: {
   if (error) {
     console.error('Error creating order:', error)
     throw error
+  }
+
+  // Automatically route the order to appropriate KDS stations
+  try {
+    await intelligentOrderRouting(data.id)
+    // Successfully routed order to KDS stations
+  } catch (routingError) {
+    console.error('Error routing order to KDS stations:', routingError)
+    // Don't fail the order creation if routing fails
   }
 
   return {

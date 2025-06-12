@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { createOrder } from '@/lib/modassembly/supabase/database/orders'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import {
   User,
   Utensils,
 } from 'lucide-react'
+import { VoiceOrderPanel } from '@/components/voice-order-panel'
 
 interface Table {
   id: string
@@ -100,6 +102,7 @@ export function ServerClientComponent({
   } | null>(null)
   const [orderStep, setOrderStep] = useState<OrderStep>({ step: 'resident' })
   const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0)
+  const [showVoiceRecording, setShowVoiceRecording] = useState(false)
 
   const supabase = createClient()
 
@@ -467,6 +470,20 @@ export function ServerClientComponent({
     )
   }
 
+  // Error state
+  if (error) {
+    return (
+      <Shell user={user} profile={profile}>
+        <div className='flex items-center justify-center h-screen'>
+          <div className='text-center text-red-400'>
+            <div className='mb-4'>Error loading tables</div>
+            <div className='text-sm'>{error}</div>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   return (
     <Shell user={user} profile={profile}>
       <div className='p-6 h-full overflow-auto'>
@@ -776,298 +793,339 @@ export function ServerClientComponent({
         {/* Order Form Modal with Suggestions */}
         {showOrderForm && orderFormData && (
           <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-            <Card className='bg-gray-800 border-gray-700 w-full max-w-lg mx-4'>
-              <CardHeader>
-                <CardTitle className='text-white flex items-center justify-between'>
+            {showVoiceRecording ? (
+              <VoiceOrderPanel
+                tableId={orderFormData.tableId}
+                tableName={orderFormData.tableName}
+                seatNumber={orderFormData.seatNumber}
+                orderType='food'
+                onOrderSubmitted={async orderData => {
+                  try {
+                    // Get seat_id
+                    const { data: seatData } = await supabase
+                      .from('seats')
+                      .select('id')
+                      .eq('table_id', orderFormData.tableId)
+                      .eq('label', orderFormData.seatNumber)
+                      .single()
+
+                    if (!seatData) {
+                      throw new Error('Seat not found')
+                    }
+
+                    // Create the order with the voice data
+                    await createOrder({
+                      table_id: orderFormData.tableId,
+                      seat_id: seatData.id,
+                      resident_id:
+                        orderStep.selectedResident?.id || 'guest-user',
+                      server_id: user.id,
+                      items: orderData.items,
+                      transcript: orderData.transcription,
+                      type: 'food',
+                    })
+                    setShowVoiceRecording(false)
+                    handleCloseOrderForm()
+                    await loadTables() // Refresh the tables
+                  } catch (error) {
+                    console.error('Error creating order:', error)
+                  }
+                }}
+                onCancel={() => setShowVoiceRecording(false)}
+              />
+            ) : (
+              <Card className='bg-gray-800 border-gray-700 w-full max-w-lg mx-4'>
+                <CardHeader>
+                  <CardTitle className='text-white flex items-center justify-between'>
+                    {orderStep.step === 'resident' && (
+                      <>
+                        Who is sitting at Table {orderFormData.tableName}, Seat{' '}
+                        {orderFormData.seatNumber}?
+                      </>
+                    )}
+                    {orderStep.step === 'meal' &&
+                      orderStep.selectedResident && (
+                        <>
+                          What would {orderStep.selectedResident.name} like for{' '}
+                          {getCurrentMealTime()}?
+                        </>
+                      )}
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={handleCloseOrderForm}
+                      className='text-gray-400 hover:text-white'
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   {orderStep.step === 'resident' && (
-                    <>
-                      Who is sitting at Table {orderFormData.tableName}, Seat{' '}
-                      {orderFormData.seatNumber}?
-                    </>
-                  )}
-                  {orderStep.step === 'meal' && orderStep.selectedResident && (
-                    <>
-                      What would {orderStep.selectedResident.name} like for{' '}
-                      {getCurrentMealTime()}?
-                    </>
-                  )}
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={handleCloseOrderForm}
-                    className='text-gray-400 hover:text-white'
-                  >
-                    ✕
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {orderStep.step === 'resident' && (
-                  <div className='space-y-4'>
-                    {(() => {
-                      const suggestions = getSuggestedResidents(
-                        orderFormData.tableName,
-                        orderFormData.seatNumber
-                      )
-
-                      if (suggestions.length === 0) {
-                        return (
-                          <div className='text-center py-8'>
-                            <div className='text-gray-300 mb-4'>
-                              No resident suggestions for this seat
-                            </div>
-                            <Button
-                              className='w-full bg-blue-600 hover:bg-blue-700'
-                              onClick={() => {
-                                console.error('Guest selected')
-                                handleCloseOrderForm()
-                              }}
-                            >
-                              👤 Guest
-                            </Button>
-                          </div>
+                    <div className='space-y-4'>
+                      {(() => {
+                        const suggestions = getSuggestedResidents(
+                          orderFormData.tableName,
+                          orderFormData.seatNumber
                         )
-                      }
 
-                      const currentSuggestion =
-                        suggestions[currentSuggestionIndex]
-
-                      return (
-                        <>
-                          {/* Main Suggestion Display */}
-                          <div className='bg-gray-900/50 rounded-lg p-6 text-center'>
-                            <div className='mb-4'>
-                              <User className='h-16 w-16 text-blue-400 mx-auto mb-3' />
-                              <h3 className='text-xl font-bold text-white mb-2'>
-                                {currentSuggestion.name}
-                              </h3>
-                              <div className='text-sm text-gray-400'>
-                                Usually sits in:{' '}
-                                {currentSuggestion.favoriteSeats.join(', ')}
+                        if (suggestions.length === 0) {
+                          return (
+                            <div className='text-center py-8'>
+                              <div className='text-gray-300 mb-4'>
+                                No resident suggestions for this seat
                               </div>
-                              {currentSuggestion.dietaryRestrictions && (
-                                <div className='text-xs text-yellow-400 mt-1'>
-                                  Dietary:{' '}
-                                  {currentSuggestion.dietaryRestrictions.join(
-                                    ', '
-                                  )}
+                              <Button
+                                className='w-full bg-blue-600 hover:bg-blue-700'
+                                onClick={() => {
+                                  console.error('Guest selected')
+                                  handleCloseOrderForm()
+                                }}
+                              >
+                                👤 Guest
+                              </Button>
+                            </div>
+                          )
+                        }
+
+                        const currentSuggestion =
+                          suggestions[currentSuggestionIndex]
+
+                        return (
+                          <>
+                            {/* Main Suggestion Display */}
+                            <div className='bg-gray-900/50 rounded-lg p-6 text-center'>
+                              <div className='mb-4'>
+                                <User className='h-16 w-16 text-blue-400 mx-auto mb-3' />
+                                <h3 className='text-xl font-bold text-white mb-2'>
+                                  {currentSuggestion.name}
+                                </h3>
+                                <div className='text-sm text-gray-400'>
+                                  Usually sits in:{' '}
+                                  {currentSuggestion.favoriteSeats.join(', ')}
                                 </div>
-                              )}
-                            </div>
-
-                            <Button
-                              onClick={() =>
-                                handleSelectResident(currentSuggestion)
-                              }
-                              className='w-full bg-green-600 hover:bg-green-700 text-white font-semibold'
-                              size='lg'
-                            >
-                              Select {currentSuggestion.name}
-                            </Button>
-                          </div>
-
-                          {/* Navigation */}
-                          {suggestions.length > 1 && (
-                            <div className='flex items-center justify-between'>
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                onClick={() =>
-                                  setCurrentSuggestionIndex(
-                                    Math.max(0, currentSuggestionIndex - 1)
-                                  )
-                                }
-                                disabled={currentSuggestionIndex === 0}
-                                className='border-gray-600 text-gray-300'
-                              >
-                                <ChevronLeft className='h-4 w-4 mr-1' />
-                                Previous
-                              </Button>
-
-                              <div className='text-gray-400 text-sm'>
-                                {currentSuggestionIndex + 1} of{' '}
-                                {suggestions.length}
+                                {currentSuggestion.dietaryRestrictions && (
+                                  <div className='text-xs text-yellow-400 mt-1'>
+                                    Dietary:{' '}
+                                    {currentSuggestion.dietaryRestrictions.join(
+                                      ', '
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               <Button
-                                variant='outline'
-                                size='sm'
                                 onClick={() =>
-                                  setCurrentSuggestionIndex(
-                                    Math.min(
-                                      suggestions.length - 1,
-                                      currentSuggestionIndex + 1
-                                    )
-                                  )
+                                  handleSelectResident(currentSuggestion)
                                 }
-                                disabled={
-                                  currentSuggestionIndex ===
-                                  suggestions.length - 1
-                                }
-                                className='border-gray-600 text-gray-300'
+                                className='w-full bg-green-600 hover:bg-green-700 text-white font-semibold'
+                                size='lg'
                               >
-                                Next
-                                <ChevronRight className='h-4 w-4 ml-1' />
+                                Select {currentSuggestion.name}
                               </Button>
                             </div>
-                          )}
 
-                          {/* Guest Option */}
-                          <div className='pt-4 border-t border-gray-600'>
-                            <Button
-                              variant='outline'
-                              className='w-full border-gray-600 text-gray-300 hover:bg-gray-700'
-                              onClick={() => {
-                                console.error('Guest selected')
-                                handleCloseOrderForm()
-                              }}
-                            >
-                              👤 Guest (Unknown Resident)
-                            </Button>
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                )}
+                            {/* Navigation */}
+                            {suggestions.length > 1 && (
+                              <div className='flex items-center justify-between'>
+                                <Button
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    setCurrentSuggestionIndex(
+                                      Math.max(0, currentSuggestionIndex - 1)
+                                    )
+                                  }
+                                  disabled={currentSuggestionIndex === 0}
+                                  className='border-gray-600 text-gray-300'
+                                >
+                                  <ChevronLeft className='h-4 w-4 mr-1' />
+                                  Previous
+                                </Button>
 
-                {orderStep.step === 'meal' && orderStep.selectedResident && (
-                  <div className='space-y-4'>
-                    {(() => {
-                      const mealSuggestions = getSuggestedMeals(
-                        orderStep.selectedResident
-                      )
+                                <div className='text-gray-400 text-sm'>
+                                  {currentSuggestionIndex + 1} of{' '}
+                                  {suggestions.length}
+                                </div>
 
-                      if (mealSuggestions.length === 0) {
-                        return (
-                          <div className='text-center py-8'>
-                            <div className='text-gray-300 mb-4'>
-                              No meal suggestions for {getCurrentMealTime()}
+                                <Button
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    setCurrentSuggestionIndex(
+                                      Math.min(
+                                        suggestions.length - 1,
+                                        currentSuggestionIndex + 1
+                                      )
+                                    )
+                                  }
+                                  disabled={
+                                    currentSuggestionIndex ===
+                                    suggestions.length - 1
+                                  }
+                                  className='border-gray-600 text-gray-300'
+                                >
+                                  Next
+                                  <ChevronRight className='h-4 w-4 ml-1' />
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Guest Option */}
+                            <div className='pt-4 border-t border-gray-600'>
+                              <Button
+                                variant='outline'
+                                className='w-full border-gray-600 text-gray-300 hover:bg-gray-700'
+                                onClick={() => {
+                                  console.error('Guest selected')
+                                  handleCloseOrderForm()
+                                }}
+                              >
+                                👤 Guest (Unknown Resident)
+                              </Button>
                             </div>
-                            <Button
-                              className='w-full bg-blue-600 hover:bg-blue-700'
-                              onClick={() => {
-                                console.error('Record new order')
-                                handleCloseOrderForm()
-                              }}
-                            >
-                              🎤 Record New Order
-                            </Button>
-                          </div>
+                          </>
                         )
-                      }
+                      })()}
+                    </div>
+                  )}
 
-                      const currentMeal =
-                        mealSuggestions[currentSuggestionIndex]
+                  {orderStep.step === 'meal' && orderStep.selectedResident && (
+                    <div className='space-y-4'>
+                      {(() => {
+                        const mealSuggestions = getSuggestedMeals(
+                          orderStep.selectedResident
+                        )
 
-                      return (
-                        <>
-                          {/* Back Button */}
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={() => setOrderStep({ step: 'resident' })}
-                            className='text-gray-400 hover:text-white mb-4'
-                          >
-                            <ChevronLeft className='h-4 w-4 mr-1' />
-                            Back to resident selection
-                          </Button>
-
-                          {/* Main Meal Suggestion Display */}
-                          <div className='bg-gray-900/50 rounded-lg p-6 text-center'>
-                            <div className='mb-4'>
-                              <Utensils className='h-16 w-16 text-orange-400 mx-auto mb-3' />
-                              <h3 className='text-xl font-bold text-white mb-2'>
-                                {currentMeal.dish}
-                              </h3>
-                              <div className='text-sm text-gray-400 mb-2'>
-                                {orderStep.selectedResident.name}'s #
-                                {currentMeal.frequency}/10 favorite for{' '}
-                                {getCurrentMealTime()}
+                        if (mealSuggestions.length === 0) {
+                          return (
+                            <div className='text-center py-8'>
+                              <div className='text-gray-300 mb-4'>
+                                No meal suggestions for {getCurrentMealTime()}
                               </div>
-                              <div className='text-xs text-green-400'>
-                                Perfect for {getCurrentMealTime()} time
+                              <Button
+                                className='w-full bg-blue-600 hover:bg-blue-700'
+                                onClick={() => {
+                                  setShowVoiceRecording(true)
+                                }}
+                              >
+                                🎤 Record New Order
+                              </Button>
+                            </div>
+                          )
+                        }
+
+                        const currentMeal =
+                          mealSuggestions[currentSuggestionIndex]
+
+                        return (
+                          <>
+                            {/* Back Button */}
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              onClick={() => setOrderStep({ step: 'resident' })}
+                              className='text-gray-400 hover:text-white mb-4'
+                            >
+                              <ChevronLeft className='h-4 w-4 mr-1' />
+                              Back to resident selection
+                            </Button>
+
+                            {/* Main Meal Suggestion Display */}
+                            <div className='bg-gray-900/50 rounded-lg p-6 text-center'>
+                              <div className='mb-4'>
+                                <Utensils className='h-16 w-16 text-orange-400 mx-auto mb-3' />
+                                <h3 className='text-xl font-bold text-white mb-2'>
+                                  {currentMeal.dish}
+                                </h3>
+                                <div className='text-sm text-gray-400 mb-2'>
+                                  {orderStep.selectedResident.name}'s #
+                                  {currentMeal.frequency}/10 favorite for{' '}
+                                  {getCurrentMealTime()}
+                                </div>
+                                <div className='text-xs text-green-400'>
+                                  Perfect for {getCurrentMealTime()} time
+                                </div>
                               </div>
+
+                              <Button
+                                onClick={() =>
+                                  handleSelectMeal(currentMeal.dish)
+                                }
+                                className='w-full bg-green-600 hover:bg-green-700 text-white font-semibold'
+                                size='lg'
+                              >
+                                Order {currentMeal.dish}
+                              </Button>
                             </div>
 
-                            <Button
-                              onClick={() => handleSelectMeal(currentMeal.dish)}
-                              className='w-full bg-green-600 hover:bg-green-700 text-white font-semibold'
-                              size='lg'
-                            >
-                              Order {currentMeal.dish}
-                            </Button>
-                          </div>
-
-                          {/* Navigation */}
-                          {mealSuggestions.length > 1 && (
-                            <div className='flex items-center justify-between'>
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                onClick={() =>
-                                  setCurrentSuggestionIndex(
-                                    Math.max(0, currentSuggestionIndex - 1)
-                                  )
-                                }
-                                disabled={currentSuggestionIndex === 0}
-                                className='border-gray-600 text-gray-300'
-                              >
-                                <ChevronLeft className='h-4 w-4 mr-1' />
-                                Previous
-                              </Button>
-
-                              <div className='text-gray-400 text-sm'>
-                                {currentSuggestionIndex + 1} of{' '}
-                                {mealSuggestions.length}
-                              </div>
-
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                onClick={() =>
-                                  setCurrentSuggestionIndex(
-                                    Math.min(
-                                      mealSuggestions.length - 1,
-                                      currentSuggestionIndex + 1
+                            {/* Navigation */}
+                            {mealSuggestions.length > 1 && (
+                              <div className='flex items-center justify-between'>
+                                <Button
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    setCurrentSuggestionIndex(
+                                      Math.max(0, currentSuggestionIndex - 1)
                                     )
-                                  )
-                                }
-                                disabled={
-                                  currentSuggestionIndex ===
-                                  mealSuggestions.length - 1
-                                }
-                                className='border-gray-600 text-gray-300'
+                                  }
+                                  disabled={currentSuggestionIndex === 0}
+                                  className='border-gray-600 text-gray-300'
+                                >
+                                  <ChevronLeft className='h-4 w-4 mr-1' />
+                                  Previous
+                                </Button>
+
+                                <div className='text-gray-400 text-sm'>
+                                  {currentSuggestionIndex + 1} of{' '}
+                                  {mealSuggestions.length}
+                                </div>
+
+                                <Button
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    setCurrentSuggestionIndex(
+                                      Math.min(
+                                        mealSuggestions.length - 1,
+                                        currentSuggestionIndex + 1
+                                      )
+                                    )
+                                  }
+                                  disabled={
+                                    currentSuggestionIndex ===
+                                    mealSuggestions.length - 1
+                                  }
+                                  className='border-gray-600 text-gray-300'
+                                >
+                                  Next
+                                  <ChevronRight className='h-4 w-4 ml-1' />
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Record New Order Option */}
+                            <div className='pt-4 border-t border-gray-600'>
+                              <Button
+                                variant='outline'
+                                className='w-full border-gray-600 text-gray-300 hover:bg-gray-700'
+                                onClick={() => {
+                                  // Recording new order
+                                  setShowVoiceRecording(true)
+                                }}
                               >
-                                Next
-                                <ChevronRight className='h-4 w-4 ml-1' />
+                                🎤 Record New Order
                               </Button>
                             </div>
-                          )}
-
-                          {/* Record New Order Option */}
-                          <div className='pt-4 border-t border-gray-600'>
-                            <Button
-                              variant='outline'
-                              className='w-full border-gray-600 text-gray-300 hover:bg-gray-700'
-                              onClick={() => {
-                                console.error(
-                                  'Record new order for',
-                                  orderStep.selectedResident?.name
-                                )
-                                handleCloseOrderForm()
-                              }}
-                            >
-                              🎤 Record New Order
-                            </Button>
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>

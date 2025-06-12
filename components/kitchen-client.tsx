@@ -51,8 +51,6 @@ export function KitchenClientComponent({
       setLoading(true)
       setError(null)
 
-      console.error('[Kitchen] Loading orders...')
-
       // Query to get all active orders for kitchen display
       const { data: kdsData, error: kdsError } = await supabase
         .from('kds_order_routing')
@@ -83,6 +81,8 @@ export function KitchenClientComponent({
         .is('completed_at', null)
         .order('routed_at', { ascending: true })
 
+      // Process KDS data
+
       if (kdsError) {
         console.error('[Kitchen] KDS query error:', kdsError)
         setError(`Database error: ${kdsError.message}`)
@@ -98,7 +98,11 @@ export function KitchenClientComponent({
         table_label: (item.order as any)?.table?.label || 'Unknown Table',
         seat_id: (item.order as any)?.seat_id || '',
         items: Array.isArray((item.order as any)?.items)
-          ? (item.order as any).items
+          ? (item.order as any).items.map((orderItem: any) =>
+              typeof orderItem === 'string'
+                ? orderItem
+                : orderItem.name || JSON.stringify(orderItem)
+            )
           : [],
         status: (item.order as any)?.status || 'pending',
         type: (item.order as any)?.type || 'food',
@@ -396,6 +400,17 @@ export function KitchenClientComponent({
               <div>Orders Loaded: {orders.length}</div>
               <div>Connection: {connectionStatus}</div>
               <div>Last Updated: {new Date().toLocaleTimeString()}</div>
+              <div>Error: {error || 'None'}</div>
+              {orders.length > 0 && (
+                <div>
+                  <div className='font-medium text-gray-300 mt-2'>
+                    Sample Order:
+                  </div>
+                  <div>Station: {orders[0].station_name}</div>
+                  <div>Table: {orders[0].table_label}</div>
+                  <div>Items: {orders[0].items.join(', ')}</div>
+                </div>
+              )}
             </div>
           </div>
         )}
