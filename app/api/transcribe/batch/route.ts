@@ -48,11 +48,11 @@ export async function POST(request: NextRequest) {
     // 2. Authentication
     const supabase = await createClient()
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
-    if (authError || !session?.user) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },
         {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Enhanced Rate Limiting for Batch Operations
     const isAllowed = Security.rateLimit.isAllowed(
-      session.user.id,
+      user.id,
       'batch_transcribe',
       2, // Only 2 batch requests per minute
       2 / 60
@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
     if (!isAllowed) {
       return NextResponse.json(
         {
-          error: 'Rate limit exceeded. Batch transcription is limited to 2 requests per minute.',
+          error:
+            'Rate limit exceeded. Batch transcription is limited to 2 requests per minute.',
         },
         {
           status: 429,
@@ -100,7 +101,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract audio files from form data
-    const audioFiles: Array<{ blob: Blob; id: string; userId: string; filename?: string }> = []
+    const audioFiles: Array<{
+      blob: Blob
+      id: string
+      userId: string
+      filename?: string
+    }> = []
     const maxBatchSize = 10 // Limit batch size
     let fileCount = 0
 
@@ -135,8 +141,10 @@ export async function POST(request: NextRequest) {
         audioFiles.push({
           blob: audioBlob,
           id: key.replace('audio_', ''),
-          userId: session.user.id,
-          filename: Security.sanitize.sanitizeIdentifier(value.name || `audio_${fileCount}`),
+          userId: user.id,
+          filename: Security.sanitize.sanitizeIdentifier(
+            value.name || `audio_${fileCount}`
+          ),
         })
 
         fileCount++
@@ -167,7 +175,7 @@ export async function POST(request: NextRequest) {
     } catch (batchError: any) {
       console.error('Batch transcription failed:', {
         error: batchError.message,
-        userId: session.user.id,
+        userId: user.id,
         batchSize: audioFiles.length,
       })
 
@@ -206,17 +214,26 @@ export async function POST(request: NextRequest) {
           success: true,
           transcript: safeTranscription,
           items: safeItems,
-          metadata: process.env.NODE_ENV === 'development' ? {
-            cached: result.result.metadata?.cached,
-            optimized: result.result.metadata?.optimized,
-            cost: result.result.metadata?.cost,
-            latency: result.result.metadata?.latency,
-          } : undefined,
+          metadata:
+            process.env.NODE_ENV === 'development'
+              ? {
+                  cached: result.result.metadata?.cached,
+                  optimized: result.result.metadata?.optimized,
+                  cost: result.result.metadata?.cost,
+                  latency: result.result.metadata?.latency,
+                }
+              : undefined,
         })
 
-        if (result.result.metadata?.cached) {cacheHits++}
-        if (result.result.metadata?.cost) {totalCost += result.result.metadata.cost}
-        if (result.result.metadata?.latency) {totalLatency += result.result.metadata.latency}
+        if (result.result.metadata?.cached) {
+          cacheHits++
+        }
+        if (result.result.metadata?.cost) {
+          totalCost += result.result.metadata.cost
+        }
+        if (result.result.metadata?.latency) {
+          totalLatency += result.result.metadata.latency
+        }
         successfulJobs++
       } else {
         sanitizedResults.push({
@@ -238,7 +255,7 @@ export async function POST(request: NextRequest) {
 
     // 7. Enhanced Logging
     // console.log('Batch transcription completed:', {
-    //   userId: session.user.id,
+    //   userId: user.id,
     //   batchSize: audioFiles.length,
     //   summary,
     // })
@@ -280,7 +297,10 @@ function validateAudioFile(file: File): { valid: boolean; error?: string } {
   ]
 
   if (!allowedTypes.some(type => file.type.includes(type))) {
-    return { valid: false, error: `Invalid format. Allowed: ${allowedTypes.join(', ')}` }
+    return {
+      valid: false,
+      error: `Invalid format. Allowed: ${allowedTypes.join(', ')}`,
+    }
   }
 
   return { valid: true }
