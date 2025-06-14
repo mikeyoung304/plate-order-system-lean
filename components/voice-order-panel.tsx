@@ -214,7 +214,7 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
 
       {/* Action Buttons */}
       <div className='w-full flex flex-col items-center space-y-3'>
-        {!voiceState.showConfirmation ? (
+        {!voiceState.showConfirmation && !voiceState.hasError ? (
           <div className='flex flex-col items-center space-y-3'>
             {/* Recording Button */}
             <div
@@ -238,6 +238,27 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
             </div>
 
             {/* Cancel Button */}
+            <Button variant='outline' onClick={handleCancel} className='w-full'>
+              Cancel Order
+            </Button>
+          </div>
+        ) : voiceState.hasError ? (
+          // Error State Buttons
+          <div className='w-full flex flex-col space-y-3'>
+            <div className='text-center p-4 bg-red-50 border border-red-200 rounded-lg'>
+              <AlertCircle className='h-6 w-6 text-red-500 mx-auto mb-2' />
+              <p className='text-red-700 text-sm mb-3'>{voiceState.error}</p>
+              {voiceState.canRetry && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={voiceState.retry}
+                  className='mb-2 w-full'
+                >
+                  Try Again ({voiceState.retryCount}/{3})
+                </Button>
+              )}
+            </div>
             <Button variant='outline' onClick={handleCancel} className='w-full'>
               Cancel Order
             </Button>

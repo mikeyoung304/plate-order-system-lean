@@ -158,6 +158,13 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
     try {
       dispatch({ type: 'START_RECORDING' })
 
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          'Microphone not available in this browser or context. Please use a modern browser with HTTPS.'
+        )
+      }
+
       // Initialize audio recorder if needed
       if (!audioRecorderRef.current) {
         const { AudioRecorder } = await import(
@@ -170,12 +177,13 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
       const hasPermission = await audioRecorderRef.current.requestPermission()
       if (!hasPermission) {
         throw new Error(
-          'Microphone permission denied. Please allow microphone access in your browser settings.'
+          'Microphone access denied. Please check your browser settings and allow microphone access for this site.'
         )
       }
 
       await audioRecorderRef.current.startRecording()
     } catch (error) {
+      console.error('Recording start failed:', error)
       dispatch({
         type: 'TRANSCRIPTION_ERROR',
         error:
@@ -271,11 +279,20 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
   }, [])
 
   const cancel = useCallback(() => {
-    // Clean up audio recorder if recording
-    if (audioRecorderRef.current && audioRecorderRef.current.isRecording()) {
-      audioRecorderRef.current.cleanup()
+    try {
+      // Clean up audio recorder if recording
+      if (audioRecorderRef.current) {
+        if (audioRecorderRef.current.isRecording()) {
+          audioRecorderRef.current.cleanup()
+        }
+        // Reset the recorder reference to force re-initialization on next use
+        audioRecorderRef.current = null
+      }
+    } catch (error) {
+      console.error('Error during cancel cleanup:', error)
+    } finally {
+      dispatch({ type: 'CANCEL' })
     }
-    dispatch({ type: 'CANCEL' })
   }, [])
 
   // Cleanup on unmount
