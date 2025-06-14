@@ -62,27 +62,19 @@ export async function createOrder(orderData: {
   type: 'food' | 'drink'
 }): Promise<Order> {
   const supabase = createClient()
-  
-  // Handle mock seat IDs by creating a mock order response
-  if (orderData.seat_id.startsWith('mock-seat-')) {
-    console.log('Creating mock order for testing purposes')
-    const mockOrder = {
-      id: `mock-order-${Date.now()}`,
-      ...orderData,
-      status: 'new' as const,
-      created_at: new Date().toISOString(),
-      tables: { label: parseInt(orderData.table_id.replace('mock-table-', '')) || 1 },
-      seats: { label: parseInt(orderData.seat_id.split('-')[3]) || 1 }
-    }
-    
-    return {
-      ...mockOrder,
-      table: `Table ${mockOrder.tables.label}`,
-      seat: mockOrder.seats.label,
-      items: mockOrder.items || [],
-    } as Order
+
+  // Validate required data
+  if (
+    !orderData.table_id ||
+    !orderData.seat_id ||
+    !orderData.resident_id ||
+    !orderData.server_id
+  ) {
+    throw new Error(
+      'Missing required order data: table_id, seat_id, resident_id, and server_id are required'
+    )
   }
-  
+
   const { data, error } = await supabase
     .from('orders')
     .insert([
@@ -102,16 +94,20 @@ export async function createOrder(orderData: {
 
   if (error) {
     console.error('Error creating order:', error)
-    throw error
+    throw new Error(`Failed to create order: ${error.message}`)
+  }
+
+  if (!data) {
+    throw new Error('No data returned from order creation')
   }
 
   // Automatically route the order to appropriate KDS stations
   try {
     await intelligentOrderRouting(data.id)
-    // Successfully routed order to KDS stations
+    console.warn(`✅ Order ${data.id} successfully routed to KDS stations`)
   } catch (routingError) {
     console.error('Error routing order to KDS stations:', routingError)
-    // Don't fail the order creation if routing fails
+    // Don't fail the order creation if routing fails - this is a secondary operation
   }
 
   return {
