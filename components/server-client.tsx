@@ -908,8 +908,12 @@ export function ServerClientComponent({
                               <Button
                                 className='w-full bg-blue-600 hover:bg-blue-700'
                                 onClick={() => {
-                                  console.error('Guest selected')
-                                  handleCloseOrderForm()
+                                  handleSelectResident({
+                                    id: 'guest-user',
+                                    name: 'Guest',
+                                    favoriteSeats: [],
+                                    mealPreferences: []
+                                  })
                                 }}
                               >
                                 👤 Guest
@@ -1007,8 +1011,12 @@ export function ServerClientComponent({
                                 variant='outline'
                                 className='w-full border-gray-600 text-gray-300 hover:bg-gray-700'
                                 onClick={() => {
-                                  console.error('Guest selected')
-                                  handleCloseOrderForm()
+                                  handleSelectResident({
+                                    id: 'guest-user',
+                                    name: 'Guest (Unknown Resident)',
+                                    favoriteSeats: [],
+                                    mealPreferences: []
+                                  })
                                 }}
                               >
                                 👤 Guest (Unknown Resident)
