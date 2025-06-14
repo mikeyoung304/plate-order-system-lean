@@ -53,21 +53,7 @@ jest.mock('./lib/modassembly/supabase/client', () => {
   }
 })
 
-// Mock Supabase auth helpers
-jest.mock('@supabase/auth-helpers-nextjs', () => ({
-  createRouteHandlerClient: jest.fn(() => {
-    const { createMockSupabaseClient } = require('./__tests__/utils/test-utils')
-    return createMockSupabaseClient()
-  }),
-  createServerComponentClient: jest.fn(() => {
-    const { createMockSupabaseClient } = require('./__tests__/utils/test-utils')
-    return createMockSupabaseClient()
-  }),
-  createMiddlewareClient: jest.fn(() => {
-    const { createMockSupabaseClient } = require('./__tests__/utils/test-utils')
-    return createMockSupabaseClient()
-  }),
-}))
+// Note: @supabase/auth-helpers-nextjs no longer used - using server-first auth pattern
 
 // Mock OpenAI API
 jest.mock('openai', () => ({

@@ -8,7 +8,7 @@ import { render, RenderOptions, RenderResult } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
-import { AuthProvider } from '@/lib/modassembly/supabase/auth/auth-context'
+// Note: AuthProvider no longer exists - using server-first auth pattern
 
 // Types
 export interface TestRenderOptions extends Omit<RenderOptions, 'wrapper'> {
@@ -27,21 +27,9 @@ const MockAuthProvider: React.FC<{ children: React.ReactNode; user?: any }> = ({
   children, 
   user = null 
 }) => {
-  const mockContextValue = {
-    user,
-    session: user ? { user, access_token: 'mock-token' } : null,
-    loading: false,
-    signIn: jest.fn(),
-    signOut: jest.fn(),
-    signUp: jest.fn(),
-    resetPassword: jest.fn(),
-  }
-
-  return (
-    <AuthProvider value={mockContextValue}>
-      {children}
-    </AuthProvider>
-  )
+  // No longer using AuthProvider - server-first auth pattern
+  // Just pass through children for testing
+  return <>{children}</>
 }
 
 // Test wrapper component
