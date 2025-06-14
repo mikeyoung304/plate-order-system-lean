@@ -5,9 +5,8 @@ const createJestConfig = nextJest({
   dir: './',
 })
 
-// Add any custom config to be passed to Jest
-const config = {
-  coverageProvider: 'v8',
+// Base configuration shared by all projects
+const baseConfig = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
@@ -23,6 +22,80 @@ const config = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
+  ],
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+  },
+  transformIgnorePatterns: [
+    '/node_modules/',
+    '^.+\\.module\\.(css|sass|scss)$',
+  ],
+}
+
+// Define test projects
+const projects = [
+  {
+    ...baseConfig,
+    displayName: 'unit',
+    testMatch: ['<rootDir>/__tests__/unit/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+  },
+  {
+    ...baseConfig,
+    displayName: 'integration',
+    testMatch: ['<rootDir>/__tests__/integration/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+  },
+  {
+    ...baseConfig,
+    displayName: 'e2e',
+    testMatch: ['<rootDir>/__tests__/e2e/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    testEnvironment: 'node',
+  },
+  {
+    ...baseConfig,
+    displayName: 'performance',
+    testMatch: ['<rootDir>/__tests__/performance/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    testEnvironment: 'node',
+  },
+]
+
+// Main Jest configuration
+const config = {
+  projects,
+  // Global settings
+  coverageProvider: 'v8',
+  collectCoverageFrom: [
+    '**/*.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+    '!**/.next/**',
+    '!**/coverage/**',
+    '!**/*.config.js',
+    '!**/scripts/**',
+    '!**/test-reports/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: 'test-reports',
+      outputName: 'junit.xml',
+    }],
+    ['jest-html-reporters', {
+      publicPath: 'test-reports/html',
+      filename: 'report.html',
+      expand: true,
+    }],
+  ],
+  watchPlugins: [
+    'jest-watch-typeahead/filename',
+    'jest-watch-typeahead/testname',
   ],
 }
 

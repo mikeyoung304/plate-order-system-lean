@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import 'jest-axe/extend-expect'
+import React from 'react'
 
 // Mock Next.js router with enhanced functionality
 jest.mock('next/navigation', () => ({
@@ -30,6 +31,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('next/dynamic', () => ({
   __esModule: true,
   default: (...args) => {
+    const React = require('react')
     const dynamicModule = args[0]
     const dynamicOptions = args[1] || {}
     
@@ -233,6 +235,22 @@ Object.defineProperty(navigator, 'clipboard', {
     readText: jest.fn().mockResolvedValue(''),
   },
 })
+
+// Mock crypto.subtle API for hashing operations
+global.crypto = {
+  ...global.crypto,
+  subtle: {
+    digest: jest.fn(async (algorithm, data) => {
+      // Simple mock hash generation
+      const view = new Uint8Array(data)
+      const hash = new Uint8Array(32)
+      for (let i = 0; i < 32; i++) {
+        hash[i] = view[i % view.length] || 0
+      }
+      return hash.buffer
+    }),
+  },
+}
 
 // Setup cleanup for better test isolation
 afterEach(() => {
