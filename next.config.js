@@ -28,15 +28,43 @@ const nextConfig = {
     // Optimize package imports
     optimizePackageImports: ['@radix-ui/react-*', 'lucide-react'],
   },
-  webpack: (config, { isServer }) => {
+  // Production optimizations
+  poweredByHeader: false,
+  compress: true,
+  
+  webpack: (config, { isServer, dev, webpack }) => {
+    // Production optimizations
+    if (!dev) {
+      // Disable source maps in production to reduce size
+      config.devtool = false
+      
+      // Aggressive minification
+      config.optimization.minimize = true
+      
+      // Remove development-only code
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        })
+      )
+    }
+
     // Optimize bundle for client-side
     if (!isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
+            priority: -10,
             chunks: 'all',
           },
           common: {
@@ -44,10 +72,16 @@ const nextConfig = {
             minChunks: 2,
             chunks: 'all',
             enforce: true,
+            priority: -5,
           },
         },
       }
+      
+      // Tree shaking optimizations
+      config.optimization.usedExports = true
+      config.optimization.sideEffects = false
     }
+    
     return config
   },
 }

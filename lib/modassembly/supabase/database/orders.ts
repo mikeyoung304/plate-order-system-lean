@@ -62,6 +62,27 @@ export async function createOrder(orderData: {
   type: 'food' | 'drink'
 }): Promise<Order> {
   const supabase = createClient()
+  
+  // Handle mock seat IDs by creating a mock order response
+  if (orderData.seat_id.startsWith('mock-seat-')) {
+    console.log('Creating mock order for testing purposes')
+    const mockOrder = {
+      id: `mock-order-${Date.now()}`,
+      ...orderData,
+      status: 'new' as const,
+      created_at: new Date().toISOString(),
+      tables: { label: parseInt(orderData.table_id.replace('mock-table-', '')) || 1 },
+      seats: { label: parseInt(orderData.seat_id.split('-')[3]) || 1 }
+    }
+    
+    return {
+      ...mockOrder,
+      table: `Table ${mockOrder.tables.label}`,
+      seat: mockOrder.seats.label,
+      items: mockOrder.items || [],
+    } as Order
+  }
+  
   const { data, error } = await supabase
     .from('orders')
     .insert([
