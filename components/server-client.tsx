@@ -401,13 +401,43 @@ export function ServerClientComponent({
     setCurrentSuggestionIndex(0)
   }
 
-  const handleSelectMeal = async (_meal: string) => {
+  const handleSelectMeal = async (meal: string) => {
     if (!orderFormData || !orderStep.selectedResident) {
       return
     }
 
     try {
-      // TODO: Create actual order in database
+      // Get current user ID for server_id
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.error('No authenticated user')
+        return
+      }
+
+      // Get seat_id from seat number
+      const { data: seatData } = await supabase
+        .from('seats')
+        .select('id')
+        .eq('table_id', orderFormData.tableId)
+        .eq('label', orderFormData.seatNumber)
+        .single()
+
+      if (!seatData) {
+        throw new Error('Seat not found')
+      }
+
+      // Create the order in the database
+      await createOrder({
+        table_id: orderFormData.tableId,
+        seat_id: seatData.id,
+        resident_id: orderStep.selectedResident.id,
+        server_id: user.id,
+        items: [meal],
+        transcript: `Order for ${meal}`,
+        type: 'food'
+      })
+
+      // Close form and reload tables to show updated order
       handleCloseOrderForm()
       loadTables()
     } catch (err) {
