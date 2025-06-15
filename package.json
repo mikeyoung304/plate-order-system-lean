@@ -9,6 +9,8 @@
     "dev:smart": "./start-dev.sh",
     "dev:https": "next dev -p 3000 --experimental-https --experimental-https-key ./certificates/localhost.key --experimental-https-cert ./certificates/localhost.crt",
     "kill-port": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
+    "fresh-start": "rm -rf .next && npm run kill-port && npm run build && npm run start",
+    "clean-restart": "./optimal-start.sh",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --fix",

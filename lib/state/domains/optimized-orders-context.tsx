@@ -427,42 +427,48 @@ export function OptimizedOrdersProvider({
 
   // Handle real-time updates with deduplication
   const handleRealtimeUpdate = useCallback(
-    (payload: RealtimePostgresChangesPayload<Order>) => {
+    (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
       const now = Date.now()
       const updateStart = performance.now()
 
+      // Validate payload has required fields
+      const newOrder = payload.new as Order | null
+      const oldOrder = payload.old as Order | null
+      
       // Check for duplicate updates
-      const recordId =
-        (payload.new as Order)?.id || (payload.old as Order)?.id || ''
+      const recordId = newOrder?.id || oldOrder?.id || ''
+      if (!recordId) {
+        console.warn('Real-time payload missing order ID:', payload)
+        return
+      }
+      
       const lastUpdate = dedupeMapRef.current.get(recordId)
       if (lastUpdate && now - lastUpdate < CACHE_CONFIG.DEDUPE_WINDOW) {
         return // Skip duplicate
       }
 
       // Update dedupe map
-      if (recordId) {
-        dedupeMapRef.current.set(recordId, now)
-      }
+      dedupeMapRef.current.set(recordId, now)
 
       // Handle update based on event type
       switch (payload.eventType) {
         case 'INSERT':
-          if (payload.new) {
-            queueBatchUpdate(payload.new)
+          if (newOrder && newOrder.id) {
+            queueBatchUpdate(newOrder)
           }
           break
 
         case 'UPDATE':
-          if (payload.new) {
-            queueBatchUpdate(payload.new)
+          if (newOrder && newOrder.id) {
+            queueBatchUpdate(newOrder)
           }
           break
 
         case 'DELETE':
-          if ((payload.old as Order)?.id) {
+          if (oldOrder?.id) {
             dispatch({
               type: 'REMOVE_ORDER',
-              payload: (payload.old as Order).id,
+              payload: oldOrder.id,
             })
           }
           break

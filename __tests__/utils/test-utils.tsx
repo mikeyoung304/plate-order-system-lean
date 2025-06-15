@@ -141,25 +141,59 @@ export const createMockSupabaseClient = () => ({
       data: { subscription: { unsubscribe: jest.fn() } },
     }),
   },
-  from: jest.fn(() => ({
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    gte: jest.fn().mockReturnThis(),
-    lte: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({
-      data: null,
-      error: null,
-    }),
-    maybeSingle: jest.fn().mockResolvedValue({
-      data: null,
-      error: null,
-    }),
-  })),
+  from: jest.fn(() => {
+    const createQueryBuilder = () => {
+      const queryBuilder = {
+        select: jest.fn(),
+        insert: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        eq: jest.fn(),
+        gte: jest.fn(),
+        lte: jest.fn(),
+        order: jest.fn(),
+        limit: jest.fn(),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: null,
+        }),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: null,
+          error: null,
+        }),
+      };
+      
+      // Make each chainable method return the same query builder
+      queryBuilder.select.mockReturnValue(queryBuilder);
+      queryBuilder.insert.mockReturnValue(queryBuilder);
+      queryBuilder.update.mockReturnValue(queryBuilder);
+      queryBuilder.delete.mockReturnValue(queryBuilder);
+      queryBuilder.eq.mockReturnValue(queryBuilder);
+      queryBuilder.gte.mockReturnValue(queryBuilder);
+      queryBuilder.lte.mockReturnValue(queryBuilder);
+      queryBuilder.order.mockReturnValue(queryBuilder);
+      queryBuilder.limit.mockReturnValue(queryBuilder);
+      
+      // Add mockResolvedValue to chainable methods
+      queryBuilder.select.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.insert.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.update.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.delete.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.eq.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.gte.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.lte.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.order.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.limit.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      
+      return queryBuilder;
+    };
+    
+    return createQueryBuilder();
+  }),
+  rpc: jest.fn().mockResolvedValue({
+    data: null,
+    error: null,
+  }),
   channel: jest.fn(() => ({
     on: jest.fn().mockReturnThis(),
     subscribe: jest.fn().mockResolvedValue('ok'),
@@ -210,9 +244,10 @@ export const mockData = {
     server_id: 'test-server-id',
     items: ['Test Item 1', 'Test Item 2'],
     transcript: 'Test order transcript',
-    status: 'pending',
+    status: 'new',
     type: 'food',
     priority: 1,
+    actual_time: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,

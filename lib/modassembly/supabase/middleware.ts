@@ -6,6 +6,16 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    // Skip Supabase auth for development server startup and health checks
+    const isStartupRequest = request.headers.get('user-agent')?.includes('node') ||
+                           request.headers.get('sec-fetch-mode') === 'navigate' ||
+                           request.nextUrl.pathname.startsWith('/_next') ||
+                           !request.headers.get('user-agent')
+
+    if (isStartupRequest) {
+        return supabaseResponse
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,9 +43,15 @@ export async function updateSession(request: NextRequest) {
 
     // IMPORTANT: DO NOT REMOVE auth.getUser()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    let user = null
+    try {
+        const result = await supabase.auth.getUser()
+        user = result.data?.user
+    } catch (error) {
+        console.warn('Supabase auth check failed:', error)
+        // Continue without auth if Supabase is unreachable
+        return supabaseResponse
+    }
 
     if (!user && request.nextUrl.pathname !== '/') {
         // no user, redirect to the root page which has the auth form

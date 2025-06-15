@@ -83,13 +83,7 @@ export async function createOrder(orderData: {
         status: 'new',
       },
     ])
-    .select(
-      `
-      *,
-      tables!inner(label),
-      seats!inner(label)
-    `
-    )
+    .select('*')
     .single()
 
   if (error) {
@@ -100,6 +94,12 @@ export async function createOrder(orderData: {
   if (!data) {
     throw new Error('No data returned from order creation')
   }
+
+  // Fetch table and seat info separately to build the complete Order object
+  const [tableData, seatData] = await Promise.all([
+    supabase.from('tables').select('label').eq('id', data.table_id).single(),
+    supabase.from('seats').select('label').eq('id', data.seat_id).single()
+  ])
 
   // Automatically route the order to appropriate KDS stations
   try {
@@ -112,8 +112,8 @@ export async function createOrder(orderData: {
 
   return {
     ...data,
-    table: `Table ${data.tables.label}`,
-    seat: data.seats.label,
+    table: `Table ${tableData.data?.label || 'Unknown'}`,
+    seat: seatData.data?.label || 0,
     items: data.items || [],
   } as Order
 }

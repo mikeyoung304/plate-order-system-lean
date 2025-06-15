@@ -180,47 +180,49 @@ async function DashboardContent() {
             </Link>
           </div>
 
-          {/* Floor Plan Manager - Layout & Sections */}
-          <div className='dashboard-item dashboard-item-4'>
-            <Link href='/admin' className='block h-full'>
-              <Card className='h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 border-purple-500/50 hover:border-purple-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02]'>
-                <CardContent className='p-0'>
-                  <div className='p-8 flex flex-col h-full relative'>
-                    {/* Enhanced glow effect */}
-                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-indigo-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+          {/* Floor Plan Manager - Layout & Sections (Admin Only) */}
+          {profile?.role === 'admin' && (
+            <div className='dashboard-item dashboard-item-4'>
+              <Link href='/admin' className='block h-full'>
+                <Card className='h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 border-purple-500/50 hover:border-purple-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02]'>
+                  <CardContent className='p-0'>
+                    <div className='p-8 flex flex-col h-full relative'>
+                      {/* Enhanced glow effect */}
+                      <div className='absolute -top-32 -right-32 w-64 h-64 bg-indigo-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
 
-                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
-                      <LayoutGrid className='w-8 h-8 text-white drop-shadow-lg' />
-                    </div>
-                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
-                      Floor Plan Manager
-                    </h2>
-                    <p className='text-purple-100 sf-pro-text font-light text-sm leading-relaxed'>
-                      Layout Design & Section Management
-                    </p>
-                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-purple-100'>
-                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
-                        <LayoutGrid className='w-3 h-3' />
-                        <span>Edit Layout</span>
+                      <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                        <LayoutGrid className='w-8 h-8 text-white drop-shadow-lg' />
                       </div>
-                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
-                        <User className='w-3 h-3' />
-                        <span>Assign Sections</span>
-                      </div>
-                    </div>
-                    <div className='mt-auto pt-8'>
-                      <div className='flex items-center justify-between'>
-                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
-                          Manage Layout →
+                      <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                        Floor Plan Manager
+                      </h2>
+                      <p className='text-purple-100 sf-pro-text font-light text-sm leading-relaxed'>
+                        Layout Design & Section Management
+                      </p>
+                      <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-purple-100'>
+                        <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                          <LayoutGrid className='w-3 h-3' />
+                          <span>Edit Layout</span>
                         </div>
-                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                        <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                          <User className='w-3 h-3' />
+                          <span>Assign Sections</span>
+                        </div>
+                      </div>
+                      <div className='mt-auto pt-8'>
+                        <div className='flex items-center justify-between'>
+                          <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                            Manage Layout →
+                          </div>
+                          <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          )}
 
           {/* Cook Station - Prep & Recipes */}
           <div className='dashboard-item dashboard-item-5'>

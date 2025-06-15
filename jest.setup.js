@@ -55,6 +55,14 @@ jest.mock('./lib/modassembly/supabase/client', () => {
   }
 })
 
+// Mock Supabase server client
+jest.mock('./lib/modassembly/supabase/server', () => {
+  const { createMockSupabaseClient } = require('./__tests__/utils/test-utils')
+  return {
+    createClient: jest.fn(() => createMockSupabaseClient()),
+  }
+})
+
 // Note: @supabase/auth-helpers-nextjs no longer used - using server-first auth pattern
 
 // Mock OpenAI API
@@ -132,13 +140,28 @@ global.URL.createObjectURL = jest.fn(() => 'mocked-object-url')
 global.URL.revokeObjectURL = jest.fn()
 
 // Mock Blob constructor
-global.Blob = jest.fn().mockImplementation((content, options) => ({
-  size: content ? content.length : 0,
-  type: options?.type || '',
-  stream: jest.fn(),
-  text: jest.fn().mockResolvedValue(content ? content.join('') : ''),
-  arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(0)),
-}))
+global.Blob = jest.fn().mockImplementation((content, options) => {
+  let size = 0;
+  if (content && Array.isArray(content)) {
+    size = content.reduce((total, item) => {
+      if (item instanceof ArrayBuffer || item instanceof Uint8Array) {
+        return total + item.byteLength || item.length
+      }
+      if (typeof item === 'string') {
+        return total + item.length
+      }
+      return total + (item.length || 0)
+    }, 0)
+  }
+  
+  return {
+    size,
+    type: options?.type || '',
+    stream: jest.fn(),
+    text: jest.fn().mockResolvedValue(content ? content.join('') : ''),
+    arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(size)),
+  }
+})
 
 // Mock File constructor
 global.File = jest.fn().mockImplementation((content, filename, options) => ({
@@ -230,6 +253,7 @@ Element.prototype.scrollIntoView = jest.fn()
 // Mock clipboard API
 Object.defineProperty(navigator, 'clipboard', {
   writable: true,
+  configurable: true,
   value: {
     writeText: jest.fn().mockResolvedValue(undefined),
     readText: jest.fn().mockResolvedValue(''),
@@ -237,20 +261,38 @@ Object.defineProperty(navigator, 'clipboard', {
 })
 
 // Mock crypto.subtle API for hashing operations
-global.crypto = {
-  ...global.crypto,
-  subtle: {
-    digest: jest.fn(async (algorithm, data) => {
-      // Simple mock hash generation
-      const view = new Uint8Array(data)
-      const hash = new Uint8Array(32)
-      for (let i = 0; i < 32; i++) {
-        hash[i] = view[i % view.length] || 0
+Object.defineProperty(global, 'crypto', {
+  writable: true,
+  value: {
+    ...global.crypto,
+    subtle: {
+      digest: jest.fn(async (algorithm, data) => {
+        // Simple mock hash generation that creates different hashes for different data
+        const view = new Uint8Array(data)
+        const hash = new Uint8Array(32)
+        let seed = 0
+        for (let i = 0; i < view.length; i++) {
+          seed = (seed + view[i]) * 31
+        }
+        for (let i = 0; i < 32; i++) {
+          hash[i] = (seed + i) % 256
+        }
+        return hash.buffer
+      }),
+    },
+    getRandomValues: jest.fn((array) => {
+      for (let i = 0; i < array.length; i++) {
+        array[i] = Math.floor(Math.random() * 256)
       }
-      return hash.buffer
+      return array
     }),
+    randomUUID: jest.fn(() => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0
+      const v = c === 'x' ? r : (r & 0x3 | 0x8)
+      return v.toString(16)
+    })),
   },
-}
+})
 
 // Setup cleanup for better test isolation
 afterEach(() => {

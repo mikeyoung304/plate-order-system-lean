@@ -47,6 +47,7 @@ type OrdersAction =
   | { type: 'SET_ORDERS'; payload: Order[] }
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'UPDATE_ORDER'; payload: Order }
+  | { type: 'UPDATE_ORDER_AND_CLEAR_OPTIMISTIC'; payload: { order: Order; orderId: string } }
   | { type: 'REMOVE_ORDER'; payload: string }
   | {
       type: 'OPTIMISTIC_UPDATE'
@@ -96,6 +97,18 @@ function ordersReducer(state: OrdersState, action: OrdersAction): OrdersState {
         orders: state.orders.map(order =>
           order.id === action.payload.id ? action.payload : order
         ),
+        lastUpdated: new Date(),
+      }
+
+    case 'UPDATE_ORDER_AND_CLEAR_OPTIMISTIC':
+      const { [action.payload.orderId]: removedOptimistic, ...remainingOptimistic } =
+        state.optimisticUpdates
+      return {
+        ...state,
+        orders: state.orders.map(order =>
+          order.id === action.payload.order.id ? action.payload.order : order
+        ),
+        optimisticUpdates: remainingOptimistic,
         lastUpdated: new Date(),
       }
 
@@ -191,6 +204,7 @@ interface OrdersProviderProps {
   enableRealtime?: boolean
   autoRefresh?: boolean
   refreshInterval?: number
+  disableAutoLoad?: boolean // For testing purposes
 }
 
 export function OrdersProvider({
@@ -198,12 +212,14 @@ export function OrdersProvider({
   enableRealtime = true,
   autoRefresh = false,
   refreshInterval = 30000, // 30 seconds
+  disableAutoLoad = false,
 }: OrdersProviderProps) {
   const [state, dispatch] = useReducer(ordersReducer, initialState)
   const supabaseRef = useRef(createClient())
   const channelRef = useRef<RealtimeChannel | null>(null)
   const mountedRef = useRef(true)
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Compute orders with optimistic updates applied
   const orders = useMemo(() => {
@@ -219,22 +235,38 @@ export function OrdersProvider({
       return
     }
 
-    dispatch({ type: 'SET_LOADING', payload: true })
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+    const currentController = abortControllerRef.current
+
+    // Ensure component is still mounted before setting loading state
+    if (mountedRef.current) {
+      dispatch({ type: 'SET_LOADING', payload: true })
+    }
 
     try {
       const fetchedOrders = await getOrders(filters)
 
-      if (mountedRef.current) {
+      // Only dispatch if this request wasn't aborted and component is still mounted
+      if (!currentController.signal.aborted && mountedRef.current) {
         dispatch({ type: 'SET_ORDERS', payload: fetchedOrders })
       }
     } catch (error) {
-      console.error('Error loading orders:', error)
-      if (mountedRef.current) {
-        dispatch({
-          type: 'SET_ERROR',
-          payload:
-            error instanceof Error ? error.message : 'Failed to load orders',
-        })
+      // Don't log or dispatch if the request was aborted
+      if (!currentController.signal.aborted) {
+        console.error('Error loading orders:', error)
+        if (mountedRef.current) {
+          dispatch({
+            type: 'SET_ERROR',
+            payload:
+              error instanceof Error ? error.message : 'Failed to load orders',
+          })
+        }
       }
     }
   }, [])
@@ -265,15 +297,19 @@ export function OrdersProvider({
         const updatedOrder = await updateOrder(orderId, updates)
 
         if (mountedRef.current && updatedOrder) {
-          dispatch({ type: 'UPDATE_ORDER', payload: updatedOrder })
-          dispatch({ type: 'CLEAR_OPTIMISTIC_UPDATE', payload: orderId })
+          // Use combined action to update order and clear optimistic update in one dispatch
+          dispatch({ 
+            type: 'UPDATE_ORDER_AND_CLEAR_OPTIMISTIC', 
+            payload: { order: updatedOrder, orderId } 
+          })
         }
       } catch (error) {
         console.error('Error updating order:', error)
-        // Clear optimistic update on error
+        // Clear optimistic update on error - do this before throwing to ensure it's synchronous
         if (mountedRef.current) {
           dispatch({ type: 'CLEAR_OPTIMISTIC_UPDATE', payload: orderId })
         }
+        // Re-throw the error for the caller to handle
         throw error
       }
     },
@@ -333,7 +369,7 @@ export function OrdersProvider({
 
   const getActiveOrders = useCallback(() => {
     return orders.filter(order =>
-      ['pending', 'confirmed', 'preparing', 'ready'].includes(
+      ['new', 'in_progress', 'ready'].includes(
         order.status || ''
       )
     )
@@ -370,11 +406,14 @@ export function OrdersProvider({
       }
 
       // Calculate average time for completed orders
-      if (status === 'delivered' && order.created_at) {
-        const createdTime = new Date(order.created_at).getTime()
-        const currentTime = Date.now()
-        totalTime += currentTime - createdTime
-        completedOrders++
+      if (status === 'delivered') {
+        if (order.created_at) {
+          // Calculate time since creation
+          const createdTime = new Date(order.created_at).getTime()
+          const currentTime = Date.now()
+          totalTime += currentTime - createdTime
+          completedOrders++
+        }
       }
     })
 
@@ -458,15 +497,21 @@ export function OrdersProvider({
     }
   }, [autoRefresh, refreshInterval, loadOrders])
 
-  // Load orders on mount
+  // Load orders on mount (unless disabled for testing)
   useEffect(() => {
-    loadOrders()
-  }, [loadOrders])
+    if (!disableAutoLoad) {
+      loadOrders()
+    }
+  }, [loadOrders, disableAutoLoad])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false
+      // Abort any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [])
 

@@ -134,7 +134,7 @@ export function ServerClientComponent({
   // Mock resident data for demo
   const mockResidents: Resident[] = [
     {
-      id: '1',
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
       name: 'Salazar Saladbar',
       dietaryRestrictions: ['vegetarian'],
       favoriteSeats: ['5-1', '5-2'],
@@ -153,7 +153,7 @@ export function ServerClientComponent({
       ],
     },
     {
-      id: '2',
+      id: 'b2c3d4e5-f6g7-8901-bcde-f23456789012',
       name: 'Margaret Meatloaf',
       favoriteSeats: ['1-1', '1-3', '2-1'],
       mealPreferences: [
@@ -167,7 +167,7 @@ export function ServerClientComponent({
       ],
     },
     {
-      id: '3',
+      id: 'c3d4e5f6-g7h8-9012-cdef-345678901234',
       name: 'Frank Fisherman',
       favoriteSeats: ['3-2', '4-1'],
       mealPreferences: [
@@ -177,7 +177,7 @@ export function ServerClientComponent({
       ],
     },
     {
-      id: '4',
+      id: 'd4e5f6g7-h8i9-0123-defg-456789012345',
       name: 'Betty Burger',
       favoriteSeats: ['2-2', '3-1'],
       mealPreferences: [
@@ -237,6 +237,16 @@ export function ServerClientComponent({
       setLoading(true)
       setError(null)
 
+      // Debug: Log current authentication state
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      console.log('[ServerClient] Current user:', user ? { id: user.id, email: user.email } : 'No user')
+      if (userError) {
+        console.log('[ServerClient] User error:', userError)
+      }
+
+      // Debug: Log query details
+      console.log('[ServerClient] Executing loadTables query...')
+      
       // Get tables with orders - handle potential RLS issues
       const { data: tablesData, error: tablesError } = await supabase
         .from('tables')
@@ -259,6 +269,11 @@ export function ServerClientComponent({
 
       if (tablesError) {
         console.error('[ServerClient] Tables query error:', tablesError)
+        console.error('[ServerClient] Error code:', tablesError.code)
+        console.error('[ServerClient] Error message:', tablesError.message)
+        console.error('[ServerClient] Error details:', tablesError.details)
+        console.error('[ServerClient] Error hint:', tablesError.hint)
+        
         // If we can't access tables due to RLS, create mock data
         if (tablesError.code === 'PGRST116' || tablesError.message.includes('policy')) {
           console.log('[ServerClient] Using mock data due to RLS restrictions')
@@ -269,6 +284,10 @@ export function ServerClientComponent({
         setError(`Database error: ${tablesError.message}`)
         return
       }
+
+      // Debug: Log successful query result
+      console.log('[ServerClient] Query succeeded! Retrieved tables:', tablesData?.length || 0)
+      console.log('[ServerClient] First table sample:', tablesData?.[0])
 
       // Demo restaurant layout positions
       const demoPositions = [
@@ -434,6 +453,12 @@ export function ServerClientComponent({
   }
 
   const handleSelectMeal = async (meal: string) => {
+    console.log('🍽️ handleSelectMeal called with:', {
+      meal,
+      orderFormData,
+      selectedResident: orderStep.selectedResident
+    })
+
     if (!orderFormData || !orderStep.selectedResident) {
       console.error('Missing order form data or selected resident')
       return
@@ -454,20 +479,36 @@ export function ServerClientComponent({
         seat_number: orderFormData.seatNumber
       })
 
-      // Get seat_id from seat number with better error handling and fallback
+      // First validate that we have a real UUID table ID
+      if (!orderFormData.tableId || orderFormData.tableId.startsWith('mock-')) {
+        console.error('Cannot create order: using mock table ID', orderFormData.tableId)
+        setError('Cannot create order: table not properly loaded from database')
+        return
+      }
+
+      // Get seat_id from seat number with better error handling
+      console.log('🔍 Looking up seat:', {
+        table_id: orderFormData.tableId,
+        seat_label: orderFormData.seatNumber,
+        table_id_type: typeof orderFormData.tableId,
+        seat_label_type: typeof orderFormData.seatNumber
+      })
+      
       let seatData = null
       let seatError = null
       
       try {
         const result = await supabase
           .from('seats')
-          .select('id')
+          .select('id, label, status')
           .eq('table_id', orderFormData.tableId)
           .eq('label', orderFormData.seatNumber)
           .single()
           
         seatData = result.data
         seatError = result.error
+        
+        console.log('🪑 Seat lookup result:', { seatData, seatError })
       } catch (err) {
         console.error('Seat lookup failed:', err)
         seatError = err
@@ -508,15 +549,27 @@ export function ServerClientComponent({
       console.log('Using seat:', seatData)
 
       // Create the order in the database
-      await createOrder({
+      const orderData = {
         table_id: orderFormData.tableId,
         seat_id: seatData.id,
         resident_id: orderStep.selectedResident.id,
         server_id: user.id,
         items: [meal],
         transcript: `Order for ${meal}`,
-        type: 'food'
+        type: 'food' as const
+      }
+      
+      console.log('📝 Creating order with data:', {
+        table_id: orderData.table_id,
+        seat_id: orderData.seat_id, 
+        resident_id: orderData.resident_id,
+        server_id: orderData.server_id,
+        resident_name: orderStep.selectedResident.name,
+        items: orderData.items,
+        type: orderData.type
       })
+      
+      await createOrder(orderData)
 
       // Close form and reload tables to show updated order
       handleCloseOrderForm()
