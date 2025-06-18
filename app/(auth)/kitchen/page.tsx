@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { redirect } from 'next/navigation'
-import { KitchenClientComponent } from '@/components/kitchen-client'
 
-// Luis's server-first pattern - auth check on server
+// Redirect /kitchen to /kitchen/kds since that's the main feature
 export default async function KitchenPage() {
   const supabase = await createClient()
   const {
@@ -13,13 +12,6 @@ export default async function KitchenPage() {
     redirect('/login')
   }
 
-  // Get user profile for role checking
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, name')
-    .eq('user_id', user.id)
-    .single()
-
-  // Pass user data to client component
-  return <KitchenClientComponent user={user} profile={profile} />
+  // Redirect to KDS - the main kitchen functionality
+  redirect('/kitchen/kds')
 }

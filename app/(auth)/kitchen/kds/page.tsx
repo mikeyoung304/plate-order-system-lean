@@ -7,24 +7,9 @@ import { useEffect, useState } from 'react'
 // Impact: Faster kitchen page loads, reduced initial bundle
 // Risk: Minimal - KDS is main feature, users expect short load time
 
-import dynamic from 'next/dynamic'
-
-const KDSLayout = dynamic(
-  () =>
-    import('@/components/kds').then(m => ({ default: m.KDSLayout })),
-  {
-    loading: () => (
-      <div className="flex flex-col items-center justify-center min-h-screen animate-in">
-        <div className="skeleton-loading rounded-lg w-full max-w-6xl h-96 mb-4"></div>
-        <div className="text-center space-y-2">
-          <p className="text-lg font-medium">Loading kitchen display...</p>
-          <p className="text-sm text-muted-foreground">Connecting to real-time orders</p>
-        </div>
-      </div>
-    ),
-    ssr: false, // Real-time updates don't work on server
-  }
-)
+// Temporarily removing dynamic import to debug the issue
+import { KDSLayout } from '@/components/kds'
+import { SimpleKDSDebug } from '@/components/kds/debug-simple'
 import { KDSErrorBoundary } from '@/components/error-boundaries'
 import { PageLoadingState } from '@/components/loading-states'
 import { Button } from '@/components/ui/button'
@@ -51,7 +36,7 @@ type LayoutMode = 'single' | 'multi' | 'split'
 
 export default function KDSPage() {
   const [selectedStationId, setSelectedStationId] = useState<string>('')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('single')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('multi')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [splitStations, setSplitStations] = useState<string[]>([])
 
@@ -255,20 +240,22 @@ export default function KDSPage() {
         )}
 
         {/* Main content */}
-        <div className='flex-1 overflow-hidden'>
+        <div className='flex-1 overflow-auto'>
           <KDSErrorBoundary>
             {layoutMode === 'single' && selectedStationId && (
-              <KDSLayout
-                stationId={selectedStationId}
-                showHeader={isFullscreen}
-                isFullscreen={isFullscreen}
-                onToggleFullscreen={toggleFullscreen}
-              />
+              <div className="h-full overflow-auto">
+                <KDSLayout
+                  stationId={selectedStationId}
+                  showHeader={true}
+                  isFullscreen={isFullscreen}
+                  onToggleFullscreen={toggleFullscreen}
+                />
+              </div>
             )}
 
             {layoutMode === 'multi' && (
               <KDSLayout
-                showHeader={isFullscreen}
+                showHeader={true}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={toggleFullscreen}
               />
