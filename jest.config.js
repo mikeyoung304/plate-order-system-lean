@@ -9,7 +9,6 @@ const createJestConfig = nextJest({
 const baseConfig = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@components/(.*)$': '<rootDir>/components/$1',
@@ -18,7 +17,6 @@ const baseConfig = {
     '^@types/(.*)$': '<rootDir>/types/$1',
     '^@app/(.*)$': '<rootDir>/app/$1',
     '^@services/(.*)$': '<rootDir>/services/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
@@ -29,10 +27,9 @@ const baseConfig = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.(mjs|esm\\.js)$|@testing-library))',
+    '/node_modules/',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 }
 
 // Define test projects
@@ -78,25 +75,23 @@ const config = {
   ],
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 60,
-      lines: 60,
-      statements: 60,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
   reporters: [
     'default',
-    ...(process.env.CI ? [
-      ['jest-junit', {
-        outputDirectory: 'test-reports',
-        outputName: 'junit.xml',
-      }],
-      ['jest-html-reporters', {
-        publicPath: 'test-reports/html',
-        filename: 'report.html',
-        expand: true,
-      }],
-    ] : []),
+    ['jest-junit', {
+      outputDirectory: 'test-reports',
+      outputName: 'junit.xml',
+    }],
+    ['jest-html-reporters', {
+      publicPath: 'test-reports/html',
+      filename: 'report.html',
+      expand: true,
+    }],
   ],
   watchPlugins: [
     'jest-watch-typeahead/filename',
