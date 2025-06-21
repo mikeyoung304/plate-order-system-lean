@@ -1,12 +1,4 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import { Shell } from '@/components/shell'
-import {
-  ProtectedRoute,
-  useIsRole,
-  useRole,
-} from '@/lib/modassembly/supabase/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import {
@@ -20,30 +12,30 @@ import {
   User,
   Utensils,
 } from 'lucide-react'
+import { createClient } from '@/lib/modassembly/supabase/server'
+import { redirect } from 'next/navigation'
+import { DashboardClock } from '@/components/dashboard-clock'
 
-function DashboardContent() {
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const _userRole = useRole()
-  const _isServer = useIsRole('server')
-  const _isCook = useIsRole('cook')
-  const _isAdmin = useIsRole('admin')
+async function DashboardContent() {
+  // Server-side auth check using Luis's pattern
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (!user) {
+    redirect('/login')
   }
 
-  // Animation classes are now handled via CSS for better performance
+  // Get user profile for sidebar
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, name')
+    .eq('user_id', user.id)
+    .single()
 
   return (
-    <Shell>
+    <Shell user={user} profile={profile}>
       {/* Subtle texture overlay */}
       <div className='absolute inset-0 bg-noise opacity-5 pointer-events-none'></div>
 
@@ -58,12 +50,7 @@ function DashboardContent() {
             </p>
           </div>
 
-          <div className='mt-4 md:mt-0 flex items-center bg-gray-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-800/50 shadow-inner'>
-            <Clock className='w-4 h-4 text-gray-400 mr-2' />
-            <span className='text-gray-300 sf-pro-text'>
-              {formatTime(currentTime)}
-            </span>
-          </div>
+          <DashboardClock />
         </div>
 
         <div className='dashboard-container grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8'>
@@ -193,47 +180,49 @@ function DashboardContent() {
             </Link>
           </div>
 
-          {/* Floor Plan Manager - Layout & Sections */}
-          <div className='dashboard-item dashboard-item-4'>
-            <Link href='/admin' className='block h-full'>
-              <Card className='h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 border-purple-500/50 hover:border-purple-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02]'>
-                <CardContent className='p-0'>
-                  <div className='p-8 flex flex-col h-full relative'>
-                    {/* Enhanced glow effect */}
-                    <div className='absolute -top-32 -right-32 w-64 h-64 bg-indigo-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
+          {/* Floor Plan Manager - Layout & Sections (Admin Only) */}
+          {profile?.role === 'admin' && (
+            <div className='dashboard-item dashboard-item-4'>
+              <Link href='/admin' className='block h-full'>
+                <Card className='h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 border-purple-500/50 hover:border-purple-400/70 transition-all duration-500 overflow-hidden group shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02]'>
+                  <CardContent className='p-0'>
+                    <div className='p-8 flex flex-col h-full relative'>
+                      {/* Enhanced glow effect */}
+                      <div className='absolute -top-32 -right-32 w-64 h-64 bg-indigo-300/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700'></div>
 
-                    <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
-                      <LayoutGrid className='w-8 h-8 text-white drop-shadow-lg' />
-                    </div>
-                    <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
-                      Floor Plan Manager
-                    </h2>
-                    <p className='text-purple-100 sf-pro-text font-light text-sm leading-relaxed'>
-                      Layout Design & Section Management
-                    </p>
-                    <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-purple-100'>
-                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
-                        <LayoutGrid className='w-3 h-3' />
-                        <span>Edit Layout</span>
+                      <div className='w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-300 shadow-2xl border border-white/20'>
+                        <LayoutGrid className='w-8 h-8 text-white drop-shadow-lg' />
                       </div>
-                      <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
-                        <User className='w-3 h-3' />
-                        <span>Assign Sections</span>
-                      </div>
-                    </div>
-                    <div className='mt-auto pt-8'>
-                      <div className='flex items-center justify-between'>
-                        <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
-                          Manage Layout →
+                      <h2 className='text-2xl font-semibold sf-pro-display mb-3 text-white drop-shadow-sm'>
+                        Floor Plan Manager
+                      </h2>
+                      <p className='text-purple-100 sf-pro-text font-light text-sm leading-relaxed'>
+                        Layout Design & Section Management
+                      </p>
+                      <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-purple-100'>
+                        <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                          <LayoutGrid className='w-3 h-3' />
+                          <span>Edit Layout</span>
                         </div>
-                        <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                        <div className='flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full'>
+                          <User className='w-3 h-3' />
+                          <span>Assign Sections</span>
+                        </div>
+                      </div>
+                      <div className='mt-auto pt-8'>
+                        <div className='flex items-center justify-between'>
+                          <div className='text-white font-medium text-sm sf-pro-text group-hover:translate-x-2 transition-transform duration-300'>
+                            Manage Layout →
+                          </div>
+                          <div className='w-3 h-3 bg-white rounded-full animate-pulse shadow-lg'></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          )}
 
           {/* Cook Station - Prep & Recipes */}
           <div className='dashboard-item dashboard-item-5'>
@@ -324,10 +313,7 @@ function DashboardContent() {
   )
 }
 
+// Luis's server-first pattern - simple and direct
 export default function Dashboard() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  )
+  return <DashboardContent />
 }

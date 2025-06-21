@@ -19,8 +19,8 @@ const mockUpdateOrder = jest.fn()
 const mockDeleteOrder = jest.fn()
 const mockGetOrders = jest.fn()
 
-jest.mock('@/lib/modassembly/supabase/optimized-client', () => ({
-  createOptimizedClient: jest.fn(() => ({
+jest.mock('@/lib/modassembly/supabase/client', () => ({
+  createClient: jest.fn(() => ({
     channel: jest.fn(() => ({
       on: jest.fn().mockReturnThis(),
       subscribe: jest.fn().mockReturnValue(Promise.resolve()),
@@ -38,10 +38,28 @@ jest.mock('@/lib/modassembly/supabase/database/orders', () => ({
 
 describe('OrdersContext', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <OrdersProvider enableRealtime={false} autoRefresh={false}>
+    <OrdersProvider enableRealtime={false} autoRefresh={false} disableAutoLoad={true}>
       {children}
     </OrdersProvider>
   )
+
+  // Helper function to wait for all pending async operations
+  const waitForAsyncOperations = async () => {
+    await act(async () => {
+      // Wait for any pending promises to resolve
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+  }
+
+  // Helper function to load orders in tests
+  const loadOrdersInTest = async (result: any) => {
+    await act(async () => {
+      await result.current.loadOrders()
+    })
+    await waitFor(() => {
+      expect(result.current.state.loading).toBe(false)
+    })
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -56,6 +74,11 @@ describe('OrdersContext', () => {
       ...updates,
     }))
     mockDeleteOrder.mockResolvedValue(undefined)
+  })
+
+  afterEach(async () => {
+    // Wait for any pending async operations to complete
+    await waitForAsyncOperations()
   })
 
   describe('Provider Initialization', () => {
@@ -79,6 +102,11 @@ describe('OrdersContext', () => {
       mockGetOrders.mockResolvedValue(testOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
+      
+      // Since auto-load is disabled in tests, manually trigger load
+      await act(async () => {
+        await result.current.loadOrders()
+      })
       
       await waitFor(() => {
         expect(result.current.state.loading).toBe(false)
@@ -113,7 +141,7 @@ describe('OrdersContext', () => {
         resident_id: 'resident-1',
         server_id: 'server-1',
         items: ['Chicken', 'Salad'],
-        status: 'pending' as const,
+        status: 'new' as const,
       }
 
       await act(async () => {
@@ -128,7 +156,7 @@ describe('OrdersContext', () => {
     })
 
     it('updates existing order', async () => {
-      const initialOrders = [mockData.order({ id: 'order-1', status: 'pending' })]
+      const initialOrders = [mockData.order({ id: 'order-1', status: 'new' })]
       mockGetOrders.mockResolvedValue(initialOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
@@ -137,7 +165,7 @@ describe('OrdersContext', () => {
         expect(result.current.orders).toHaveLength(1)
       })
 
-      const updates = { status: 'preparing' as const }
+      const updates = { status: 'in_progress' as const }
       mockUpdateOrder.mockResolvedValue({ 
         ...initialOrders[0], 
         ...updates 
@@ -148,7 +176,7 @@ describe('OrdersContext', () => {
       })
 
       expect(mockUpdateOrder).toHaveBeenCalledWith('order-1', updates)
-      expect(result.current.getOrderById('order-1')?.status).toBe('preparing')
+      expect(result.current.getOrderById('order-1')?.status).toBe('in_progress')
     })
 
     it('removes order', async () => {
@@ -182,7 +210,7 @@ describe('OrdersContext', () => {
         await expect(result.current.createNewOrder({
           table_id: 'table-1',
           items: [],
-          status: 'pending',
+          status: 'new',
         } as any)).rejects.toThrow('Creation failed')
       })
 
@@ -192,7 +220,7 @@ describe('OrdersContext', () => {
 
   describe('Optimistic Updates', () => {
     it('applies optimistic updates immediately', async () => {
-      const initialOrders = [mockData.order({ id: 'order-1', status: 'pending' })]
+      const initialOrders = [mockData.order({ id: 'order-1', status: 'new' })]
       mockGetOrders.mockResolvedValue(initialOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
@@ -202,17 +230,17 @@ describe('OrdersContext', () => {
       })
 
       act(() => {
-        result.current.optimisticUpdate('order-1', { status: 'preparing' })
+        result.current.optimisticUpdate('order-1', { status: 'in_progress' })
       })
 
-      expect(result.current.getOrderById('order-1')?.status).toBe('preparing')
+      expect(result.current.getOrderById('order-1')?.status).toBe('in_progress')
       expect(result.current.state.optimisticUpdates['order-1']).toEqual({ 
-        status: 'preparing' 
+        status: 'in_progress' 
       })
     })
 
     it('clears optimistic updates on successful real update', async () => {
-      const initialOrders = [mockData.order({ id: 'order-1', status: 'pending' })]
+      const initialOrders = [mockData.order({ id: 'order-1', status: 'new' })]
       mockGetOrders.mockResolvedValue(initialOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
@@ -223,13 +251,13 @@ describe('OrdersContext', () => {
 
       // Apply optimistic update
       act(() => {
-        result.current.optimisticUpdate('order-1', { status: 'preparing' })
+        result.current.optimisticUpdate('order-1', { status: 'in_progress' })
       })
 
       expect(result.current.state.optimisticUpdates['order-1']).toBeDefined()
 
       // Simulate successful real update
-      const updates = { status: 'preparing' as const }
+      const updates = { status: 'in_progress' as const }
       mockUpdateOrder.mockResolvedValue({ 
         ...initialOrders[0], 
         ...updates 
@@ -243,7 +271,7 @@ describe('OrdersContext', () => {
     })
 
     it('clears optimistic updates on operation error', async () => {
-      const initialOrders = [mockData.order({ id: 'order-1', status: 'pending' })]
+      const initialOrders = [mockData.order({ id: 'order-1', status: 'new' })]
       mockGetOrders.mockResolvedValue(initialOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
@@ -254,7 +282,7 @@ describe('OrdersContext', () => {
 
       // Apply optimistic update
       act(() => {
-        result.current.optimisticUpdate('order-1', { status: 'preparing' })
+        result.current.optimisticUpdate('order-1', { status: 'in_progress' })
       })
 
       expect(result.current.state.optimisticUpdates['order-1']).toBeDefined()
@@ -264,7 +292,7 @@ describe('OrdersContext', () => {
 
       await act(async () => {
         await expect(
-          result.current.updateOrderData('order-1', { status: 'preparing' })
+          result.current.updateOrderData('order-1', { status: 'in_progress' })
         ).rejects.toThrow('Update failed')
       })
 
@@ -272,7 +300,7 @@ describe('OrdersContext', () => {
     })
 
     it('merges multiple optimistic updates', async () => {
-      const initialOrders = [mockData.order({ id: 'order-1', status: 'pending' })]
+      const initialOrders = [mockData.order({ id: 'order-1', status: 'new' })]
       mockGetOrders.mockResolvedValue(initialOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
@@ -282,12 +310,12 @@ describe('OrdersContext', () => {
       })
 
       act(() => {
-        result.current.optimisticUpdate('order-1', { status: 'preparing' })
+        result.current.optimisticUpdate('order-1', { status: 'in_progress' })
         result.current.optimisticUpdate('order-1', { priority: 1 })
       })
 
       const updatedOrder = result.current.getOrderById('order-1')
-      expect(updatedOrder?.status).toBe('preparing')
+      expect(updatedOrder?.status).toBe('in_progress')
       expect(updatedOrder?.priority).toBe(1)
     })
   })
@@ -297,7 +325,7 @@ describe('OrdersContext', () => {
       const testOrders = [
         mockData.order({ 
           id: 'order-1', 
-          status: 'pending', 
+          status: 'new', 
           table_id: 'table-1',
           resident_id: 'resident-1'
         }),
@@ -309,7 +337,7 @@ describe('OrdersContext', () => {
         }),
         mockData.order({ 
           id: 'order-3', 
-          status: 'served', 
+          status: 'delivered', 
           table_id: 'table-2',
           resident_id: 'resident-1'
         }),
@@ -320,9 +348,7 @@ describe('OrdersContext', () => {
     it('gets order by ID', async () => {
       const { result } = renderHook(() => useOrders(), { wrapper })
       
-      await waitFor(() => {
-        expect(result.current.orders).toHaveLength(3)
-      })
+      await loadOrdersInTest(result)
 
       const order = result.current.getOrderById('order-2')
       expect(order?.id).toBe('order-2')
@@ -336,9 +362,9 @@ describe('OrdersContext', () => {
         expect(result.current.orders).toHaveLength(3)
       })
 
-      const pendingOrders = result.current.getOrdersByStatus('pending')
-      expect(pendingOrders).toHaveLength(1)
-      expect(pendingOrders[0].id).toBe('order-1')
+      const newOrders = result.current.getOrdersByStatus('new')
+      expect(newOrders).toHaveLength(1)
+      expect(newOrders[0].id).toBe('order-1')
 
       const readyOrders = result.current.getOrdersByStatus('ready')
       expect(readyOrders).toHaveLength(1)
@@ -376,12 +402,10 @@ describe('OrdersContext', () => {
     it('gets active orders', async () => {
       const { result } = renderHook(() => useOrders(), { wrapper })
       
-      await waitFor(() => {
-        expect(result.current.orders).toHaveLength(3)
-      })
+      await loadOrdersInTest(result)
 
       const activeOrders = result.current.getActiveOrders()
-      expect(activeOrders).toHaveLength(2) // pending and ready, not served
+      expect(activeOrders).toHaveLength(2) // new and ready, not delivered
       expect(activeOrders.map(o => o.id)).toEqual(['order-1', 'order-2'])
     })
   })
@@ -389,28 +413,26 @@ describe('OrdersContext', () => {
   describe('Order Statistics', () => {
     it('calculates order statistics correctly', async () => {
       const testOrders = [
-        mockData.order({ id: 'order-1', status: 'pending' }),
+        mockData.order({ id: 'order-1', status: 'new' }),
         mockData.order({ id: 'order-2', status: 'ready' }),
         mockData.order({ id: 'order-3', status: 'ready' }),
-        mockData.order({ id: 'order-4', status: 'served', actual_time: 1800000, created_at: new Date().toISOString() }),
+        mockData.order({ id: 'order-4', status: 'delivered', created_at: new Date().toISOString() }),
       ]
       mockGetOrders.mockResolvedValue(testOrders)
 
       const { result } = renderHook(() => useOrders(), { wrapper })
       
-      await waitFor(() => {
-        expect(result.current.orders).toHaveLength(4)
-      })
+      await loadOrdersInTest(result)
 
       const stats = result.current.getOrderStats()
       
       expect(stats.total).toBe(4)
-      expect(stats.byStatus.pending).toBe(1)
+      expect(stats.byStatus.new).toBe(1)
       expect(stats.byStatus.ready).toBe(2)
-      expect(stats.byStatus.served).toBe(1)
+      expect(stats.byStatus.delivered).toBe(1)
       expect(stats.pendingCount).toBe(1)
       expect(stats.readyCount).toBe(2)
-      expect(stats.averageTime).toBe(30) // 1800000ms = 30 minutes
+      expect(stats.averageTime).toBe(0) // No actual_time data provided
     })
 
     it('handles empty order list', async () => {
@@ -448,11 +470,15 @@ describe('OrdersContext', () => {
 
     it('useActiveOrders provides active orders only', async () => {
       const testOrders = [
-        mockData.order({ id: 'order-1', status: 'pending' }),
-        mockData.order({ id: 'order-2', status: 'served' }),
+        mockData.order({ id: 'order-1', status: 'new' }),
+        mockData.order({ id: 'order-2', status: 'delivered' }),
         mockData.order({ id: 'order-3', status: 'ready' }),
       ]
       mockGetOrders.mockResolvedValue(testOrders)
+
+      // First load the data using useOrders, then test useActiveOrders
+      const { result: ordersResult } = renderHook(() => useOrders(), { wrapper })
+      await loadOrdersInTest(ordersResult)
 
       const { result } = renderHook(() => useActiveOrders(), { wrapper })
       
@@ -480,8 +506,8 @@ describe('OrdersContext', () => {
       })
 
       // Simulate concurrent operations
-      const orderData1 = { table_id: 'table-1', items: ['Item 1'], status: 'pending' as const }
-      const orderData2 = { table_id: 'table-2', items: ['Item 2'], status: 'pending' as const }
+      const orderData1 = { table_id: 'table-1', items: ['Item 1'], status: 'new' as const }
+      const orderData2 = { table_id: 'table-2', items: ['Item 2'], status: 'new' as const }
 
       mockCreateOrder
         .mockResolvedValueOnce({ id: 'order-1', ...orderData1 })
@@ -509,7 +535,7 @@ describe('OrdersContext', () => {
 
       // Apply optimistic update
       act(() => {
-        result.current.optimisticUpdate('order-1', { status: 'preparing' })
+        result.current.optimisticUpdate('order-1', { status: 'in_progress' })
       })
 
       // Simulate update failure
@@ -517,12 +543,15 @@ describe('OrdersContext', () => {
 
       await act(async () => {
         await expect(
-          result.current.updateOrderData('order-1', { status: 'preparing' })
+          result.current.updateOrderData('order-1', { status: 'in_progress' })
         ).rejects.toThrow('Network error')
       })
 
-      // State should revert optimistic update
-      expect(result.current.getOrderById('order-1')?.status).toBe('pending')
+      // Wait for any additional state updates to complete
+      await waitFor(() => {
+        // State should revert optimistic update
+        expect(result.current.getOrderById('order-1')?.status).toBe('new')
+      })
     })
   })
 

@@ -1,28 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ProtectedRoute } from '@/lib/modassembly/supabase/auth/protected-route'
 // PERFORMANCE_OPTIMIZATION: Dynamic import for KDS Layout
 // Original: Static import loading heavy real-time component immediately
 // Changed to: Lazy loading for better initial page performance
 // Impact: Faster kitchen page loads, reduced initial bundle
 // Risk: Minimal - KDS is main feature, users expect short load time
 
-import dynamic from 'next/dynamic'
-
-const KDSLayout = dynamic(
-  () =>
-    import('@/components/kds').then(m => ({ default: m.KDSLayout })),
-  {
-    loading: () => (
-      <PageLoadingState
-        message='Loading kitchen display...'
-        showProgress={false}
-      />
-    ),
-    ssr: false, // Real-time updates don't work on server
-  }
-)
+// Temporarily removing dynamic import to debug the issue
+import { KDSLayout } from '@/components/kds'
+import { SimpleKDSDebug } from '@/components/kds/debug-simple'
 import { KDSErrorBoundary } from '@/components/error-boundaries'
 import { PageLoadingState } from '@/components/loading-states'
 import { Button } from '@/components/ui/button'
@@ -49,7 +36,7 @@ type LayoutMode = 'single' | 'multi' | 'split'
 
 export default function KDSPage() {
   const [selectedStationId, setSelectedStationId] = useState<string>('')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('single')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('multi')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [splitStations, setSplitStations] = useState<string[]>([])
 
@@ -102,23 +89,20 @@ export default function KDSPage() {
 
   if (stationsLoading) {
     return (
-      <ProtectedRoute roles={['cook', 'admin']}>
-        <PageLoadingState
-          message='Loading Kitchen Display System...'
-          showProgress={false}
-        />
-      </ProtectedRoute>
+      <PageLoadingState
+        message='Loading Kitchen Display System...'
+        showProgress={false}
+      />
     )
   }
 
   return (
-    <ProtectedRoute roles={['cook', 'admin']}>
-      <div
-        className={cn(
-          'h-screen flex flex-col bg-gray-100 dark:bg-gray-900',
-          isFullscreen && 'fixed inset-0 z-50'
-        )}
-      >
+    <div
+      className={cn(
+        'h-screen flex flex-col bg-gray-100 dark:bg-gray-900',
+        isFullscreen && 'fixed inset-0 z-50'
+      )}
+    >
         {/* Header - hidden in fullscreen */}
         {!isFullscreen && (
           <div className='flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b shadow-sm'>
@@ -256,20 +240,22 @@ export default function KDSPage() {
         )}
 
         {/* Main content */}
-        <div className='flex-1 overflow-hidden'>
+        <div className='flex-1 overflow-auto'>
           <KDSErrorBoundary>
             {layoutMode === 'single' && selectedStationId && (
-              <KDSLayout
-                stationId={selectedStationId}
-                showHeader={isFullscreen}
-                isFullscreen={isFullscreen}
-                onToggleFullscreen={toggleFullscreen}
-              />
+              <div className="h-full overflow-auto">
+                <KDSLayout
+                  stationId={selectedStationId}
+                  showHeader={true}
+                  isFullscreen={isFullscreen}
+                  onToggleFullscreen={toggleFullscreen}
+                />
+              </div>
             )}
 
             {layoutMode === 'multi' && (
               <KDSLayout
-                showHeader={isFullscreen}
+                showHeader={true}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={toggleFullscreen}
               />
@@ -341,7 +327,6 @@ export default function KDSPage() {
             </Button>
           </div>
         )}
-      </div>
-    </ProtectedRoute>
+    </div>
   )
 }

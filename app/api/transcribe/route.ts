@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
     // 2. Authentication & Session Security
     const supabase = await createClient()
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
-    if (authError || !session?.user) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },
         {
@@ -41,11 +41,11 @@ export async function POST(request: NextRequest) {
 
     // 3. Enhanced Rate Limiting with Cost-Based Budgets
     const usageTracker = getUsageTracker()
-    
+
     // Check if user is within daily budget
-    const dailyStats = await usageTracker.getUsageStats('day', session.user.id)
+    const dailyStats = await usageTracker.getUsageStats('day', user.id)
     const dailyBudget = 5.0 // $5 daily budget per user
-    
+
     if (dailyStats.totalCost >= dailyBudget) {
       return NextResponse.json(
         {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Standard rate limiting
     const isAllowed = Security.rateLimit.isAllowed(
-      session.user.id,
+      user.id,
       'transcribe',
       10, // Increased to 10 per minute (caching should reduce actual OpenAI calls)
       10 / 60 // Rate per second
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     // Log large files for optimization tracking
     if (audioFile.size > targetFileSize) {
       // console.log('Large audio file detected, will optimize:', {
-      //   userId: session.user.id,
+      //   userId: user.id,
       //   originalSize: audioFile.size,
       //   fileName: Security.sanitize.sanitizeIdentifier(audioFile.name || 'unknown'),
       // })
@@ -173,11 +173,11 @@ export async function POST(request: NextRequest) {
       const audioBlob = new Blob([await audioFile.arrayBuffer()], {
         type: audioFile.type,
       })
-      
+
       // Use optimized transcription service with caching, optimization, and tracking
       const result = await optimizedTranscribeAudioFile(
         audioBlob,
-        session.user.id,
+        user.id,
         safeFileName,
         {
           enableOptimization: true,
@@ -188,34 +188,38 @@ export async function POST(request: NextRequest) {
           preferredModel: 'gpt-3.5-turbo', // Cost-effective for menu parsing
         }
       )
-      
+
       transcriptionResult = result
-      
     } catch (transcriptionError: any) {
       console.error('Optimized transcription failed:', {
         error: transcriptionError.message,
         code: transcriptionError.code,
         retryable: transcriptionError.retryable,
-        userId: session.user.id,
+        userId: user.id,
         fileSize: audioFile.size,
         fileType: audioFile.type,
       })
 
       // Provide more specific error messages based on error type
-      let errorMessage = 'Audio transcription failed. Please try again with a clearer recording.'
+      let errorMessage =
+        'Audio transcription failed. Please try again with a clearer recording.'
       let statusCode = 422
 
       if (transcriptionError.code === 'RATE_LIMITED') {
-        errorMessage = 'Service temporarily unavailable due to high demand. Please try again in a moment.'
+        errorMessage =
+          'Service temporarily unavailable due to high demand. Please try again in a moment.'
         statusCode = 503
       } else if (transcriptionError.code === 'AUDIO_TOO_LARGE') {
-        errorMessage = 'Audio file is too large. Please record a shorter message.'
+        errorMessage =
+          'Audio file is too large. Please record a shorter message.'
         statusCode = 413
       } else if (transcriptionError.code === 'INVALID_FORMAT') {
-        errorMessage = 'Audio format not supported. Please use a different recording format.'
+        errorMessage =
+          'Audio format not supported. Please use a different recording format.'
         statusCode = 400
       } else if (transcriptionError.code === 'TIMEOUT') {
-        errorMessage = 'Transcription timed out. Please try recording a shorter message.'
+        errorMessage =
+          'Transcription timed out. Please try recording a shorter message.'
         statusCode = 408
       }
 
@@ -244,7 +248,7 @@ export async function POST(request: NextRequest) {
 
     // 8. Enhanced Logging with Optimization Metrics
     // console.log('Optimized transcription completed:', {
-    //   userId: session.user.id,
+    //   userId: user.id,
     //   itemCount: safeItems.length,
     //   transcriptionLength: safeTranscription.length,
     //   originalFileSize: audioFile.size,

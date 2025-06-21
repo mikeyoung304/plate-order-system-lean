@@ -30,7 +30,7 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
     const tableGroups = new Map<string, KDSOrderRouting[]>()
 
     for (const order of orders) {
-      const tableId = order.order?.table_id
+      const tableId = order.order?.table?.id
       if (!tableId) continue
 
       let tableOrders = tableGroups.get(tableId)
@@ -64,7 +64,7 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
 
       const uniqueSeats = new Set<string>()
       for (const order of sortedOrders) {
-        const seatId = order.order?.seat_id
+        const seatId = order.order?.seat?.id
         if (seatId) {
           uniqueSeats.add(seatId)
         }
@@ -131,7 +131,7 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
       }
 
       const tableLabel =
-        sortedOrders[0].order?.table?.label || `Table ${tableId.slice(-6)}`
+        `Table ${sortedOrders[0].order?.table?.label || tableId.slice(-6)}`
 
       groups.push({
         tableId,

@@ -10,6 +10,15 @@ import { OrderCard } from './order-card'
 import { TableGroupCard } from './table-group-card'
 import { useKDSState } from '@/lib/hooks/use-kds-state'
 import { useTableGroupedOrders } from '@/hooks/use-table-grouped-orders'
+import {
+  bumpOrder,
+  recallOrder,
+  startOrderPrep,
+  updateOrderPriority,
+  addOrderNotes,
+} from '@/lib/modassembly/supabase/database/kds'
+import { getClientUser } from '@/lib/modassembly/supabase/auth/session'
+import { useToast } from '@/hooks/use-toast'
 
 interface KDSMainContentProps {
   className?: string
@@ -79,26 +88,124 @@ const getGridClasses = (viewMode: string, orderCount: number) => {
 // Individual order view
 const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
   const kdsState = useKDSState()
+  const { toast } = useToast()
   
-  // Placeholder action handlers matching OrderCard interface
+  // Real action handlers connected to KDS database functions
   const handleBump = async (routingId: string) => {
-    console.log('Bump order:', routingId)
+    try {
+      const user = await getClientUser()
+      const userId = user?.id || 'unknown-user'
+      
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        completed_at: new Date().toISOString(),
+        bumped_at: new Date().toISOString()
+      })
+      
+      await bumpOrder(routingId, userId)
+      toast({
+        title: 'Order completed',
+        description: 'Order marked as ready for pickup',
+      })
+    } catch (error) {
+      console.error('Error bumping order:', error)
+      kdsState.refetch() // Restore correct state
+      toast({
+        title: 'Error',
+        description: 'Failed to bump order',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleRecall = async (routingId: string) => {
-    console.log('Recall order:', routingId)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        completed_at: null,
+        bumped_at: null,
+        recalled_at: new Date().toISOString()
+      })
+      
+      await recallOrder(routingId)
+      toast({
+        title: 'Order recalled',
+        description: 'Order has been recalled to the kitchen',
+      })
+    } catch (error) {
+      console.error('Error recalling order:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to recall order',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleStartPrep = async (routingId: string) => {
-    console.log('Start prep:', routingId)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        started_at: new Date().toISOString()
+      })
+      
+      await startOrderPrep(routingId)
+      toast({
+        title: 'Preparation started',
+        description: 'Order preparation has begun',
+      })
+    } catch (error) {
+      console.error('Error starting prep:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to start preparation',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleUpdatePriority = async (routingId: string, priority: number) => {
-    console.log('Update priority:', routingId, priority)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, { priority })
+      
+      await updateOrderPriority(routingId, priority)
+      toast({
+        title: 'Priority updated',
+        description: `Order priority set to ${priority}`,
+      })
+    } catch (error) {
+      console.error('Error updating priority:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to update priority',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleAddNotes = async (routingId: string, notes: string) => {
-    console.log('Add notes:', routingId, notes)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, { notes })
+      
+      await addOrderNotes(routingId, notes)
+      toast({
+        title: 'Notes saved',
+        description: 'Order notes have been updated',
+      })
+    } catch (error) {
+      console.error('Error adding notes:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to save notes',
+        variant: 'destructive',
+      })
+    }
   }
   
   return (
@@ -124,29 +231,137 @@ IndividualOrderView.displayName = 'IndividualOrderView'
 const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
   const kdsState = useKDSState()
   const tableGroups = useTableGroupedOrders(orders)
+  const { toast } = useToast()
+
+  // 🔥 DEBUG: Log table grouping results
+  console.log('🔥 TableGroupedView DEBUG:', {
+    inputOrders: orders.length,
+    tableGroups: tableGroups.length,
+    firstGroup: tableGroups[0] ? {
+      tableLabel: tableGroups[0].tableLabel,
+      ordersCount: tableGroups[0].orders?.length || 0
+    } : 'No groups',
+    groupDetails: tableGroups.map(g => ({
+      table: g.tableLabel,
+      orders: g.orders?.length || 0
+    }))
+  });
   
-  // Placeholder action handlers matching TableGroupCard interface
+  // Real action handlers for table operations
   const handleBumpOrder = async (routingId: string) => {
-    console.log('Bump order:', routingId)
+    try {
+      const user = await getClientUser()
+      const userId = user?.id || 'unknown-user'
+      
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        completed_at: new Date().toISOString(),
+        bumped_at: new Date().toISOString()
+      })
+      
+      await bumpOrder(routingId, userId)
+      toast({
+        title: 'Order completed',
+        description: 'Order marked as ready for pickup',
+      })
+    } catch (error) {
+      console.error('Error bumping order:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to bump order',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleBumpTable = async (tableId: string, orderIds: string[]) => {
-    console.log('Bump table:', tableId, orderIds)
+    try {
+      const user = await getClientUser()
+      const userId = user?.id || 'unknown-user'
+      
+      // Optimistic updates for all orders
+      orderIds.forEach(orderId => {
+        kdsState.optimisticUpdate(orderId, {
+          completed_at: new Date().toISOString(),
+          bumped_at: new Date().toISOString()
+        })
+      })
+      
+      // Bump all orders in the table
+      await Promise.all(orderIds.map(orderId => bumpOrder(orderId, userId)))
+      
+      toast({
+        title: 'Table completed',
+        description: `All orders for table ${tableId} marked as ready`,
+      })
+    } catch (error) {
+      console.error('Error bumping table:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to bump table orders',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleStartPrep = async (routingId: string) => {
-    console.log('Start prep:', routingId)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        started_at: new Date().toISOString()
+      })
+      
+      await startOrderPrep(routingId)
+      toast({
+        title: 'Preparation started',
+        description: 'Order preparation has begun',
+      })
+    } catch (error) {
+      console.error('Error starting prep:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to start preparation',
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleRecallOrder = async (routingId: string) => {
-    console.log('Recall order:', routingId)
+    try {
+      // Optimistic update
+      kdsState.optimisticUpdate(routingId, {
+        completed_at: null,
+        bumped_at: null,
+        recalled_at: new Date().toISOString()
+      })
+      
+      await recallOrder(routingId)
+      toast({
+        title: 'Order recalled',
+        description: 'Order has been recalled to the kitchen',
+      })
+    } catch (error) {
+      console.error('Error recalling order:', error)
+      kdsState.refetch()
+      toast({
+        title: 'Error',
+        description: 'Failed to recall order',
+        variant: 'destructive',
+      })
+    }
   }
   
   return (
     <>
+      <div style={{backgroundColor: 'green', color: 'white', padding: '10px', margin: '10px'}}>
+        🔥 DEBUG: TableGroupedView rendering {tableGroups.length} groups
+      </div>
       {tableGroups.map((group) => (
         <TableGroupCard
-          key={group.tableId}
+          key={`${group.tableId}-${group.earliestOrderTime.getTime()}`}
           group={group}
           onBumpOrder={handleBumpOrder}
           onBumpTable={handleBumpTable}
@@ -219,10 +434,34 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
   
   // Use props if provided, otherwise fall back to hook
   const actualOrders = orders.length > 0 ? orders : fallbackOrders
-  const actualLoading = loading || kdsState.loading
+  const actualLoading = orders.length > 0 ? loading : kdsState.loading  // Only use prop loading if orders provided via props
   const actualError = error || kdsState.error
   const actualViewMode = viewMode || kdsState.viewMode
   const actualFilterBy = filterBy || kdsState.filterBy
+
+  // 🔥 DEBUG: Log component rendering data with decision path
+  console.log('🔥 KDSMainContent Render DEBUG:', {
+    propsOrders: orders.length,
+    fallbackOrders: fallbackOrders.length,
+    actualOrders: actualOrders.length,
+    actualLoading,
+    actualError,
+    actualViewMode,
+    actualFilterBy,
+    firstActualOrder: actualOrders?.[0] ? {
+      id: actualOrders[0].id,
+      orderExists: !!actualOrders[0].order,
+      tableLabel: actualOrders[0].order?.table?.label,
+      seatLabel: actualOrders[0].order?.seat?.label,
+      items: actualOrders[0].order?.items?.length || 0
+    } : 'No actual orders',
+    // Decision path debugging
+    willShowLoading: actualLoading,
+    willShowError: !!actualError,
+    willShowEmpty: actualOrders.length === 0,
+    willShowOrders: !actualLoading && !actualError && actualOrders.length > 0,
+    actuallyRendering: !actualLoading && !actualError && actualOrders.length > 0 ? 'YES - SHOULD RENDER ORDERS' : 'NO - SHOWING LOADING/ERROR/EMPTY'
+  });
   
   if (actualLoading) {
     return (
@@ -248,20 +487,36 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
     )
   }
   
+  // 🔥 DEBUG: Log which render path is being taken
+  console.log('🔥 KDSMainContent Final Render Path:', {
+    actualViewMode,
+    willRenderTable: actualViewMode === 'table',
+    ordersForTableView: actualViewMode === 'table' ? actualOrders.length : 'N/A',
+    ordersForGridView: actualViewMode !== 'table' ? actualOrders.length : 'N/A'
+  });
+
   return (
     <div className={cn("flex-1", className)}>
-      <ScrollArea className="h-full">
-        <div className={cn(
-          "p-4 grid gap-4",
-          getGridClasses(actualViewMode, actualOrders.length)
-        )}>
-          {actualViewMode === 'table' ? (
+      <div className="h-full overflow-auto">
+        {actualViewMode === 'table' ? (
+          <div className="p-4 space-y-4">
+            <div style={{backgroundColor: 'red', color: 'white', padding: '10px', margin: '10px'}}>
+              🔥 DEBUG: Table View - {actualOrders.length} orders
+            </div>
             <TableGroupedView orders={actualOrders} />
-          ) : (
+          </div>
+        ) : (
+          <div className={cn(
+            "p-4 grid gap-4",
+            getGridClasses(actualViewMode, actualOrders.length)
+          )}>
+            <div style={{backgroundColor: 'blue', color: 'white', padding: '10px', margin: '10px'}}>
+              🔥 DEBUG: Grid View - {actualOrders.length} orders
+            </div>
             <IndividualOrderView orders={actualOrders} />
-          )}
-        </div>
-      </ScrollArea>
+          </div>
+        )}
+      </div>
     </div>
   )
 })

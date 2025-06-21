@@ -5,10 +5,12 @@ import { createClient as createBrowserClient } from '@/lib/modassembly/supabase/
 import type { Session, User } from '@supabase/supabase-js'
 import type { AppRole } from './roles'
 
+
 export type ServerUserProfile = {
   user_id: string
   role: AppRole
   name: string
+
 }
 
 export type UserWithProfile = {
@@ -57,6 +59,8 @@ export async function getUserWithProfile(): Promise<UserWithProfile | null> {
     .eq('user_id', session.user.id)
     .single()
 
+
+
   return {
     user: session.user,
     profile: profile || null,
@@ -103,6 +107,8 @@ export async function getClientUserWithProfile(): Promise<UserWithProfile | null
     .select('user_id, role, name')
     .eq('user_id', session.user.id)
     .single()
+
+
 
   return {
     user: session.user,

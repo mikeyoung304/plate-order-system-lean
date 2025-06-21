@@ -1,11 +1,11 @@
 'use client'
 
-import { useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import type { Table } from '@/lib/floor-plan-utils'
 import {
-  saveFloorPlanTables,
   loadFloorPlanTables,
+  saveFloorPlanTables,
 } from '@/lib/modassembly/supabase/database/floor-plan'
 
 const MAX_UNDO_STATES = 20
@@ -237,7 +237,9 @@ function floorPlanReducer(
 
     case 'DUPLICATE_TABLE': {
       const table = state.data.tables.find(t => t.id === action.payload)
-      if (!table) return state
+      if (!table) {
+        return state
+      }
 
       const newTable: Table = {
         ...table,
@@ -418,7 +420,9 @@ function floorPlanReducer(
     }
 
     case 'UNDO': {
-      if (state.history.undoStack.length <= 1) return state
+      if (state.history.undoStack.length <= 1) {
+        return state
+      }
 
       const currentState = [...state.data.tables]
       const newStack = [...state.history.undoStack]
@@ -448,7 +452,9 @@ function floorPlanReducer(
     }
 
     case 'REDO': {
-      if (state.history.redoStack.length === 0) return state
+      if (state.history.redoStack.length === 0) {
+        return state
+      }
 
       const currentState = [...state.data.tables]
       const newRedoStack = [...state.history.redoStack]
@@ -852,10 +858,10 @@ export function useFloorPlanReducer(floorPlanId: string) {
     }
   }, [floorPlanId, state.data.tables, logger, showInternalToast])
 
-  // Load tables on mount
+  // Load tables on mount - FIXED: Remove loadTables from dependencies to prevent infinite loop
   useEffect(() => {
     loadTables()
-  }, [loadTables])
+  }, [floorPlanId]) // Only depend on floorPlanId, not the loadTables function
 
   // Cleanup on unmount
   useEffect(() => {

@@ -1,17 +1,25 @@
-'use client'
+import { createClient } from '@/lib/modassembly/supabase/server'
+import { redirect } from 'next/navigation'
+import { KitchenMetricsClientComponent } from '@/components/kitchen-metrics-client'
 
-import { Shell } from '@/components/shell'
-import { ProtectedRoute } from '@/lib/modassembly/supabase/auth'
-import { LiveRestaurantMetrics } from '@/components/analytics/live-restaurant-metrics'
+// Luis's server-first pattern - auth check on server
+export default async function KitchenMetricsPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-export default function MetricsPage() {
-  return (
-    <ProtectedRoute roles={['cook', 'admin']}>
-      <Shell className='bg-gray-900 min-h-screen'>
-        <div className='container py-6'>
-          <LiveRestaurantMetrics />
-        </div>
-      </Shell>
-    </ProtectedRoute>
-  )
+  if (!user) {
+    redirect('/login')
+  }
+
+  // Get user profile for role checking
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, name')
+    .eq('user_id', user.id)
+    .single()
+
+  // Pass user data to client component
+  return <KitchenMetricsClientComponent user={user} profile={profile} />
 }

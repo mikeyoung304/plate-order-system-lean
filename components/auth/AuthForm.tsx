@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useActionState, useTransition } from 'react'
+import React, { useActionState, useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { signIn, signUp } from '@/app/auth/actions'
+import { signIn, signUp } from '@/lib/modassembly/supabase/auth/actions'
 import { useAuthFormState } from '@/lib/hooks/use-auth-form-state'
 
 export function AuthForm() {
@@ -52,7 +52,6 @@ export function AuthForm() {
     try {
       // Validate and prepare data (includes rate limiting check)
       const validatedInputs = actions.validateAndPrepareData()
-
       const finalEmail = validatedInputs.email
 
       // Create secure form data
@@ -117,13 +116,6 @@ export function AuthForm() {
             placeholder='Enter your email address'
             value={state.email}
             onChange={e => actions.setEmail(e.target.value)}
-            onFocus={e => {
-              // Auto-fill demo credentials when clicking email field in development
-              if (process.env.NODE_ENV === 'development' && !state.email) {
-                actions.setEmail('guest@restaurant.plate')
-                actions.setPassword('guest12345')
-              }
-            }}
             disabled={state.isRateLimited || isLoading}
             maxLength={254}
             required

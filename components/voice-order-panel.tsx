@@ -214,7 +214,7 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
 
       {/* Action Buttons */}
       <div className='w-full flex flex-col items-center space-y-3'>
-        {!voiceState.showConfirmation ? (
+        {!voiceState.showConfirmation && !voiceState.hasError ? (
           <div className='flex flex-col items-center space-y-3'>
             {/* Recording Button */}
             <div
@@ -222,7 +222,7 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
             >
               <Button
                 size='lg'
-                className={`w-20 h-20 rounded-full shadow-lg voice-order-button voice-button-hover voice-button-tap ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600 voice-button-recording' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation`}
+                className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-premium-lg voice-order-button voice-button-hover voice-button-tap ${voiceState.isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600 voice-button-recording' : 'bg-primary hover:bg-primary/90'} text-primary-foreground touch-manipulation min-h-[80px] min-w-[80px]`}
                 onClick={
                   voiceState.isRecording
                     ? handleStopRecording
@@ -242,15 +242,36 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
               Cancel Order
             </Button>
           </div>
+        ) : voiceState.hasError ? (
+          // Error State Buttons
+          <div className='w-full flex flex-col space-y-3'>
+            <div className='text-center p-4 bg-red-50 border border-red-200 rounded-lg'>
+              <AlertCircle className='h-6 w-6 text-red-500 mx-auto mb-2' />
+              <p className='text-red-700 text-sm mb-3'>{voiceState.error}</p>
+              {voiceState.canRetry && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={voiceState.retry}
+                  className='mb-2 w-full'
+                >
+                  Try Again ({voiceState.retryCount}/{3})
+                </Button>
+              )}
+            </div>
+            <Button variant='outline' onClick={handleCancel} className='w-full'>
+              Cancel Order
+            </Button>
+          </div>
         ) : (
-          // Confirmation Buttons
-          <div className='confirmation-buttons w-full flex justify-center space-x-4 voice-confirm-buttons'>
+          // Confirmation Buttons - Mobile optimized
+          <div className='confirmation-buttons w-full flex flex-col md:flex-row justify-center space-y-3 md:space-y-0 md:space-x-4 voice-confirm-buttons card-mobile-optimize'>
             <Button
               variant='outline'
               size='lg'
               onClick={voiceState.cancel}
               disabled={voiceState.isSubmitting}
-              className='touch-manipulation'
+              className='touch-manipulation touch-safe-mobile min-h-[48px] w-full md:w-auto font-medium'
             >
               <XCircle className='mr-2 h-5 w-5' /> Try Again
             </Button>
@@ -258,7 +279,7 @@ export const VoiceOrderPanel = memo(function VoiceOrderPanel({
               size='lg'
               onClick={handleConfirmOrder}
               disabled={voiceState.isSubmitting}
-              className='touch-manipulation'
+              className='touch-manipulation touch-safe-mobile min-h-[48px] w-full md:w-auto font-medium shadow-premium'
             >
               {voiceState.isSubmitting ? (
                 <>

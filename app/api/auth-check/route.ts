@@ -56,17 +56,14 @@ export async function GET(request: NextRequest) {
       const supabase = await createClient()
 
       const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession()
-      const {
         data: { user },
+        error,
       } = await supabase.auth.getUser()
 
       // 3. Minimal Data Exposure (only what's needed)
       const responseData = {
-        authenticated: !!session && !!user,
-        hasValidSession: !!session && !error,
+        authenticated: !!user && !error,
+        hasValidSession: !!user && !error,
         userId: user?.id || null,
         // Only expose email for debugging in development
         ...(process.env.NODE_ENV === 'development' && {

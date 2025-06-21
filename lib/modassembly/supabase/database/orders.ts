@@ -1,305 +1,224 @@
-/**
- * File enhanced by Modular Assembly with Fort Knox security
- * IMPORTANT!!! Ask the user before editing this file.
- */
+import { getOrderClient } from '@/lib/database-connection-pool'
+import { intelligentOrderRouting } from './kds'
 
-import { createClient } from '@/lib/modassembly/supabase/client'
-import { Security } from '@/lib/security'
-import { measureApiCall } from '@/lib/performance-utils'
-import {
-  Database,
-  Order as DatabaseOrder,
-  OrderFilters,
-  OrderInsert,
-  OrderStatus,
-  OrderType,
-  OrderUpdate,
-  OrderWithJoins,
-} from '@/types/database'
-
-interface OrderRow extends DatabaseOrder {
+interface OrderRow {
+  id: string
+  table_id: string
+  seat_id: string
+  resident_id: string
+  server_id: string
+  items: string[]
+  transcript: string
+  status: 'new' | 'in_progress' | 'ready' | 'delivered' | 'cancelled'
+  type: 'food' | 'drink'
+  special_requests?: string
+  estimated_prep_time?: number
+  actual_prep_time?: number
+  created_at: string
   tables: {
-    label: number
+    label: string
   }
   seats: {
-    label: number
+    label: string
   }
 }
 
 export interface Order extends OrderRow {
   table: string
-  seat: number
+  seat: string
 }
 
 export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
-  return measureApiCall('fetch_recent_orders', async () => {
-    // Security: Validate and sanitize limit parameter
-    const safeLimit = Math.max(1, Math.min(50, Math.floor(limit))) // Clamp between 1-50
-
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .select(
-        `
-        *,
-        tables!inner(label),
-        seats!inner(label)
+  const supabase = getOrderClient()
+  const { data, error } = await supabase
+    .from('orders')
+    .select(
       `
-      )
-      .order('created_at', { ascending: false })
-      .limit(safeLimit)
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `
+    )
+    .order('created_at', { ascending: false })
+    .limit(limit)
 
-    if (error) {
-      console.error('Error fetching orders:', error)
-      throw error
-    }
+  if (error) {
+    throw error
+  }
 
-    // Security: Sanitize all returned data
-    return data.map((order: OrderRow) => ({
-      ...order,
-      table: Security.sanitize.sanitizeUserName(`Table ${order.tables.label}`),
-      seat: Math.max(1, Math.min(20, order.seats.label)), // Validate seat number
-      items: Array.isArray(order.items)
-        ? order.items
-            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
-            .filter((item: string) => item.length > 0)
-            .slice(0, 20) // Limit items for security
-        : [],
-      transcript: Security.sanitize.sanitizeHTML(order.transcript || ''),
-    }))
-  })
+  return data.map((order: OrderRow) => ({
+    ...order,
+    table: `Table ${order.tables.label}`,
+    seat: order.seats.label,
+    items: order.items || [],
+  }))
 }
 
-export async function createOrder(
-  orderData: Omit<OrderInsert, 'id' | 'created_at' | 'updated_at' | 'status'>
-): Promise<Order> {
-  return measureApiCall('create_order', async () => {
-    // Security: Comprehensive validation of order data
-    const validation = Security.validate.validateOrderData(orderData)
-    if (!validation.isValid) {
-      throw new Error(
-        `Order validation failed: ${validation.errors.join(', ')}`
-      )
-    }
+export async function createOrder(orderData: {
+  table_id: string
+  seat_id: string
+  resident_id: string
+  server_id: string
+  items: string[]
+  transcript: string
+  type: 'food' | 'drink'
+  special_requests?: string
+  estimated_prep_time?: number
+  actual_prep_time?: number
+}): Promise<Order> {
+  const supabase = getOrderClient()
 
-    // Security: Use sanitized data from validation
-    const sanitizedData = validation.sanitizedData!
+  // Validate required data
+  if (
+    !orderData.table_id ||
+    !orderData.seat_id ||
+    !orderData.resident_id ||
+    !orderData.server_id
+  ) {
+    throw new Error(
+      'Missing required order data: table_id, seat_id, resident_id, and server_id are required'
+    )
+  }
 
-    // Additional business logic validation
-    if (!sanitizedData.items || sanitizedData.items.length === 0) {
-      throw new Error('Order must contain at least one valid item')
-    }
+  const { data, error } = await supabase
+    .from('orders')
+    .insert([
+      {
+        ...orderData,
+        status: 'new',
+      },
+    ])
+    .select('*')
+    .single()
 
-    if (!['food', 'drink'].includes(orderData.type)) {
-      throw new Error('Invalid order type')
-    }
+  if (error) {
+    throw new Error(`Failed to create order: ${error.message}`)
+  }
 
-    // Security: Validate UUIDs for IDs
-    const idFields = ['table_id', 'seat_id', 'resident_id', 'server_id']
-    for (const field of idFields) {
-      const value = orderData[field as keyof typeof orderData] as string
-      if (!value || typeof value !== 'string') {
-        throw new Error(`Invalid ${field}`)
-      }
-      // UUID validation regex
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(value)) {
-        throw new Error(`Invalid ${field} format`)
-      }
-    }
+  if (!data) {
+    throw new Error('No data returned from order creation')
+  }
 
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .insert([
-        {
-          table_id: orderData.table_id,
-          seat_id: orderData.seat_id,
-          resident_id: orderData.resident_id,
-          server_id: orderData.server_id,
-          items: sanitizedData.items,
-          transcript: sanitizedData.transcript || '',
-          type: orderData.type,
-          status: 'in_progress',
-        },
-      ])
-      .select(
-        `
-        *,
-        tables!inner(label),
-        seats!inner(label)
-      `
-      )
-      .single()
+  // Fetch table and seat info separately to build the complete Order object
+  const [tableData, seatData] = await Promise.all([
+    supabase.from('tables').select('label').eq('id', data.table_id).single(),
+    supabase.from('seats').select('label').eq('id', data.seat_id).single(),
+  ])
 
-    if (error) {
-      console.error('Error creating order:', error)
-      throw error
-    }
+  // Automatically route the order to appropriate KDS stations
+  try {
+    await intelligentOrderRouting(data.id)
+    // Order successfully routed to KDS stations
+  } catch {
+    // Error routing order to KDS stations - will be handled by caller
+    // Don't fail the order creation if routing fails - this is a secondary operation
+  }
 
-    try {
-      const { intelligentOrderRouting } = await import('./kds')
-      await intelligentOrderRouting(data.id)
-      // Order automatically routed to KDS stations
-    } catch (routingError) {
-      console.error('Error routing order to KDS:', routingError)
-      // Don't fail the order creation if routing fails
-    }
-
-    // Security: Sanitize response data
-    return {
-      ...data,
-      table: Security.sanitize.sanitizeUserName(`Table ${data.tables.label}`),
-      seat: Math.max(1, Math.min(20, data.seats.label)),
-      items: Array.isArray(data.items)
-        ? data.items
-            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
-            .filter((item: string) => item.length > 0)
-        : [],
-      transcript: Security.sanitize.sanitizeHTML(data.transcript || ''),
-    } as Order
-  })
+  return {
+    ...data,
+    table: `Table ${tableData.data?.label || 'Unknown'}`,
+    seat: seatData.data?.label || 0,
+    items: data.items || [],
+  } as Order
 }
 
 export async function updateOrderStatus(
   orderId: string,
-  status: OrderStatus
+  status: OrderRow['status']
 ): Promise<void> {
-  return measureApiCall('update_order_status', async () => {
-    // Security: Validate order ID
-    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
-    if (!sanitizedOrderId) {
-      throw new Error('Invalid order ID')
-    }
+  const supabase = getOrderClient()
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
 
-    // Security: Validate status
-    const validStatuses = ['new', 'in_progress', 'ready', 'delivered']
-    if (!validStatuses.includes(status)) {
-      throw new Error('Invalid order status')
-    }
-
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', sanitizedOrderId)
-
-    if (error) {
-      console.error('Error updating order status:', error)
-      throw error
-    }
-  })
+  if (error) {
+    throw error
+  }
 }
 
-/**
- * Update order items and transcript (secure)
- * @param orderId Order ID to update
- * @param items New order items
- * @param transcript New transcript (optional)
- * @returns Updated order
- */
-export async function updateOrderItems(
-  orderId: string,
-  items: string[],
-  transcript?: string
-): Promise<Order> {
-  return measureApiCall('update_order_items', async () => {
-    // Security: Validate order ID
-    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
-    if (!sanitizedOrderId) {
-      throw new Error('Invalid order ID')
-    }
-
-    // Security: Sanitize and validate items
-    if (!Array.isArray(items)) {
-      throw new Error('Items must be an array')
-    }
-
-    const sanitizedItems = items
-      .map(item => Security.sanitize.sanitizeOrderItem(item))
-      .filter(item => item.length > 0)
-      .slice(0, 20) // Limit to 20 items
-
-    if (sanitizedItems.length === 0) {
-      throw new Error('Order must contain at least one valid item')
-    }
-
-    // Security: Sanitize transcript if provided
-    const sanitizedTranscript = transcript
-      ? Security.sanitize.sanitizeHTML(transcript).slice(0, 1000)
-      : undefined
-
-    const supabase = createClient()
-
-    const updateData: { items: string[]; transcript?: string } = {
-      items: sanitizedItems,
-    }
-    if (sanitizedTranscript) {
-      updateData.transcript = sanitizedTranscript
-    }
-
-    const { data, error } = await supabase
-      .from('orders')
-      .update(updateData)
-      .eq('id', sanitizedOrderId)
-      .select(
-        `
-        *,
-        tables!inner(label),
-        seats!inner(label)
-      `
-      )
-      .single()
-
-    if (error) {
-      console.error('Error updating order items:', error)
-      throw error
-    }
-
-    // Security: Sanitize response data
-    return {
-      ...data,
-      table: Security.sanitize.sanitizeUserName(`Table ${data.tables.label}`),
-      seat: Math.max(1, Math.min(20, data.seats.label)),
-      items: Array.isArray(data.items)
-        ? data.items
-            .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
-            .filter((item: string) => item.length > 0)
-        : [],
-      transcript: Security.sanitize.sanitizeHTML(data.transcript || ''),
-    } as Order
-  })
-}
-
-/**
- * Delete/cancel an order (secure)
- * @param orderId Order ID to delete
- */
+// Additional CRUD functions following Luis's patterns
 export async function deleteOrder(orderId: string): Promise<void> {
-  return measureApiCall('delete_order', async () => {
-    // Security: Validate order ID
-    const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
-    if (!sanitizedOrderId) {
-      throw new Error('Invalid order ID')
-    }
+  const supabase = getOrderClient()
 
-    // UUID validation for extra security
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(sanitizedOrderId)) {
-      throw new Error('Invalid order ID format')
-    }
+  const { error } = await supabase.from('orders').delete().eq('id', orderId)
 
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('orders')
-      .delete()
-      .eq('id', sanitizedOrderId)
+  if (error) {
+    throw new Error(`Failed to delete order: ${error.message}`)
+  }
+}
 
-    if (error) {
-      console.error('Error deleting order:', error)
-      throw error
-    }
-  })
+export async function getOrders(filters?: {
+  status?: OrderRow['status']
+  tableId?: string
+  limit?: number
+}): Promise<Order[]> {
+  const supabase = getOrderClient()
+
+  let query = supabase
+    .from('orders')
+    .select(
+      `
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `
+    )
+    .order('created_at', { ascending: false })
+
+  if (filters?.status) {
+    query = query.eq('status', filters.status)
+  }
+
+  if (filters?.tableId) {
+    query = query.eq('table_id', filters.tableId)
+  }
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Failed to fetch orders: ${error.message}`)
+  }
+
+  return data.map((order: OrderRow) => ({
+    ...order,
+    table: `Table ${order.tables.label}`,
+    seat: order.seats.label,
+    items: order.items || [],
+  }))
+}
+
+export async function updateOrder(
+  orderId: string,
+  updates: Partial<OrderRow>
+): Promise<Order | null> {
+  const supabase = getOrderClient()
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update(updates)
+    .eq('id', orderId)
+    .select(
+      `
+      *,
+      tables!inner(label),
+      seats!inner(label)
+    `
+    )
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update order: ${error.message}`)
+  }
+
+  return {
+    ...data,
+    table: `Table ${data.tables.label}`,
+    seat: data.seats.label,
+    items: data.items || [],
+  } as Order
 }

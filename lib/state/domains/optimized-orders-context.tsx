@@ -2,7 +2,7 @@
 
 /**
  * Optimized Orders Context
- * 
+ *
  * Performance-optimized orders management with:
  * - Intelligent caching and deduplication
  * - Batch updates for efficiency
@@ -20,13 +20,14 @@ import React, {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react'
-import { createOptimizedClient } from '@/lib/modassembly/supabase/optimized-client'
-import { useOptimizedRealtime } from '@/lib/state/optimized-realtime-context'
+import { createClient } from '@/lib/modassembly/supabase/client'
+// Note: optimized-realtime-context removed - using simplified approach
 import type { Order } from '@/lib/modassembly/supabase/database/orders'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
-// Order status type  
+// Order status type
 type OrderStatus = 'new' | 'in_progress' | 'ready' | 'delivered' | 'cancelled'
 
 // Cache configuration
@@ -62,7 +63,10 @@ type OrdersAction =
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'UPDATE_ORDER'; payload: Order }
   | { type: 'REMOVE_ORDER'; payload: string }
-  | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; updates: Partial<Order> } }
+  | {
+      type: 'OPTIMISTIC_UPDATE'
+      payload: { id: string; updates: Partial<Order> }
+    }
   | { type: 'ROLLBACK_OPTIMISTIC'; payload: string }
   | { type: 'CACHE_HIT' }
   | { type: 'CACHE_MISS' }
@@ -100,16 +104,18 @@ function updateIndexes(
         state.ordersByTable.delete(oldOrder.table_id)
       }
     }
-    
+
     // Remove from status index
-    const statusOrders = state.ordersByStatus.get(oldOrder.status as OrderStatus)
+    const statusOrders = state.ordersByStatus.get(
+      oldOrder.status as OrderStatus
+    )
     if (statusOrders) {
       statusOrders.delete(oldOrder.id)
       if (statusOrders.size === 0) {
         state.ordersByStatus.delete(oldOrder.status as OrderStatus)
       }
     }
-    
+
     // Remove from resident index
     if (oldOrder.resident_id) {
       const residentOrders = state.ordersByResident.get(oldOrder.resident_id)
@@ -121,21 +127,21 @@ function updateIndexes(
       }
     }
   }
-  
+
   // Add to new indexes
   // Table index
   if (!state.ordersByTable.has(order.table_id)) {
     state.ordersByTable.set(order.table_id, new Set())
   }
   state.ordersByTable.get(order.table_id)!.add(order.id)
-  
+
   // Status index
   const status = order.status as OrderStatus
   if (!state.ordersByStatus.has(status)) {
     state.ordersByStatus.set(status, new Set())
   }
   state.ordersByStatus.get(status)!.add(order.id)
-  
+
   // Resident index
   if (order.resident_id) {
     if (!state.ordersByResident.has(order.resident_id)) {
@@ -150,7 +156,7 @@ function evictOldOrders(state: OptimizedOrdersState): number {
   const now = Date.now()
   const maxAge = CACHE_CONFIG.MAX_AGE
   let evicted = 0
-  
+
   // Find orders to evict
   const toEvict: string[] = []
   for (const [id, order] of state.orders) {
@@ -159,7 +165,7 @@ function evictOldOrders(state: OptimizedOrdersState): number {
       toEvict.push(id)
     }
   }
-  
+
   // Evict old orders
   for (const id of toEvict) {
     const order = state.orders.get(id)
@@ -169,13 +175,16 @@ function evictOldOrders(state: OptimizedOrdersState): number {
       evicted++
     }
   }
-  
+
   // If still over limit, evict oldest served orders
   if (state.orders.size > CACHE_CONFIG.MAX_ORDERS) {
     const delivered = Array.from(state.orders.values())
       .filter(o => o.status === 'delivered')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-    
+      .sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+
     const toRemove = state.orders.size - CACHE_CONFIG.MAX_ORDERS
     for (let i = 0; i < toRemove && i < delivered.length; i++) {
       const order = delivered[i]
@@ -184,29 +193,32 @@ function evictOldOrders(state: OptimizedOrdersState): number {
       evicted++
     }
   }
-  
+
   return evicted
 }
 
 // Reducer function
-function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): OptimizedOrdersState {
+function ordersReducer(
+  state: OptimizedOrdersState,
+  action: OrdersAction
+): OptimizedOrdersState {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, loading: action.payload }
-      
+
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false }
-      
+
     case 'BATCH_UPDATE': {
       const newState = { ...state }
-      
+
       // Process batch of orders
       for (const order of action.payload) {
         const oldOrder = newState.orders.get(order.id)
         newState.orders.set(order.id, order)
         updateIndexes(newState, order, oldOrder)
       }
-      
+
       // Evict old orders if needed
       const evicted = evictOldOrders(newState)
       if (evicted > 0) {
@@ -215,7 +227,7 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
           evictions: newState.cacheStats.evictions + evicted,
         }
       }
-      
+
       return {
         ...newState,
         loading: false,
@@ -223,12 +235,12 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
         lastUpdated: new Date(),
       }
     }
-    
+
     case 'ADD_ORDER': {
       const newState = { ...state }
       newState.orders.set(action.payload.id, action.payload)
       updateIndexes(newState, action.payload)
-      
+
       // Evict if over limit
       const evicted = evictOldOrders(newState)
       if (evicted > 0) {
@@ -237,47 +249,47 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
           evictions: newState.cacheStats.evictions + evicted,
         }
       }
-      
+
       return { ...newState, lastUpdated: new Date() }
     }
-    
+
     case 'UPDATE_ORDER': {
       const newState = { ...state }
       const oldOrder = newState.orders.get(action.payload.id)
-      
+
       if (oldOrder) {
         newState.orders.set(action.payload.id, action.payload)
         updateIndexes(newState, action.payload, oldOrder)
       }
-      
+
       return { ...newState, lastUpdated: new Date() }
     }
-    
+
     case 'REMOVE_ORDER': {
       const newState = { ...state }
       const order = newState.orders.get(action.payload)
-      
+
       if (order) {
         updateIndexes(newState, order, order)
         newState.orders.delete(action.payload)
       }
-      
+
       return { ...newState, lastUpdated: new Date() }
     }
-    
+
     case 'OPTIMISTIC_UPDATE': {
       const newState = { ...state }
       const order = newState.orders.get(action.payload.id)
-      
+
       if (order) {
         const updatedOrder = { ...order, ...action.payload.updates }
         newState.orders.set(action.payload.id, updatedOrder)
         updateIndexes(newState, updatedOrder, order)
       }
-      
+
       return { ...newState }
     }
-    
+
     case 'CACHE_HIT':
       return {
         ...state,
@@ -286,7 +298,7 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
           hits: state.cacheStats.hits + 1,
         },
       }
-      
+
     case 'CACHE_MISS':
       return {
         ...state,
@@ -295,7 +307,7 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
           misses: state.cacheStats.misses + 1,
         },
       }
-      
+
     default:
       return state
   }
@@ -305,23 +317,27 @@ function ordersReducer(state: OptimizedOrdersState, action: OrdersAction): Optim
 interface OptimizedOrdersContextValue {
   // State
   state: OptimizedOrdersState
-  
+
+  // Real-time connection status
+  isConnected: boolean
+  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error'
+
   // Data operations
-  loadOrders: (filters?: OrderFilters) => Promise<void>
-  createOrder: (orderData: Omit<Order, 'id' | 'created_at'>) => Promise<Order>
-  updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>
-  deleteOrder: (orderId: string) => Promise<void>
-  
+  loadOrders: (_filters?: OrderFilters) => Promise<void>
+  createOrder: (_orderData: Omit<Order, 'id' | 'created_at'>) => Promise<Order>
+  updateOrder: (_orderId: string, _updates: Partial<Order>) => Promise<void>
+  deleteOrder: (_orderId: string) => Promise<void>
+
   // Optimistic updates
-  optimisticUpdate: (orderId: string, updates: Partial<Order>) => void
-  
+  optimisticUpdate: (_orderId: string, _updates: Partial<Order>) => void
+
   // Efficient getters
-  getOrderById: (id: string) => Order | undefined
-  getOrdersByStatus: (status: OrderStatus) => Order[]
-  getOrdersByTable: (tableId: string) => Order[]
-  getOrdersByResident: (residentId: string) => Order[]
+  getOrderById: (_id: string) => Order | undefined
+  getOrdersByStatus: (_status: OrderStatus) => Order[]
+  getOrdersByTable: (_tableId: string) => Order[]
+  getOrdersByResident: (_residentId: string) => Order[]
   getActiveOrders: () => Order[]
-  
+
   // Performance metrics
   getPerformanceMetrics: () => PerformanceMetrics
 }
@@ -344,7 +360,8 @@ interface PerformanceMetrics {
   memoryUsage: number
 }
 
-const OptimizedOrdersContext = createContext<OptimizedOrdersContextValue | null>(null)
+const OptimizedOrdersContext =
+  createContext<OptimizedOrdersContextValue | null>(null)
 
 interface OptimizedOrdersProviderProps {
   children: ReactNode
@@ -354,113 +371,140 @@ interface OptimizedOrdersProviderProps {
 
 export function OptimizedOrdersProvider({
   children,
-  userRole,
-  userId,
+  userRole: _userRole,
+  userId: _userId,
 }: OptimizedOrdersProviderProps) {
   const [state, dispatch] = useReducer(ordersReducer, initialState)
-  const { subscribe, isConnected } = useOptimizedRealtime()
-  
+  // Real-time connection state following Luis's patterns
+  const [isConnected, setIsConnected] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'disconnected' | 'error'
+  >('disconnected')
+
   // Refs
-  const supabaseRef = useRef(createOptimizedClient())
+  const supabaseRef = useRef(createClient())
   const batchQueueRef = useRef<Map<string, Order>>(new Map())
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dedupeMapRef = useRef<Map<string, number>>(new Map())
   const updateTimesRef = useRef<number[]>([])
   const mountedRef = useRef(true)
-  
+
   // Process batch updates
   const processBatchUpdates = useCallback(() => {
-    if (batchQueueRef.current.size === 0) {return}
-    
+    if (batchQueueRef.current.size === 0) {
+      return
+    }
+
     const updates = Array.from(batchQueueRef.current.values())
     batchQueueRef.current.clear()
-    
+
     dispatch({ type: 'BATCH_UPDATE', payload: updates })
   }, [])
-  
+
   // Add order to batch queue
-  const queueBatchUpdate = useCallback((order: Order) => {
-    batchQueueRef.current.set(order.id, order)
-    
-    // Clear existing timeout
-    if (batchTimeoutRef.current) {
-      clearTimeout(batchTimeoutRef.current)
-    }
-    
-    // Process batch if it's full
-    if (batchQueueRef.current.size >= CACHE_CONFIG.BATCH_SIZE) {
-      processBatchUpdates()
-    } else {
-      // Otherwise, schedule batch processing
-      batchTimeoutRef.current = setTimeout(processBatchUpdates, CACHE_CONFIG.BATCH_DELAY)
-    }
-  }, [processBatchUpdates])
-  
+  const queueBatchUpdate = useCallback(
+    (order: Order) => {
+      batchQueueRef.current.set(order.id, order)
+
+      // Clear existing timeout
+      if (batchTimeoutRef.current) {
+        clearTimeout(batchTimeoutRef.current)
+      }
+
+      // Process batch if it's full
+      if (batchQueueRef.current.size >= CACHE_CONFIG.BATCH_SIZE) {
+        processBatchUpdates()
+      } else {
+        // Otherwise, schedule batch processing
+        batchTimeoutRef.current = setTimeout(
+          processBatchUpdates,
+          CACHE_CONFIG.BATCH_DELAY
+        )
+      }
+    },
+    [processBatchUpdates]
+  )
+
   // Handle real-time updates with deduplication
-  const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Order>) => {
-    const now = Date.now()
-    const updateStart = performance.now()
-    
-    // Check for duplicate updates
-    const recordId = (payload.new as Order)?.id || (payload.old as Order)?.id || ''
-    const lastUpdate = dedupeMapRef.current.get(recordId)
-    if (lastUpdate && now - lastUpdate < CACHE_CONFIG.DEDUPE_WINDOW) {
-      return // Skip duplicate
-    }
-    
-    // Update dedupe map
-    if (recordId) {
+  const handleRealtimeUpdate = useCallback(
+    (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
+      const now = Date.now()
+      const updateStart = performance.now()
+
+      // Validate payload has required fields
+      const newOrder = payload.new as Order | null
+      const oldOrder = payload.old as Order | null
+      
+      // Check for duplicate updates
+      const recordId = newOrder?.id || oldOrder?.id || ''
+      if (!recordId) {
+        console.warn('Real-time payload missing order ID:', payload)
+        return
+      }
+      
+      const lastUpdate = dedupeMapRef.current.get(recordId)
+      if (lastUpdate && now - lastUpdate < CACHE_CONFIG.DEDUPE_WINDOW) {
+        return // Skip duplicate
+      }
+
+      // Update dedupe map
       dedupeMapRef.current.set(recordId, now)
-    }
-    
-    // Handle update based on event type
-    switch (payload.eventType) {
-      case 'INSERT':
-        if (payload.new) {
-          queueBatchUpdate(payload.new)
-        }
-        break
-        
-      case 'UPDATE':
-        if (payload.new) {
-          queueBatchUpdate(payload.new)
-        }
-        break
-        
-      case 'DELETE':
-        if ((payload.old as Order)?.id) {
-          dispatch({ type: 'REMOVE_ORDER', payload: (payload.old as Order).id })
-        }
-        break
-    }
-    
-    // Track update time
-    updateTimesRef.current.push(performance.now() - updateStart)
-    if (updateTimesRef.current.length > 100) {
-      updateTimesRef.current.shift()
-    }
-    
-    // Clean up old dedupe entries
-    if (dedupeMapRef.current.size > 1000) {
-      const cutoff = now - CACHE_CONFIG.DEDUPE_WINDOW * 2
-      for (const [id, timestamp] of dedupeMapRef.current) {
-        if (timestamp < cutoff) {
-          dedupeMapRef.current.delete(id)
+
+      // Handle update based on event type
+      switch (payload.eventType) {
+        case 'INSERT':
+          if (newOrder && newOrder.id) {
+            queueBatchUpdate(newOrder)
+          }
+          break
+
+        case 'UPDATE':
+          if (newOrder && newOrder.id) {
+            queueBatchUpdate(newOrder)
+          }
+          break
+
+        case 'DELETE':
+          if (oldOrder?.id) {
+            dispatch({
+              type: 'REMOVE_ORDER',
+              payload: oldOrder.id,
+            })
+          }
+          break
+      }
+
+      // Track update time
+      updateTimesRef.current.push(performance.now() - updateStart)
+      if (updateTimesRef.current.length > 100) {
+        updateTimesRef.current.shift()
+      }
+
+      // Clean up old dedupe entries
+      if (dedupeMapRef.current.size > 1000) {
+        const cutoff = now - CACHE_CONFIG.DEDUPE_WINDOW * 2
+        for (const [id, timestamp] of dedupeMapRef.current) {
+          if (timestamp < cutoff) {
+            dedupeMapRef.current.delete(id)
+          }
         }
       }
-    }
-  }, [queueBatchUpdate])
-  
+    },
+    [queueBatchUpdate]
+  )
+
   // Load orders from database
   const loadOrders = useCallback(async (filters?: OrderFilters) => {
-    if (!mountedRef.current) {return}
-    
+    if (!mountedRef.current) {
+      return
+    }
+
     dispatch({ type: 'SET_LOADING', payload: true })
-    
+
     try {
       const supabase = supabaseRef.current
       let query = supabase.from('orders').select('*')
-      
+
       // Apply filters
       if (filters?.status) {
         if (Array.isArray(filters.status)) {
@@ -469,39 +513,41 @@ export function OptimizedOrdersProvider({
           query = query.eq('status', filters.status)
         }
       }
-      
+
       if (filters?.tableId) {
         query = query.eq('table_id', filters.tableId)
       }
-      
+
       if (filters?.residentId) {
         query = query.eq('resident_id', filters.residentId)
       }
-      
+
       if (filters?.serverId) {
         query = query.eq('server_id', filters.serverId)
       }
-      
+
       if (filters?.dateRange) {
         query = query
           .gte('created_at', filters.dateRange.start.toISOString())
           .lte('created_at', filters.dateRange.end.toISOString())
       }
-      
+
       // Apply limit
       if (filters?.limit) {
         query = query.limit(filters.limit)
       } else {
         query = query.limit(500) // Default limit for performance
       }
-      
+
       // Order by created_at descending
       query = query.order('created_at', { ascending: false })
-      
+
       const { data, error } = await query
-      
-      if (error) {throw error}
-      
+
+      if (error) {
+        throw error
+      }
+
       if (mountedRef.current && data) {
         dispatch({ type: 'BATCH_UPDATE', payload: data })
       }
@@ -510,149 +556,190 @@ export function OptimizedOrdersProvider({
       if (mountedRef.current) {
         dispatch({
           type: 'SET_ERROR',
-          payload: error instanceof Error ? error.message : 'Failed to load orders',
+          payload:
+            error instanceof Error ? error.message : 'Failed to load orders',
         })
       }
     }
   }, [])
-  
+
   // Create new order
-  const createOrder = useCallback(async (orderData: Omit<Order, 'id' | 'created_at'>): Promise<Order> => {
-    const supabase = supabaseRef.current
-    
-    const { data, error } = await supabase
-      .from('orders')
-      .insert(orderData)
-      .select()
-      .single()
-    
-    if (error) {throw error}
-    if (!data) {throw new Error('No data returned')}
-    
-    // Add to local state immediately
-    if (mountedRef.current) {
-      dispatch({ type: 'ADD_ORDER', payload: data })
-    }
-    
-    return data
-  }, [])
-  
+  const createOrder = useCallback(
+    async (orderData: Omit<Order, 'id' | 'created_at'>): Promise<Order> => {
+      const supabase = supabaseRef.current
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single()
+
+      if (error) {
+        throw error
+      }
+      if (!data) {
+        throw new Error('No data returned')
+      }
+
+      // Add to local state immediately
+      if (mountedRef.current) {
+        dispatch({ type: 'ADD_ORDER', payload: data })
+      }
+
+      return data
+    },
+    []
+  )
+
   // Update order
-  const updateOrder = useCallback(async (orderId: string, updates: Partial<Order>) => {
-    const supabase = supabaseRef.current
-    
-    const { data, error } = await supabase
-      .from('orders')
-      .update(updates)
-      .eq('id', orderId)
-      .select()
-      .single()
-    
-    if (error) {throw error}
-    
-    // Update local state
-    if (mountedRef.current && data) {
-      dispatch({ type: 'UPDATE_ORDER', payload: data })
-    }
-  }, [])
-  
+  const updateOrder = useCallback(
+    async (orderId: string, updates: Partial<Order>) => {
+      const supabase = supabaseRef.current
+
+      const { data, error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', orderId)
+        .select()
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      // Update local state
+      if (mountedRef.current && data) {
+        dispatch({ type: 'UPDATE_ORDER', payload: data })
+      }
+    },
+    []
+  )
+
   // Delete order
   const deleteOrder = useCallback(async (orderId: string) => {
     const supabase = supabaseRef.current
-    
-    const { error } = await supabase
-      .from('orders')
-      .delete()
-      .eq('id', orderId)
-    
-    if (error) {throw error}
-    
+
+    const { error } = await supabase.from('orders').delete().eq('id', orderId)
+
+    if (error) {
+      throw error
+    }
+
     // Remove from local state
     if (mountedRef.current) {
       dispatch({ type: 'REMOVE_ORDER', payload: orderId })
     }
   }, [])
-  
+
   // Optimistic update
-  const optimisticUpdate = useCallback((orderId: string, updates: Partial<Order>) => {
-    dispatch({ type: 'OPTIMISTIC_UPDATE', payload: { id: orderId, updates } })
-  }, [])
-  
+  const optimisticUpdate = useCallback(
+    (orderId: string, updates: Partial<Order>) => {
+      dispatch({ type: 'OPTIMISTIC_UPDATE', payload: { id: orderId, updates } })
+    },
+    []
+  )
+
   // Efficient getters using indexes
-  const getOrderById = useCallback((id: string): Order | undefined => {
-    const order = state.orders.get(id)
-    if (order) {
-      dispatch({ type: 'CACHE_HIT' })
-    } else {
-      dispatch({ type: 'CACHE_MISS' })
-    }
-    return order
-  }, [state.orders])
-  
-  const getOrdersByStatus = useCallback((status: OrderStatus): Order[] => {
-    const orderIds = state.ordersByStatus.get(status)
-    if (!orderIds) {return []}
-    
-    const orders: Order[] = []
-    for (const id of orderIds) {
+  const getOrderById = useCallback(
+    (id: string): Order | undefined => {
       const order = state.orders.get(id)
-      if (order) {orders.push(order)}
-    }
-    
-    return orders
-  }, [state.orders, state.ordersByStatus])
-  
-  const getOrdersByTable = useCallback((tableId: string): Order[] => {
-    const orderIds = state.ordersByTable.get(tableId)
-    if (!orderIds) {return []}
-    
-    const orders: Order[] = []
-    for (const id of orderIds) {
-      const order = state.orders.get(id)
-      if (order) {orders.push(order)}
-    }
-    
-    return orders
-  }, [state.orders, state.ordersByTable])
-  
-  const getOrdersByResident = useCallback((residentId: string): Order[] => {
-    const orderIds = state.ordersByResident.get(residentId)
-    if (!orderIds) {return []}
-    
-    const orders: Order[] = []
-    for (const id of orderIds) {
-      const order = state.orders.get(id)
-      if (order) {orders.push(order)}
-    }
-    
-    return orders
-  }, [state.orders, state.ordersByResident])
-  
+      if (order) {
+        dispatch({ type: 'CACHE_HIT' })
+      } else {
+        dispatch({ type: 'CACHE_MISS' })
+      }
+      return order
+    },
+    [state.orders]
+  )
+
+  const getOrdersByStatus = useCallback(
+    (status: OrderStatus): Order[] => {
+      const orderIds = state.ordersByStatus.get(status)
+      if (!orderIds) {
+        return []
+      }
+
+      const orders: Order[] = []
+      for (const id of orderIds) {
+        const order = state.orders.get(id)
+        if (order) {
+          orders.push(order)
+        }
+      }
+
+      return orders
+    },
+    [state.orders, state.ordersByStatus]
+  )
+
+  const getOrdersByTable = useCallback(
+    (tableId: string): Order[] => {
+      const orderIds = state.ordersByTable.get(tableId)
+      if (!orderIds) {
+        return []
+      }
+
+      const orders: Order[] = []
+      for (const id of orderIds) {
+        const order = state.orders.get(id)
+        if (order) {
+          orders.push(order)
+        }
+      }
+
+      return orders
+    },
+    [state.orders, state.ordersByTable]
+  )
+
+  const getOrdersByResident = useCallback(
+    (residentId: string): Order[] => {
+      const orderIds = state.ordersByResident.get(residentId)
+      if (!orderIds) {
+        return []
+      }
+
+      const orders: Order[] = []
+      for (const id of orderIds) {
+        const order = state.orders.get(id)
+        if (order) {
+          orders.push(order)
+        }
+      }
+
+      return orders
+    },
+    [state.orders, state.ordersByResident]
+  )
+
   const getActiveOrders = useCallback((): Order[] => {
     const activeStatuses: OrderStatus[] = ['new', 'in_progress', 'ready']
     const orders: Order[] = []
-    
+
     for (const status of activeStatuses) {
       const statusOrders = getOrdersByStatus(status)
       orders.push(...statusOrders)
     }
-    
+
     return orders
   }, [getOrdersByStatus])
-  
+
   // Get performance metrics
   const getPerformanceMetrics = useCallback((): PerformanceMetrics => {
     const cacheTotal = state.cacheStats.hits + state.cacheStats.misses
     const cacheHitRate = cacheTotal > 0 ? state.cacheStats.hits / cacheTotal : 0
-    
-    const avgUpdateTime = updateTimesRef.current.length > 0
-      ? updateTimesRef.current.reduce((a, b) => a + b, 0) / updateTimesRef.current.length
-      : 0
-    
+
+    const avgUpdateTime =
+      updateTimesRef.current.length > 0
+        ? updateTimesRef.current.reduce((a, b) => a + b, 0) /
+          updateTimesRef.current.length
+        : 0
+
     // Estimate memory usage (rough approximation)
     const avgOrderSize = 500 // bytes
     const memoryUsage = state.orders.size * avgOrderSize
-    
+
     return {
       totalOrders: state.orders.size,
       cacheHitRate,
@@ -660,23 +747,101 @@ export function OptimizedOrdersProvider({
       memoryUsage,
     }
   }, [state.orders.size, state.cacheStats])
-  
-  // Set up real-time subscription
+
+  // Set up real-time subscription following Luis's patterns with safety measures
   useEffect(() => {
-    if (!isConnected) {return}
-    
-    // Subscribe to orders table with role-based filtering
-    const unsubscribe = subscribe({
-      id: 'optimized-orders',
-      table: 'orders',
-      event: '*',
-      callback: handleRealtimeUpdate,
-      priority: 'high',
-    })
-    
-    return unsubscribe
-  }, [isConnected, subscribe, handleRealtimeUpdate])
-  
+    // Feature flag for real-time - can be disabled if problematic
+    const ENABLE_REALTIME = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== 'false'
+
+    if (!ENABLE_REALTIME) {
+      setConnectionStatus('disconnected')
+      return
+    }
+
+    const supabase = supabaseRef.current
+    let channel: any = null
+    let retryTimeout: NodeJS.Timeout | null = null
+
+    const setupRealtimeConnection = async () => {
+      try {
+        setConnectionStatus('connecting')
+
+        // Test basic connectivity first
+        const { error: testError } = await supabase
+          .from('orders')
+          .select('count')
+          .limit(1)
+        if (testError) {
+          console.error('Database connectivity test failed:', testError)
+          setConnectionStatus('error')
+          return
+        }
+
+        // Create channel for orders table with error boundary
+        channel = supabase
+          .channel('orders-realtime')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'orders',
+            },
+            payload => {
+              try {
+                handleRealtimeUpdate(payload)
+              } catch (error) {
+                console.error('Error handling real-time update:', error)
+                // Don't let real-time errors crash the app
+              }
+            }
+          )
+          .subscribe((status: string) => {
+            if (status === 'SUBSCRIBED') {
+              setIsConnected(true)
+              setConnectionStatus('connected')
+              console.warn('✅ Real-time orders subscription active')
+            } else if (status === 'CHANNEL_ERROR') {
+              setIsConnected(false)
+              setConnectionStatus('error')
+              console.error('❌ Real-time subscription error')
+              // Auto-retry after 5 seconds
+              retryTimeout = setTimeout(setupRealtimeConnection, 5000)
+            } else if (status === 'TIMED_OUT') {
+              setIsConnected(false)
+              setConnectionStatus('disconnected')
+              console.warn('⏰ Real-time subscription timed out')
+              // Auto-retry after 10 seconds
+              retryTimeout = setTimeout(setupRealtimeConnection, 10000)
+            }
+          })
+      } catch (error) {
+        console.error('Failed to setup real-time connection:', error)
+        setIsConnected(false)
+        setConnectionStatus('error')
+        // Don't retry on setup errors - likely configuration issue
+      }
+    }
+
+    setupRealtimeConnection()
+
+    return () => {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+      }
+      if (channel) {
+        try {
+          channel.unsubscribe()
+          console.warn('🔌 Real-time subscription cleaned up')
+        } catch (error) {
+          console.error('Error cleaning up real-time subscription:', error)
+        }
+      }
+      setIsConnected(false)
+      setConnectionStatus('disconnected')
+    }
+  }, [handleRealtimeUpdate])
+
   // Load initial orders
   useEffect(() => {
     loadOrders({
@@ -684,7 +849,7 @@ export function OptimizedOrdersProvider({
       limit: 200,
     })
   }, [loadOrders])
-  
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -694,10 +859,12 @@ export function OptimizedOrdersProvider({
       }
     }
   }, [])
-  
+
   // Context value
   const contextValue: OptimizedOrdersContextValue = {
     state,
+    isConnected,
+    connectionStatus,
     loadOrders,
     createOrder,
     updateOrder,
@@ -710,7 +877,7 @@ export function OptimizedOrdersProvider({
     getActiveOrders,
     getPerformanceMetrics,
   }
-  
+
   return (
     <OptimizedOrdersContext.Provider value={contextValue}>
       {children}
@@ -722,7 +889,9 @@ export function OptimizedOrdersProvider({
 export function useOptimizedOrders() {
   const context = useContext(OptimizedOrdersContext)
   if (!context) {
-    throw new Error('useOptimizedOrders must be used within an OptimizedOrdersProvider')
+    throw new Error(
+      'useOptimizedOrders must be used within an OptimizedOrdersProvider'
+    )
   }
   return context
 }
@@ -730,7 +899,7 @@ export function useOptimizedOrders() {
 // Hook for active orders only (performance optimized)
 export function useActiveOrders() {
   const { getActiveOrders, state } = useOptimizedOrders()
-  
+
   return useMemo(() => {
     const orders = getActiveOrders()
     return {
@@ -745,7 +914,7 @@ export function useActiveOrders() {
 // Hook for orders by table (performance optimized)
 export function useTableOrders(tableId: string) {
   const { getOrdersByTable, state } = useOptimizedOrders()
-  
+
   return useMemo(() => {
     const orders = getOrdersByTable(tableId)
     return {

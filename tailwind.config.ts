@@ -34,6 +34,14 @@ const config: Config = {
             6: 'hsl(var(--apple-gray-6))',
           },
         },
+        // Status colors that complement existing palette
+        status: {
+          new: '#3b82f6',
+          preparing: '#f59e0b', 
+          ready: '#10b981',
+          delivered: '#6b7280',
+          cancelled: '#ef4444',
+        },
         // Semantic Design Tokens
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -203,6 +211,15 @@ const config: Config = {
           '0%': { backdropFilter: 'blur(0px)' },
           '100%': { backdropFilter: 'blur(20px)' },
         },
+        // Premium enhancement keyframes - additive only
+        subtlePulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.8' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -214,9 +231,17 @@ const config: Config = {
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
         'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
         'spin-slow': 'spin-slow 3s linear infinite',
+        // Premium enhancement animations - additive only
+        'subtle-pulse': 'subtlePulse 3s ease-in-out infinite',
+        'slide-up': 'slideUp 0.3s ease-out',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
+      boxShadow: {
+        // Enhanced shadows for premium feel - additive only  
+        'premium': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        'premium-lg': '0 20px 35px -10px rgba(0, 0, 0, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04)',
       },
     },
   },

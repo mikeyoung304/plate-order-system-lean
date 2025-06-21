@@ -13,10 +13,11 @@ export async function GET(request: NextRequest) {
       // In production, require admin authentication
       const supabase = await createClient()
       const {
-        data: { session },
-      } = await supabase.auth.getSession()
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
 
-      if (!session?.user) {
+      if (authError || !user) {
         return NextResponse.json(
           { error: 'Authentication required' },
           {
@@ -85,10 +86,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Secure Authentication State Check
-    const [sessionResult, userResult] = await Promise.all([
-      supabase.auth.getSession(),
-      supabase.auth.getUser(),
-    ])
+    const userResult = await supabase.auth.getUser()
 
     const sbCookies = cookieStore.getAll().filter(c => c.name.includes('sb-'))
     const testCookie = cookieStore.get('vercel-test')
@@ -100,10 +98,9 @@ export async function GET(request: NextRequest) {
       environment: process.env.NODE_ENV,
 
       authentication: {
-        sessionExists: !!sessionResult.data.session,
         userExists: !!userResult.data.user,
-        sessionValid: !!sessionResult.data.session && !sessionResult.error,
-        hasErrors: !!(sessionResult.error || userResult.error),
+        userValid: !!userResult.data.user && !userResult.error,
+        hasErrors: !!userResult.error,
       },
 
       cookies: {

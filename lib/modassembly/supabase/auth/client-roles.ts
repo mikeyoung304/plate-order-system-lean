@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { AppRole } from './roles'
 
+
 /**
  * Gets the current user's role from their profile (client-side)
  * @returns The user's role or null if not found
@@ -45,11 +46,6 @@ export async function getClientUserRole(): Promise<AppRole | null> {
 export async function hasClientRole(
   roles: AppRole | AppRole[]
 ): Promise<boolean> {
-  // BETA TESTER OVERRIDE: All users have all permissions during beta
-  if (process.env.NEXT_PUBLIC_BETA_MODE === 'true') {
-    return true
-  }
-
   const userRole = await getClientUserRole()
   if (!userRole) {
     return false

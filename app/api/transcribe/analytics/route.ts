@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
     // 1. Authentication and Admin Check
     const supabase = await createClient()
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
-    if (authError || !session?.user) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },
         {
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
@@ -70,7 +70,8 @@ export async function GET(request: NextRequest) {
     // 3. Parse Query Parameters
     const url = new URL(request.url)
     const userId = url.searchParams.get('userId') // Optional: filter by specific user
-    const includePersonalData = url.searchParams.get('includePersonal') === 'true'
+    const includePersonalData =
+      url.searchParams.get('includePersonal') === 'true'
 
     try {
       // 4. Gather Analytics Data
@@ -137,11 +138,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response, {
         headers: Security.headers.getHeaders(),
       })
-
     } catch (error) {
       console.error('Analytics data fetch failed:', {
         error: error instanceof Error ? error.message : error,
-        userId: session.user.id,
+        userId: user.id,
         requestedUserId: userId,
       })
 
@@ -166,11 +166,11 @@ export async function POST(request: NextRequest) {
     // 1. Authentication and Admin Check
     const supabase = await createClient()
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
-    if (authError || !session?.user) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },
         {
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     let body
     try {
       body = await request.json()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid JSON body' },
         {
@@ -244,7 +244,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (budgetLimits.monthly !== undefined) {
-      if (typeof budgetLimits.monthly !== 'number' || budgetLimits.monthly < 0) {
+      if (
+        typeof budgetLimits.monthly !== 'number' ||
+        budgetLimits.monthly < 0
+      ) {
         return NextResponse.json(
           { error: 'Monthly budget must be a positive number' },
           { status: 400, headers: Security.headers.getHeaders() }
@@ -255,7 +258,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Store Budget Limits (in a real app, would save to database)
     // console.log('Budget limits updated:', {
-    //   updatedBy: session.user.id,
+    //   updatedBy: user.id,
     //   limits: validatedLimits,
     //   timestamp: new Date().toISOString(),
     // })
@@ -285,7 +288,7 @@ function sanitizeUsageStats(stats: any, includePersonalData: boolean) {
 }
 
 // Helper function to generate trend data
-async function generateTrendData(tracker: any, userId?: string | null) {
+async function generateTrendData(_tracker: any, _userId?: string | null) {
   // Generate sample trend data (in production, would query historical data)
   const now = new Date()
   const dailyCosts = []

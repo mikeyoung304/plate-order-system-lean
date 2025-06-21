@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { UserRole } from '@/types/database'
 
+
 export type AppRole = UserRole
 
 /**
@@ -34,6 +35,14 @@ export async function getUserRole(): Promise<AppRole | null> {
  * @returns True if user has any of the specified roles
  */
 export async function hasRole(roles: AppRole | AppRole[]): Promise<boolean> {
+  const supabase = await createClient()
+  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  
+
+
   const userRole = await getUserRole()
   if (!userRole) {
     return false
@@ -51,6 +60,13 @@ export async function hasRole(roles: AppRole | AppRole[]): Promise<boolean> {
 export async function requireRole(roles: AppRole | AppRole[]): Promise<void> {
   const hasRequiredRole = await hasRole(roles)
   if (!hasRequiredRole) {
+    const supabase = await createClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    
+
+
     const userRole = await getUserRole()
     throw new Error(
       `Access denied. Required role: ${Array.isArray(roles) ? roles.join(' or ') : roles}. Current role: ${userRole || 'none'}`

@@ -18,21 +18,25 @@ export type KDSOrderRouting = DatabaseKDSOrderRouting & {
     id: string
     table_id: string
     seat_id: string
-    resident_id: string
-    server_id: string
+    server_id?: string
     items: any[]
     transcript?: string
     status: string
     type: OrderType
     created_at: string
-    resident?: {
-      name: string
-    }
     server?: {
       name: string
     }
     table?: {
+      id: string
       label: string
+    }
+    seat?: {
+      id: string
+      label: string
+    }
+    resident?: {
+      name: string
     }
   }
   station?: KDSStation
@@ -100,8 +104,9 @@ export async function fetchStationOrders(
         `
         *,
         order:orders!inner (
-          id, items, status, type, created_at, transcript,
-          table:tables!table_id (label)
+          id, items, status, type, created_at, transcript, seat_id,
+          table:tables!table_id (id, label),
+          seat:seats!seat_id (id, label)
         ),
         station:kds_stations!station_id (id, name, type, color)
       `
@@ -143,29 +148,59 @@ export async function fetchStationOrders(
  * Fetch all active orders across all stations
  */
 export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
-  const supabase = await createClient()
+  return measureApiCall('fetch_all_active_orders', async () => {
+    const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('kds_order_routing')
-    .select(
+    const { data, error } = await supabase
+      .from('kds_order_routing')
+      .select(
+        `
+        *,
+        order:orders!inner (
+          id, items, status, type, created_at, transcript, seat_id,
+          table:tables!table_id (id, label),
+          seat:seats!seat_id (id, label)
+        ),
+        station:kds_stations!station_id (id, name, type, color)
       `
-      *,
-      order:orders!inner (
-        id, items, status, type, created_at, transcript,
-        table:tables!table_id (label)
-      ),
-      station:kds_stations!station_id (id, name, type, color)
-    `
-    )
-    .is('completed_at', null)
-    .order('routed_at', { ascending: true })
+      )
+      .is('completed_at', null)
+      .order('routed_at', { ascending: true })
+      .limit(100) // Security: Limit results to prevent excessive data
 
-  if (error) {
-    console.error('Error fetching all active orders:', error)
-    throw error
-  }
+    if (error) {
+      console.error('Error fetching all active orders:', error)
+      throw error
+    }
 
-  return data || []
+    // 🔥 DEBUG: Log raw data structure  
+    console.log('🔥 fetchAllActiveOrders DEBUG:', {
+      ordersCount: data?.length || 0,
+      firstOrder: data?.[0] ? JSON.stringify(data[0], null, 2) : 'No orders',
+      error: error
+    });
+
+    // Security: Sanitize order data (same as fetchStationOrders)
+    return (data || []).map(order => ({
+      ...order,
+      notes: order.notes ? Security.sanitize.sanitizeHTML(order.notes) : null,
+      priority: Math.max(0, Math.min(10, order.priority || 0)),
+      order: order.order
+        ? {
+            ...order.order,
+            items: Array.isArray(order.order.items)
+              ? order.order.items
+                  .map((item: any) => Security.sanitize.sanitizeOrderItem(item))
+                  .filter((item: string) => item.length > 0)
+                  .slice(0, 20) // Limit items
+              : [],
+            transcript: order.order.transcript
+              ? Security.sanitize.sanitizeHTML(order.order.transcript)
+              : null,
+          }
+        : null,
+    }))
+  })
 }
 
 /**
@@ -653,7 +688,7 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
       // Analyze food items to determine routing
       const items = Array.isArray(order.items) ? order.items : []
 
-      // Keywords for different stations
+      // Keywords for different stations - Enhanced coverage
       const routingRules = {
         grill: [
           'steak',
@@ -664,10 +699,50 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
           'grilled',
           'barbecue',
           'bbq',
+          'ribeye',
+          'filet',
+          'sirloin',
+          'cheeseburger',
+          'bacon',
+          'patty',
         ],
-        fryer: ['fries', 'fried', 'tempura', 'wings', 'nuggets', 'crispy'],
-        salad: ['salad', 'greens', 'vegetables', 'fresh', 'raw', 'lettuce'],
-        prep: ['soup', 'sauce', 'dressing', 'marinade', 'prep'],
+        fryer: [
+          'fries', 
+          'fried', 
+          'tempura', 
+          'wings', 
+          'nuggets', 
+          'crispy',
+          'loaded',
+          'onion rings',
+          'calamari',
+          'fish and chips',
+        ],
+        salad: [
+          'salad', 
+          'greens', 
+          'vegetables', 
+          'fresh', 
+          'raw', 
+          'lettuce',
+          'caesar',
+          'greek',
+          'chef',
+          'garden',
+          'spinach',
+        ],
+        prep: [
+          'soup', 
+          'sauce', 
+          'dressing', 
+          'marinade', 
+          'prep',
+          'mashed',
+          'potatoes',
+          'side',
+          'fondue',
+          'pot',
+        ],
         dessert: [
           'dessert',
           'cake',
@@ -675,6 +750,13 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
           'sweet',
           'chocolate',
           'fruit',
+          'tiramisu',
+          'waffle',
+          'belgian',
+          'stack',
+          'slice',
+          'birthday',
+          'bowl',
         ],
       }
 

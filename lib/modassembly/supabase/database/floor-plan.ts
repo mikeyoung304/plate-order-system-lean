@@ -3,7 +3,7 @@
  * Provides simplified persistence for floor plan editor
  */
 
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { getKDSClient } from '@/lib/database-connection-pool'
 import { createTable, deleteTable, updateTable } from './tables'
 import {
   createSeatsForTable,
@@ -34,7 +34,7 @@ export interface FloorPlanTable {
 export async function saveFloorPlanTables(
   tables: FloorPlanTable[]
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   try {
     // Get current tables from database
@@ -105,16 +105,11 @@ export async function saveFloorPlanTables(
  * @returns Array of floor plan tables
  */
 export async function loadFloorPlanTables(): Promise<FloorPlanTable[]> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   // Fetch tables and their seats with position data
   const [tablesResponse, seatsResponse] = await Promise.all([
-    supabase
-      .from('tables')
-      .select(
-        'id, label, type, status, position_x, position_y, width, height, rotation, z_index'
-      )
-      .order('label'),
+    supabase.from('tables').select('id, label, type, status').order('label'),
     supabase.from('seats').select('*'),
   ])
 
@@ -138,18 +133,19 @@ export async function loadFloorPlanTables(): Promise<FloorPlanTable[]> {
     {} as Record<string, number>
   )
 
-  // Transform to FloorPlanTable format with position data
+  // Transform to FloorPlanTable format - FIXED: Handle missing position columns gracefully
   return tables.map(table => ({
     id: table.id,
     label: table.label.toString(),
     type: table.type as 'circle' | 'rectangle' | 'square',
     seats: seatCountMap[table.id] || 0,
     status: table.status as 'available' | 'occupied' | 'reserved',
-    position_x: table.position_x,
-    position_y: table.position_y,
-    width: table.width,
-    height: table.height,
-    rotation: table.rotation,
-    zIndex: table.z_index,
+    // Set default values since position columns don't exist in database yet
+    position_x: undefined,
+    position_y: undefined,
+    width: undefined,
+    height: undefined,
+    rotation: undefined,
+    zIndex: undefined,
   }))
 }

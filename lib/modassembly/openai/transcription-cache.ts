@@ -386,9 +386,11 @@ export class TranscriptionCache {
         .from('transcription_cache')
         .update({
           last_used: new Date().toISOString(),
-          use_count: supabase.rpc('increment_use_count'),
         })
         .eq('audio_hash', audioHash)
+      
+      // Increment use count with separate RPC call
+      await supabase.rpc('increment_use_count', { audio_hash: audioHash })
     } catch (error) {
       console.error('Failed to update usage stats:', error)
     }

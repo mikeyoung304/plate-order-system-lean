@@ -11,13 +11,22 @@
         "GITHUB_TOKEN": "${GITHUB_TOKEN}"
       }
     },
-    "postgres": {
+    "context7": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres.eiipozoogrrfudhjoqms:${SUPABASE_DB_PASSWORD}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"]
+      "args": ["-y", "@context7/mcp-server"]
     },
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase-community/supabase-mcp"],
+      "env": {
+        "SUPABASE_URL": "https://eiipozoogrrfudhjoqms.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXBvem9vZ3JyZnVkaGpvcW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMDcyNzksImV4cCI6MjA1OTc4MzI3OX0.KoqHBvZXVWrVYnrqGFSSfFqD5sc7aWmf3oMaOuTiMGk",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXBvem9vZ3JyZnVkaGpvcW1zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDIwNzI3OSwiZXhwIjoyMDU5NzgzMjc5fQ.p7DodpQaPooDVFQTAkXKWRdp0ZGMzzXib9cfxGauLko"
+      }
     }
   }
 }

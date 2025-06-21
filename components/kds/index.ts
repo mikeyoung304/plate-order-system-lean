@@ -6,9 +6,6 @@ export { KDSLayoutRefactored as KDSLayout } from './KDSLayoutRefactored'
 export { KDSHeader } from './KDSHeader'
 export { KDSMainContent } from './KDSMainContent'
 
-// Legacy component (for backward compatibility)
-export { KDSLayout as KDSLayoutLegacy } from './kds-layout'
-
 // Station-specific components
 export * from './stations'
 

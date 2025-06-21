@@ -2124,6 +2124,71 @@
   animation: voice-alert-slide-in 0.3s ease-out;
 }
 
+/* ===== PREMIUM ENHANCEMENTS - ADDITIVE ONLY ===== */
+
+@layer utilities {
+  /* Subtle animations for production stability */
+  .animate-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .glass-light {
+    @apply bg-white/80 backdrop-blur-sm border border-gray-200/50;
+  }
+  
+  /* Performance-optimized shadows */
+  .shadow-premium {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    will-change: transform;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-in, .transition-all {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* Touch target compliance without breaking layouts */
+@layer components {
+  .touch-safe {
+    @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
+  }
+  
+  /* Mobile enhancements - additive only */
+  @media (max-width: 768px) {
+    /* Larger touch targets on mobile only */
+    .touch-safe-mobile {
+      @apply min-h-[48px] px-6;
+    }
+    
+    /* Stack layouts on mobile */
+    .mobile-stack > * + * {
+      @apply mt-4;
+    }
+    
+    /* Better card spacing on mobile */
+    .card-mobile-optimize {
+      @apply p-4 space-y-3;
+    }
+  }
+
+  /* iOS-specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    /* Prevent tap highlight */
+    button, a {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Smooth scrolling */
+    .scroll-container {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner,
