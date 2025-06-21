@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-06-19T19:56:58.733Z",
+  "bundleSize": {
+    "current": "308M",
+    "baseline": "386M",
+    "target": "425M",
+    "changePercent": "-20.21"
+  },
+  "chunks": {
+    "kds": {
+      "file": "_app-pages-browser_components_kds_debug-simple_tsx.js",
+      "size": "13KB"
+    },
+    "app-pages-internals": {
+      "file": "app-pages-internals.js",
+      "size": "219KB"
+    },
+    "main-app": {
+      "file": "main-app.js",
+      "size": "6399KB"
+    },
+    "polyfills": {
+      "file": "polyfills.js",
+      "size": "110KB"
+    },
+    "webpack": {
+      "file": "webpack.js",
+      "size": "55KB"
+    }
+  },
+  "status": "PASS",
+  "recommendations": [
+    {
+      "type": "WARNING",
+      "message": "Large chunk detected: app-pages-internals.js (219KB). Consider further splitting."
+    },
+    {
+      "type": "WARNING",
+      "message": "Large chunk detected: main-app.js (6399KB). Consider further splitting."
+    },
+    {
+      "type": "WARNING",
+      "message": "Large chunk detected: polyfills.js (110KB). Consider further splitting."
+    }
+  ]
+}

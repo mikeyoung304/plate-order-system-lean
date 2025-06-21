@@ -1,0 +1,226 @@
+--- a/lib/kds/voice-commands.ts
++++ b/lib/kds/voice-commands.ts
+@@ -210,11 +210,29 @@ export function useVoiceCommands({
+         })
+       }
+       
+-    } catch (_error) {
+-      console.error('Error executing voice command:', _error)
+-      setFeedbackMessage('Error executing command')
++    } catch (error: any) {
++      console.error('Error executing voice command:', error)
++      
++      // Categorize error for better user feedback
++      let errorMessage = 'Error executing command'
++      if (error.message?.includes('insufficient_privilege')) {
++        errorMessage = 'Insufficient permissions for this operation'
++      } else if (error.message?.includes('network')) {
++        errorMessage = 'Network connection issue'
++      } else if (error.message?.includes('auth')) {
++        errorMessage = 'Authentication required'
++      } else if (error.code === 'PGRST301') {
++        errorMessage = 'Database permission denied'
++      }
++      
++      setFeedbackMessage(errorMessage)
+       toast({
+         title: 'Command Failed',
+-        description: 'There was an error executing your voice command',
++        description: errorMessage,
+         variant: 'destructive',
+       })
++      
++      // Log detailed error for debugging
++      console.error('Voice command error details:', {
++        command: command.action,
++        error: error.message,
++        code: error.code
++      })
+     }
+   }, [onBump, onRecall, onStart, setFeedbackMessage, toast])
+
+--- a/components/kds/voice-command-panel.tsx
++++ b/components/kds/voice-command-panel.tsx
+@@ -1,4 +1,5 @@
+ import { useCallback, useState } from 'react'
++import { createClient } from '@/lib/modassembly/supabase/client'
+ import { VoiceCommand } from '@/lib/kds/voice-commands'
+ import { useToast } from '@/hooks/use-toast'
+ import { Button } from '@/components/ui/button'
+@@ -52,8 +53,26 @@ export function VoiceCommandPanel({
+     setIsListening(false)
+   }, [setIsListening])
+   
++  // Validate user role before executing commands
++  const validateUserRole = async (): Promise<boolean> => {
++    const supabase = createClient()
++    const { data: { user } } = await supabase.auth.getUser()
++    
++    if (!user) return false
++    
++    const { data: profile } = await supabase
++      .from('profiles')
++      .select('role')
++      .eq('user_id', user.id)
++      .single()
++    
++    return profile && ['cook', 'admin', 'guest_admin'].includes(profile.role)
++  }
++  
+   const handleCommand = useCallback(
+     async (command: VoiceCommand) => {
++      // Validate role before executing any commands
++      if (!(await validateUserRole())) {
++        setFeedbackMessage('Insufficient permissions for kitchen operations')
++        toast({
++          title: 'Permission Denied',
++          description: 'You need kitchen staff privileges to execute voice commands',
++          variant: 'destructive',
++        })
++        return
++      }
++      
+       switch (command.action) {
+         case 'bump':
+           await onBump(command.target)
+
+--- a/app/api/transcribe/route.ts
++++ b/app/api/transcribe/route.ts
+@@ -44,6 +44,19 @@ export async function POST(request: Request) {
+     )
+   }
+ 
++  // Validate user role for transcription access
++  const { data: profile } = await supabase
++    .from('profiles')
++    .select('role')
++    .eq('user_id', user.id)
++    .single()
++
++  if (!profile || !['server', 'cook', 'admin', 'guest_admin'].includes(profile.role)) {
++    return NextResponse.json(
++      { error: 'Insufficient permissions for voice transcription' },
++      { status: 403 }
++    )
++  }
++
+   try {
+     const formData = await request.formData()
+     const audioFile = formData.get('audio') as File
+
+--- a/supabase/migrations/20250527000001_create_kds_system.sql
++++ b/supabase/migrations/20250527000001_create_kds_system.sql
+@@ -108,9 +108,9 @@ INSERT INTO kds_stations (id, name, category, display_order) VALUES
+ 
+ -- RLS Policies for kds_order_routing
+ 
+-CREATE POLICY "Kitchen staff can view order routing" ON kds_order_routing
++CREATE POLICY "Kitchen staff and guests can view order routing" ON kds_order_routing
+   FOR SELECT TO authenticated USING (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   );
+ 
+@@ -118,17 +118,17 @@ CREATE POLICY "Kitchen staff can insert order routing" ON kds_order_routing
+   FOR INSERT TO authenticated WITH CHECK (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   );
+ 
+-CREATE POLICY "Kitchen staff can update order routing" ON kds_order_routing
++CREATE POLICY "Kitchen staff and guests can update order routing" ON kds_order_routing
+   FOR UPDATE TO authenticated USING (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   ) WITH CHECK (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   );
+ 
+@@ -136,7 +136,7 @@ CREATE POLICY "Kitchen staff can delete order routing" ON kds_order_routing
+   FOR DELETE TO authenticated USING (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   );
+ 
+@@ -144,7 +144,7 @@ CREATE POLICY "Kitchen staff can view stations" ON kds_stations
+   FOR SELECT TO authenticated USING (
+     auth.uid() IN (
+-      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin')
++      SELECT user_id FROM profiles WHERE role IN ('cook', 'admin', 'guest_admin')
+     )
+   );
+
+--- a/lib/modassembly/supabase/auth/actions.ts
++++ b/lib/modassembly/supabase/auth/actions.ts
+@@ -28,6 +28,18 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
+     console.log('✅ Auth successful, session exists:', !!authData.session)
+     console.log('✅ User ID:', authData.user?.id)
+     
++    // Validate user profile exists
++    const { data: profile, error: profileError } = await supabase
++      .from('profiles')
++      .select('role')
++      .eq('user_id', authData.user?.id)
++      .single()
++    
++    if (profileError || !profile) {
++      console.error('❌ User profile not found:', profileError)
++      return { error: 'User profile not found. Please contact administrator.' }
++    }
++    
+     return { success: true }
+   } catch (error: any) {
+     console.error('❌ Sign in error:', error)
+
+--- a/lib/modassembly/supabase/database/orders.ts
++++ b/lib/modassembly/supabase/database/orders.ts
+@@ -1,5 +1,6 @@
+-import { getKDSClient } from '@/lib/database-connection-pool'
++import { createClient } from '@/lib/modassembly/supabase/server'
+ import { Order, CreateOrderData, OrderStatus } from '@/types/database'
+ import { Security } from '@/lib/security'
++import { cookies } from 'next/headers'
+ 
+ // Order data sanitization
+ function sanitizeOrderData(data: any): any {
+@@ -30,7 +31,8 @@ const ORDER_FIELDS = `
+ 
+ // Fetch recent orders (read operation) - Use server-side client for security
+ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
+-  const supabase = getKDSClient()
++  const cookieStore = cookies()
++  const supabase = createClient(cookieStore)
+   
+   try {
+     console.log(`📋 Fetching recent orders (limit: ${limit})`)
+@@ -55,7 +57,8 @@ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
+ 
+ // Fetch order by ID
+ export async function fetchOrderById(orderId: string): Promise<Order | null> {
+-  const supabase = getKDSClient()
++  const cookieStore = cookies()
++  const supabase = createClient(cookieStore)
+   
+   if (!Security.isValidUUID(orderId)) {
+     console.error('❌ Invalid order ID format')
+@@ -82,7 +85,8 @@ export async function fetchOrderById(orderId: string): Promise<Order | null> {
+ 
+ // Create a new order
+ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
+-  const supabase = getKDSClient()
++  const cookieStore = cookies()
++  const supabase = createClient(cookieStore)
+   
+   try {
+     console.log('🔄 Creating new order:', {

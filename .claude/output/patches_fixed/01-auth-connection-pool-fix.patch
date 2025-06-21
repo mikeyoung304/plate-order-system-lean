@@ -1,0 +1,256 @@
+--- a/lib/modassembly/supabase/auth/global-auth-listener.ts
++++ b/lib/modassembly/supabase/auth/global-auth-listener.ts
+@@ -15,15 +15,8 @@ export function GlobalAuthListener() {
+   const router = useRouter()
+   const { toast } = useToast()
+
+-  // Store original console.error to restore later
+-  const originalError = console.error
+-
+   const handleAuthError = useCallback((error: { message: string }) => {
+-    console.error('Auth error intercepted:', error.message)
+-
+-    // Check if this is a refresh token error
+-    if (error.message.includes('Invalid Refresh Token') ||
+-        error.message.includes('Refresh Token Not Found')) {
++    if (error.message.includes('Invalid Refresh Token') || error.message.includes('Refresh Token Not Found')) {
+
+       toast({
+         title: "Session Expired",
+@@ -38,20 +31,7 @@ export function GlobalAuthListener() {
+   }, [router, toast])
+
+   useEffect(() => {
+-    // Override console.error to catch refresh token errors
+-    console.error = (...args) => {
+-      const message = args.join(' ')
+-      if (message.includes('Invalid Refresh Token') ||
+-          message.includes('Refresh Token Not Found')) {
+-        handleAuthError({ message })
+-      }
+-      originalError.apply(console, args)
+-    }
+-
+-    // Set up auth state change listener
+     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+-      console.log('🔄 Auth state changed:', event, session?.user?.email)
+-
+       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+         if (event === 'SIGNED_OUT') {
+           router.push('/auth')
+@@ -63,13 +43,11 @@ export function GlobalAuthListener() {
+         }
+       }
+
+-      if (event === 'SIGNED_IN' && session) {
+-        console.log('✅ User signed in:', session.user.email)
+-      }
++      // Handle auth errors through proper error boundaries instead of console override
++      if (event === 'TOKEN_REFRESHED' && !session) {
++        handleAuthError({ message: 'Token refresh failed' })
++      }
+     })
+
+     return () => {
+       subscription.unsubscribe()
+-      // Restore original console.error
+-      console.error = originalError
+     }
+-  }, [router, supabase, handleAuthError])
++  }, [router, handleAuthError])
+
+--- a/lib/modassembly/supabase/middleware.ts
++++ b/lib/modassembly/supabase/middleware.ts
+@@ -22,15 +22,12 @@ export async function updateSession(request: NextRequest) {
+   let user = null
+
+   try {
+-    const result = await supabase.auth.getUser()
++    const result = await Promise.race([
++      supabase.auth.getUser(),
++      new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
++    ])
+     user = result.data?.user
+-
+-    // If we get a user but no valid session, try to refresh
+-    if (user) {
+-      const { data: session, error: sessionError } = await supabase.auth.getSession()
+-      if (sessionError || !session) {
+-        await supabase.auth.signOut()
+-        user = null
+-      }
+-    }
++
+   } catch (error) {
+     console.error('Auth check failed:', error)
+     user = null
+
+--- a/lib/modassembly/supabase/server.ts
++++ b/lib/modassembly/supabase/server.ts
+@@ -45,10 +45,14 @@ export function createClient() {
+       }
+       setAll(cookiesToSet) {
+         try {
+           cookiesToSet.forEach(({ name, value, options }) => {
+             const cookieOptions = {
+               ...options,
+               httpOnly: true,
+               secure: process.env.NODE_ENV === 'production',
+               sameSite: 'lax' as const,
+               path: '/',
+             }
+             cookieStore.set(name, value, cookieOptions)
+           })
+         } catch (error) {
+-          console.error('Failed to set auth cookies:', error)
+-          throw new Error(`Authentication cookie setting failed: ${error.message}`)
++          console.warn('Failed to set auth cookies (non-fatal):', error)
++          // Don't throw - allow auth to continue with potential session issues
++          // This prevents SSR crashes during cookie setting failures
+         }
+       }
+     },
+
+--- a/lib/modassembly/supabase/database/orders.ts
++++ b/lib/modassembly/supabase/database/orders.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { Order, CreateOrderData, OrderStatus } from '@/types/database'
+ import { Security } from '@/lib/security'
+
+@@ -30,7 +30,7 @@ const ORDER_FIELDS = `
+
+ // Fetch recent orders (read operation)
+ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   try {
+     console.log(`📋 Fetching recent orders (limit: ${limit})`)
+@@ -55,7 +55,7 @@ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
+
+ // Fetch order by ID
+ export async function fetchOrderById(orderId: string): Promise<Order | null> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(orderId)) {
+     console.error('❌ Invalid order ID format')
+@@ -82,7 +82,7 @@ export async function fetchOrderById(orderId: string): Promise<Order | null> {
+
+ // Create a new order
+ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   try {
+     console.log('🔄 Creating new order:', {
+@@ -117,7 +117,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
+
+ // Update order status
+ export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(orderId)) {
+     throw new Error('Invalid order ID format')
+@@ -142,7 +142,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus):
+
+ // Fetch orders for a specific table
+ export async function fetchOrdersByTable(tableId: string): Promise<Order[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(tableId)) {
+     console.error('❌ Invalid table ID format')
+
+--- a/lib/modassembly/supabase/database/tables.ts
++++ b/lib/modassembly/supabase/database/tables.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { Table, TableStatus } from '@/types/database'
+ import { Security } from '@/lib/security'
+
+@@ -6,7 +6,7 @@ import { Security } from '@/lib/security'
+ // Fetch all tables
+ export async function fetchTables(): Promise<Table[]> {
+   try {
+-    const supabase = createClient()
++    const supabase = getKDSClient()
+     console.log('📋 Fetching all tables')
+
+     const { data, error } = await supabase
+@@ -32,7 +32,7 @@ export async function fetchTables(): Promise<Table[]> {
+
+ // Update table status
+ export async function updateTableStatus(tableId: string, status: TableStatus): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(tableId)) {
+     throw new Error('Invalid table ID format')
+@@ -58,7 +58,7 @@ export async function updateTableStatus(tableId: string, status: TableStatus):
+
+ // Fetch table by ID
+ export async function fetchTableById(tableId: string): Promise<Table | null> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(tableId)) {
+     console.error('❌ Invalid table ID format')
+@@ -83,7 +83,7 @@ export async function fetchTableById(tableId: string): Promise<Table | null> {
+
+ // Fetch table with seat information
+ export async function fetchTableWithSeats(tableId: string) {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(tableId)) {
+     throw new Error('Invalid table ID format')
+
+--- a/lib/modassembly/supabase/database/seats.ts
++++ b/lib/modassembly/supabase/database/seats.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { Seat } from '@/types/database'
+ import { Security } from '@/lib/security'
+
+@@ -6,7 +6,7 @@ import { Security } from '@/lib/security'
+ // Fetch seats for a specific table
+ export async function fetchSeatsByTable(tableId: string): Promise<Seat[]> {
+   try {
+-    const supabase = createClient()
++    const supabase = getKDSClient()
+     console.log(`📋 Fetching seats for table: ${tableId}`)
+
+     if (!Security.isValidUUID(tableId)) {
+@@ -35,7 +35,7 @@ export async function fetchSeatsByTable(tableId: string): Promise<Seat[]> {
+
+ // Fetch seat by ID
+ export async function fetchSeatById(seatId: string): Promise<Seat | null> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(seatId)) {
+     console.error('❌ Invalid seat ID format')
+@@ -60,7 +60,7 @@ export async function fetchSeatById(seatId: string): Promise<Seat | null> {
+
+ // Update seat status/information
+ export async function updateSeat(seatId: string, updates: Partial<Seat>): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   if (!Security.isValidUUID(seatId)) {
+     throw new Error('Invalid seat ID format')
+@@ -85,7 +85,7 @@ export async function updateSeat(seatId: string, updates: Partial<Seat>): Promi
+
+ // Fetch all seats (for admin purposes)
+ export async function fetchAllSeats(): Promise<Seat[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+
+   try {
+     console.log('📋 Fetching all seats')

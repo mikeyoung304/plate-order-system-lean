@@ -1,0 +1,191 @@
+--- a/lib/modassembly/supabase/database/floor-plan.ts
++++ b/lib/modassembly/supabase/database/floor-plan.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { Table, Seat } from '@/types/database'
+ import { Security } from '@/lib/security'
+ 
+@@ -6,7 +6,7 @@ import { Security } from '@/lib/security'
+ // Fetch floor plan data with tables and seats
+ export async function fetchFloorPlan() {
+   try {
+-    const supabase = createClient()
++    const supabase = getKDSClient()
+     console.log('🏗️ Fetching floor plan data')
+     
+     const { data, error } = await supabase
+@@ -32,7 +32,7 @@ export async function fetchFloorPlan() {
+ 
+ // Update table layout position
+ export async function updateTablePosition(tableId: string, x: number, y: number): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(tableId)) {
+     throw new Error('Invalid table ID format')
+
+--- a/lib/modassembly/supabase/database/kds.ts
++++ b/lib/modassembly/supabase/database/kds.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { KDSStation, KDSOrderRouting } from '@/types/database'
+ import { Security } from '@/lib/security'
+ 
+@@ -16,7 +16,7 @@ const KDS_FIELDS = `
+ // Fetch all KDS stations
+ export async function fetchKDSStations(): Promise<KDSStation[]> {
+   try {
+-    const supabase = createClient()
++    const supabase = getKDSClient()
+     console.log('🏪 Fetching KDS stations')
+     
+     const { data, error } = await supabase
+@@ -40,7 +40,7 @@ export async function fetchKDSStations(): Promise<KDSStation[]> {
+ 
+ // Fetch orders for a specific station
+ export async function fetchStationOrders(stationId: string): Promise<KDSOrderRouting[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(stationId)) {
+     console.error('❌ Invalid station ID format')
+@@ -67,7 +67,7 @@ export async function fetchStationOrders(stationId: string): Promise<KDSOrderRo
+ 
+ // Fetch all active orders across all stations
+ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   try {
+     console.log('📋 Fetching all active KDS orders')
+@@ -92,7 +92,7 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
+ 
+ // Complete/bump an order (mark as completed)
+ export async function bumpOrder(routingId: string, userId: string): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(routingId) || !Security.isValidUUID(userId)) {
+     throw new Error('Invalid ID format')
+@@ -117,7 +117,7 @@ export async function bumpOrder(routingId: string, userId: string): Promise<voi
+ 
+ // Recall an order (mark as pending again)
+ export async function recallOrder(routingId: string): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(routingId)) {
+     throw new Error('Invalid routing ID format')
+@@ -141,7 +141,7 @@ export async function recallOrder(routingId: string): Promise<void> {
+ 
+ // Start preparing an order
+ export async function startOrderPrep(routingId: string): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(routingId)) {
+     throw new Error('Invalid routing ID format')
+@@ -165,7 +165,7 @@ export async function startOrderPrep(routingId: string): Promise<void> {
+ 
+ // Update order priority
+ export async function updateOrderPriority(routingId: string, priority: number): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(routingId)) {
+     throw new Error('Invalid routing ID format')
+@@ -191,7 +191,7 @@ export async function updateOrderPriority(routingId: string, priority: number):
+ 
+ // Add notes to an order
+ export async function addOrderNotes(routingId: string, notes: string): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(routingId)) {
+     throw new Error('Invalid routing ID format')
+
+--- a/lib/modassembly/supabase/database/users.ts
++++ b/lib/modassembly/supabase/database/users.ts
+@@ -1,4 +1,4 @@
+-import { createClient } from '@/lib/modassembly/supabase/client'
++import { getKDSClient } from '@/lib/database-connection-pool'
+ import { Profile, UserRole } from '@/types/database'
+ import { Security } from '@/lib/security'
+ 
+@@ -6,7 +6,7 @@ import { Security } from '@/lib/security'
+ // Fetch user profile
+ export async function fetchUserProfile(userId: string): Promise<Profile | null> {
+   try {
+-    const supabase = createClient()
++    const supabase = getKDSClient()
+     console.log(`👤 Fetching profile for user: ${userId}`)
+     
+     if (!Security.isValidUUID(userId)) {
+@@ -33,7 +33,7 @@ export async function fetchUserProfile(userId: string): Promise<Profile | null>
+ 
+ // Update user profile
+ export async function updateUserProfile(userId: string, updates: Partial<Profile>): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(userId)) {
+     throw new Error('Invalid user ID format')
+@@ -59,7 +59,7 @@ export async function updateUserProfile(userId: string, updates: Partial<Profil
+ 
+ // Fetch all users (admin only)
+ export async function fetchAllUsers(): Promise<Profile[]> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   try {
+     console.log('👥 Fetching all user profiles')
+@@ -82,7 +82,7 @@ export async function fetchAllUsers(): Promise<Profile[]> {
+ 
+ // Update user role (admin only)
+ export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
+-  const supabase = createClient()
++  const supabase = getKDSClient()
+   
+   if (!Security.isValidUUID(userId)) {
+     throw new Error('Invalid user ID format')
+
+--- a/lib/database-connection-pool.ts
++++ b/lib/database-connection-pool.ts
+@@ -1,10 +1,23 @@
+ import { createClient } from '@/lib/modassembly/supabase/client'
++import { createClient as createServerClient } from '@/lib/modassembly/supabase/server'
+ import type { SupabaseClient } from '@supabase/supabase-js'
++import { cookies } from 'next/headers'
+ 
+ // Connection pool for managing Supabase clients efficiently
+ class SupabaseConnectionPool {
+   private pool: SupabaseClient[] = []
+   private maxConnections = 10
++  private serverPool: SupabaseClient[] = []
++  
++  // Server-side connection pool for SSR
++  getServerClient(): SupabaseClient {
++    if (typeof window !== 'undefined') {
++      throw new Error('Server client should not be used on client side')
++    }
++    
++    const cookieStore = cookies()
++    return createServerClient(cookieStore)
++  }
+   
+   // Get a client from the pool or create a new one
+   getClient(): SupabaseClient {
+@@ -29,6 +42,11 @@ class SupabaseConnectionPool {
+ const connectionPool = new SupabaseConnectionPool()
+ 
+ export const getKDSClient = () => connectionPool.getClient()
++export const getServerKDSClient = () => {
++  if (typeof window === 'undefined') {
++    return connectionPool.getServerClient()
++  }
++  return connectionPool.getClient()
++}
+ export const releaseKDSClient = (client: SupabaseClient) => connectionPool.releaseClient(client)
+ export const getPoolStats = () => connectionPool.getStats()

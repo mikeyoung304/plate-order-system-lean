@@ -1,0 +1,295 @@
+/* KDS Performance Optimizations */
+
+/* Virtual scrolling optimizations */
+.kds-virtual-list {
+  will-change: scroll-position;
+  contain: layout style paint;
+  overflow-anchor: none;
+  scroll-behavior: smooth;
+}
+
+.kds-virtual-item {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Hardware acceleration for animations */
+.kds-order-card {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.kds-order-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth scrolling with momentum on iOS */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Touch-friendly interactions */
+.touch-safe {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.touch-safe-mobile {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px;
+}
+
+@media (max-width: 768px) {
+  .mobile-stack {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .mobile-stack > * {
+    flex: 1;
+  }
+}
+
+/* Performance optimized animations */
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Lazy loading optimizations */
+.lazy-loading {
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
+}
+
+.lazy-loaded {
+  content-visibility: visible;
+}
+
+/* Intersection observer targets */
+.intersection-target {
+  position: relative;
+}
+
+.intersection-target::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* Grid performance optimizations */
+.kds-grid {
+  display: grid;
+  gap: 1rem;
+  contain: layout;
+}
+
+.kds-grid-item {
+  contain: layout style paint;
+}
+
+/* Virtualized grid specific styles */
+.react-window-grid {
+  will-change: scroll-position;
+  contain: strict;
+}
+
+.react-window-grid-item {
+  box-sizing: border-box;
+  padding: 8px;
+}
+
+/* Error boundary styles */
+.error-boundary {
+  contain: layout style paint;
+  isolation: isolate;
+}
+
+/* Loading skeleton optimizations */
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .skeleton-pulse {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .kds-order-card,
+  .animate-subtle-pulse,
+  .skeleton-pulse {
+    animation: none;
+    transition: none;
+  }
+  
+  .scroll-container {
+    scroll-behavior: auto;
+  }
+}
+
+/* Focus improvements for keyboard navigation */
+.kds-order-card:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.kds-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .kds-order-card {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+  
+  .kds-badge {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Performance monitoring styles */
+.perf-monitor {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Mobile viewport optimizations */
+@supports (height: 100dvh) {
+  .kds-viewport {
+    height: 100dvh;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .kds-viewport {
+    height: 100vh;
+  }
+}
+
+/* Container query optimizations */
+@container (max-width: 600px) {
+  .kds-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container (min-width: 600px) and (max-width: 900px) {
+  .kds-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (min-width: 900px) {
+  .kds-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Memory leak prevention */
+.kds-component {
+  contain: layout style paint;
+}
+
+.kds-component * {
+  box-sizing: border-box;
+}
+
+/* Print styles for order receipts */
+@media print {
+  .kds-no-print {
+    display: none !important;
+  }
+  
+  .kds-order-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* RTL support */
+[dir="rtl"] .kds-order-card {
+  text-align: right;
+}
+
+[dir="rtl"] .kds-grid {
+  direction: rtl;
+}
+
+/* Loading states with better UX */
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e2e8f0;
+}
+
+.loading-shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite;
+  content: '';
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
