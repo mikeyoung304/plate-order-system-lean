@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { getKDSClient } from '@/lib/database-connection-pool'
 import { Table } from '../../../floor-plan-utils'
 
 interface SupabaseTable {
@@ -41,7 +41,7 @@ const GRID_CONFIG = {
 }
 
 export async function fetchTables(): Promise<Table[]> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   // Fetch tables and their seats in parallel
   const [tablesResponse, seatsResponse] = await Promise.all([
@@ -111,7 +111,7 @@ export async function createTable(tableData: {
   height?: number
   rotation?: number
 }): Promise<{ id: string }> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   const { data, error } = await supabase
     .from('tables')
@@ -148,7 +148,7 @@ export async function updateTable(
     rotation?: number
   }
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   // Only update fields that exist in current schema
   const schemaUpdates: any = {}
@@ -174,7 +174,7 @@ export async function updateTable(
 }
 
 export async function deleteTable(tableId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   const { error } = await supabase.from('tables').delete().eq('id', tableId)
 

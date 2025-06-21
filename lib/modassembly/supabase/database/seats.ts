@@ -1,13 +1,13 @@
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { getKDSClient } from '@/lib/database-connection-pool'
 
 /**
  * Fetch a seat ID based on table and seat label
  */
 export async function fetchSeatId(
   tableId: string,
-  seatLabel: number
+  seatLabel: string | number
 ): Promise<string | null> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
   const seatData = await supabase
     .from('seats')
     .select('id')
@@ -29,7 +29,7 @@ export async function fetchSeatId(
 export interface Seat {
   id: string
   table_id: string
-  label: number
+  label: string
   position_x: number
   position_y: number
   created_at?: string
@@ -40,12 +40,12 @@ export async function createSeatsForTable(
   tableId: string,
   seatCount: number
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
-  // Create seats with basic labels (1, 2, 3, etc.)
+  // Create seats with basic labels ("1", "2", "3", etc.)
   const seats = Array.from({ length: seatCount }, (_, i) => ({
     table_id: tableId,
-    label: i + 1,
+    label: String(i + 1),
     position_x: 0, // Default positions - would need floor plan logic for real positioning
     position_y: 0,
   }))
@@ -62,7 +62,7 @@ export async function updateSeatsForTable(
   tableId: string,
   newSeatCount: number
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   // Get current seats for this table
   const { data: currentSeats, error: fetchError } = await supabase
@@ -84,7 +84,7 @@ export async function updateSeatsForTable(
       { length: newSeatCount - currentSeatCount },
       (_, i) => ({
         table_id: tableId,
-        label: currentSeatCount + i + 1,
+        label: String(currentSeatCount + i + 1),
         position_x: 0,
         position_y: 0,
       })
@@ -118,7 +118,7 @@ export async function updateSeatsForTable(
 }
 
 export async function deleteSeatsForTable(tableId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = getKDSClient()
 
   const { error } = await supabase
     .from('seats')

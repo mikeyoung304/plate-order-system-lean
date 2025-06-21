@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/modassembly/supabase/client'
+import { getOrderClient } from '@/lib/database-connection-pool'
 import { intelligentOrderRouting } from './kds'
 
 interface OrderRow {
@@ -11,22 +11,25 @@ interface OrderRow {
   transcript: string
   status: 'new' | 'in_progress' | 'ready' | 'delivered' | 'cancelled'
   type: 'food' | 'drink'
+  special_requests?: string
+  estimated_prep_time?: number
+  actual_prep_time?: number
   created_at: string
   tables: {
-    label: number
+    label: string
   }
   seats: {
-    label: number
+    label: string
   }
 }
 
 export interface Order extends OrderRow {
   table: string
-  seat: number
+  seat: string
 }
 
 export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
   const { data, error } = await supabase
     .from('orders')
     .select(
@@ -40,7 +43,6 @@ export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
     .limit(limit)
 
   if (error) {
-    console.error('Error fetching orders:', error)
     throw error
   }
 
@@ -60,8 +62,11 @@ export async function createOrder(orderData: {
   items: string[]
   transcript: string
   type: 'food' | 'drink'
+  special_requests?: string
+  estimated_prep_time?: number
+  actual_prep_time?: number
 }): Promise<Order> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
 
   // Validate required data
   if (
@@ -87,7 +92,6 @@ export async function createOrder(orderData: {
     .single()
 
   if (error) {
-    console.error('Error creating order:', error)
     throw new Error(`Failed to create order: ${error.message}`)
   }
 
@@ -98,15 +102,15 @@ export async function createOrder(orderData: {
   // Fetch table and seat info separately to build the complete Order object
   const [tableData, seatData] = await Promise.all([
     supabase.from('tables').select('label').eq('id', data.table_id).single(),
-    supabase.from('seats').select('label').eq('id', data.seat_id).single()
+    supabase.from('seats').select('label').eq('id', data.seat_id).single(),
   ])
 
   // Automatically route the order to appropriate KDS stations
   try {
     await intelligentOrderRouting(data.id)
-    console.warn(`✅ Order ${data.id} successfully routed to KDS stations`)
-  } catch (routingError) {
-    console.error('Error routing order to KDS stations:', routingError)
+    // Order successfully routed to KDS stations
+  } catch {
+    // Error routing order to KDS stations - will be handled by caller
     // Don't fail the order creation if routing fails - this is a secondary operation
   }
 
@@ -122,26 +126,24 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderRow['status']
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
   const { error } = await supabase
     .from('orders')
     .update({ status })
     .eq('id', orderId)
 
   if (error) {
-    console.error('Error updating order status:', error)
     throw error
   }
 }
 
 // Additional CRUD functions following Luis's patterns
 export async function deleteOrder(orderId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
 
   const { error } = await supabase.from('orders').delete().eq('id', orderId)
 
   if (error) {
-    console.error('Error deleting order:', error)
     throw new Error(`Failed to delete order: ${error.message}`)
   }
 }
@@ -151,7 +153,7 @@ export async function getOrders(filters?: {
   tableId?: string
   limit?: number
 }): Promise<Order[]> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
 
   let query = supabase
     .from('orders')
@@ -179,7 +181,6 @@ export async function getOrders(filters?: {
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching orders:', error)
     throw new Error(`Failed to fetch orders: ${error.message}`)
   }
 
@@ -195,7 +196,7 @@ export async function updateOrder(
   orderId: string,
   updates: Partial<OrderRow>
 ): Promise<Order | null> {
-  const supabase = createClient()
+  const supabase = getOrderClient()
 
   const { data, error } = await supabase
     .from('orders')
@@ -211,7 +212,6 @@ export async function updateOrder(
     .single()
 
   if (error) {
-    console.error('Error updating order:', error)
     throw new Error(`Failed to update order: ${error.message}`)
   }
 
