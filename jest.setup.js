@@ -2,6 +2,19 @@ import '@testing-library/jest-dom'
 import 'jest-axe/extend-expect'
 import React from 'react'
 
+// Custom Jest matchers
+import './__tests__/utils/jest-matchers'
+
+// React 19 compatibility - set up React testing environment
+import { configure } from '@testing-library/react'
+
+// Configure React Testing Library for React 19
+configure({
+  // Enable React 19 features and compatibility
+  asyncUtilTimeout: 5000,
+  testIdAttribute: 'data-testid',
+})
+
 // Mock Next.js router with enhanced functionality
 jest.mock('next/navigation', () => ({
   useRouter() {

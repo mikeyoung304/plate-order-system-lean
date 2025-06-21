@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   build-and-test:
@@ -35,6 +35,9 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: mock-service-role-key
+          OPENAI_API_KEY: mock-openai-key
+          DATABASE_URL: postgresql://mock:mock@localhost:5432/mock_db
           NODE_ENV: test
 
       - name: Build application
@@ -42,6 +45,10 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: mock-service-role-key
+          OPENAI_API_KEY: mock-openai-key
+          DATABASE_URL: postgresql://mock:mock@localhost:5432/mock_db
+          NODE_ENV: production
 
       - name: Run linting (non-blocking)
         run: npm run lint

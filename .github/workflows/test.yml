@@ -1,8 +1,10 @@
-name: Test Suite (Disabled)
+name: Comprehensive Test Suite
 
 on:
-  # Temporarily disabled to prevent CI failures
-  # Will be re-enabled once test implementations are complete
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 env:
