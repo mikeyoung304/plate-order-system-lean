@@ -20,13 +20,21 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // Ensure cookies are set with proper options for refresh tokens
+              const cookieOptions = {
+                ...options,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax' as const,
+                path: '/',
+              }
+              cookieStore.set(name, value, cookieOptions)
+            })
+          } catch (error) {
+            console.warn('Failed to set auth cookies (non-fatal):', error)
+            // Don't throw - allow auth to continue with potential session issues
+            // This prevents SSR crashes during cookie setting failures
           }
         },
       },

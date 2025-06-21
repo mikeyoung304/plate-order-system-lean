@@ -45,10 +45,21 @@ export async function updateSession(request: NextRequest) {
 
     let user = null
     try {
-        const result = await supabase.auth.getUser()
+        const result = await Promise.race([
+            supabase.auth.getUser(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
+        ])
         user = result.data?.user
-    } catch (error) {
-        console.warn('Supabase auth check failed:', error)
+    } catch (_error) {
+        console.warn('Supabase auth check failed:', _error)
+        // If there's a refresh token error, clear the session
+        if (_error.message?.includes('Invalid Refresh Token')) {
+            try {
+                await supabase.auth.signOut()
+            } catch (signOutError) {
+                console.warn('Failed to sign out during refresh token error:', signOutError)
+            }
+        }
         // Continue without auth if Supabase is unreachable
         return supabaseResponse
     }
