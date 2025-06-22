@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import { AuthForm } from '@/components/auth/AuthForm'
-import { createClient } from '@/lib/modassembly/supabase/server'
 
 
 export default async function LandingPage() {
@@ -9,7 +7,7 @@ export default async function LandingPage() {
   // const supabase = await createClient()
   
   // Handle potential refresh token errors gracefully
-  let user = null
+  const _user = null
   // try {
   //   const {
   //     data: { user: authUser },
