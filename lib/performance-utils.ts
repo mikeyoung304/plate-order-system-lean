@@ -3,12 +3,22 @@
  * These are minimal implementations to replace the deleted performance library
  */
 
-// Simple pass-through for API calls (no actual monitoring)
+// Enhanced API call measurement with performance tracking
 export async function measureApiCall<T>(
   name: string,
   fn: () => Promise<T>
 ): Promise<T> {
-  return fn()
+  const startTime = Date.now()
+  
+  try {
+    const result = await fn()
+    performanceMonitor.track(name, startTime, true)
+    return result
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    performanceMonitor.track(name, startTime, false, errorMessage)
+    throw error
+  }
 }
 
 // Empty hook for render performance (does nothing)
@@ -92,10 +102,64 @@ export function debounce<T extends (...args: any[]) => any>(
   }
 }
 
-// Empty performance monitor object
-export const performanceMonitor = {
-  init: () => {},
-  track: () => {},
-  measure: () => {},
-  report: () => {},
+// Simple performance tracking
+interface PerformanceMetric {
+  name: string
+  duration: number
+  timestamp: Date
+  success: boolean
+  error?: string
 }
+
+class SimplePerformanceMonitor {
+  private metrics: PerformanceMetric[] = []
+  private readonly maxMetrics = 1000 // Keep last 1000 metrics
+
+  track(name: string, startTime: number, success: boolean = true, error?: string) {
+    const duration = Date.now() - startTime
+    const metric: PerformanceMetric = {
+      name,
+      duration,
+      timestamp: new Date(),
+      success,
+      error
+    }
+    
+    this.metrics.push(metric)
+    
+    // Keep only recent metrics to prevent memory issues
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics = this.metrics.slice(-this.maxMetrics)
+    }
+  }
+
+  getMetrics(name?: string): PerformanceMetric[] {
+    if (name) {
+      return this.metrics.filter(m => m.name === name)
+    }
+    return [...this.metrics]
+  }
+
+  getAverageTime(name: string): number {
+    const nameMetrics = this.getMetrics(name)
+    if (nameMetrics.length === 0) return 0
+    
+    const total = nameMetrics.reduce((sum, m) => sum + m.duration, 0)
+    return total / nameMetrics.length
+  }
+
+  getSuccessRate(name: string): number {
+    const nameMetrics = this.getMetrics(name)
+    if (nameMetrics.length === 0) return 1
+    
+    const successful = nameMetrics.filter(m => m.success).length
+    return successful / nameMetrics.length
+  }
+
+  clear() {
+    this.metrics = []
+  }
+}
+
+// Enhanced performance monitor object
+export const performanceMonitor = new SimplePerformanceMonitor()
