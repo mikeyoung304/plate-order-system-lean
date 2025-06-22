@@ -58,12 +58,18 @@ The KDS system is now enterprise-grade with:
 ## Current System Status
 **GitHub CI/CD**: ✅ 95% operational - all major workflows passing
 **Voice Integration**: ✅ 100% functional with all 6 command types
-**Real-time Data**: ✅ Optimized WebSocket management
+**Real-time Data**: ⚠️ Session fixes applied, subscription errors persist  
 **Database Performance**: ✅ Sub-10ms query response
-**UI/UX**: ✅ Clean, professional, tablet-optimized
+**UI/UX**: ✅ KDS split view default, multi-table visibility improved
 **Security**: ✅ RLS policies with guest demo mode
 **Testing Infrastructure**: ✅ Jest + React 19 + Next.js 15 compatibility
 **Monitoring**: ✅ Performance dashboard operational
+
+## Latest Session Results (2025-06-22)
+**KDS Layout**: ✅ Split view default with auto-station selection
+**Session Architecture**: ✅ SessionProvider moved to root layout  
+**Summer Menu Data**: ✅ 38 realistic orders with proper station routing
+**Real-time Subscriptions**: ⚠️ Improved but errors persist - need further debugging
 
 ## Guest Account Access
 - **User:** guest@restaurant.plate  
@@ -78,13 +84,20 @@ npm run build        # production bundle (15.5MB)
 npm run bundle:analyze # webpack bundle analysis
 ```
 
-## Next Recommended Steps
-1. **Monitor GitHub Actions** - Verify remaining workflow completion rates  
-2. **Address TypeScript compatibility** - Fix remaining React 19 type issues
-3. **Deploy to staging** - Test optimizations in production-like environment
-4. **Performance monitoring** - Validate real-world metrics
-5. **User acceptance testing** - Kitchen staff training and feedback
-6. **Production deployment** - System ready for live restaurant operations
+## Next Recommended Steps (Priority Order)
+🔥 **CRITICAL - Real-time Issues**
+1. **Debug persistent subscription errors** - Session architecture improved but WebSocket issues remain
+2. **Investigate Supabase client configuration** - May need connection retry logic
+
+🎯 **HIGH - KDS Optimization**  
+3. **Test split view with high order volume** - Verify performance with 10+ simultaneous tables
+4. **Enhance connection recovery** - Add retry mechanisms for dropped connections
+5. **Optimize for tablet/kitchen environment** - Test on actual kitchen hardware
+
+📊 **MEDIUM - System Health**
+6. **Monitor GitHub Actions** - Verify remaining workflow completion rates
+7. **Address TypeScript compatibility** - Fix remaining React 19 type issues  
+8. **Performance monitoring** - Validate real-world kitchen metrics
 
 ## Session Learning Patterns Applied
 - **Systematic CI/CD Recovery**: Root cause analysis → standardization → incremental fixes
