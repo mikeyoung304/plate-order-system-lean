@@ -54,17 +54,23 @@ export function KDSInterface({ initialStations }: KDSInterfaceProps) {
     validateClientSession()
   }, [])
   const [selectedStationId, setSelectedStationId] = useState<string>('')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('multi')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('split')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [splitStations, setSplitStations] = useState<string[]>([])
   const [stations] = useState<KDSStation[]>(initialStations)
 
-  // Initialize with first station
+  // Initialize with first station and auto-select all stations for split view
   useEffect(() => {
-    if (stations.length > 0 && !selectedStationId) {
-      setSelectedStationId(stations[0].id)
+    if (stations.length > 0) {
+      if (!selectedStationId) {
+        setSelectedStationId(stations[0].id)
+      }
+      // Auto-select all stations for split view (up to 4)
+      if (splitStations.length === 0) {
+        setSplitStations(stations.slice(0, 4).map(s => s.id))
+      }
     }
-  }, [stations, selectedStationId])
+  }, [stations, selectedStationId, splitStations.length])
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
