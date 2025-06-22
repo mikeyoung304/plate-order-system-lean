@@ -109,7 +109,7 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
         }
       }
 
-      const isOverdue = maxElapsedTime > 600
+      const isOverdue = maxElapsedTime > 1800 // 30 minutes instead of 10
 
       let maxPriority = 0
       for (const order of sortedOrders) {
@@ -160,9 +160,9 @@ export function useTableGroupedOrders(orders: KDSOrderRouting[]): TableGroup[] {
 
 export function useTableGroupTiming(group: TableGroup) {
   const colorStatus = useMemo(() => {
-    if (group.maxElapsedTime <= 300) return 'green'
-    if (group.maxElapsedTime <= 600) return 'yellow'
-    return 'red'
+    if (group.maxElapsedTime <= 900) return 'green'  // 15 minutes
+    if (group.maxElapsedTime <= 1200) return 'yellow' // 20 minutes  
+    return 'red' // 20+ minutes
   }, [group.maxElapsedTime])
 
   const colors = useMemo(() => {

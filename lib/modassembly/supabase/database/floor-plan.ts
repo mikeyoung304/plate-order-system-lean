@@ -3,7 +3,7 @@
  * Provides simplified persistence for floor plan editor
  */
 
-import { getKDSClient } from '@/lib/database-connection-pool'
+import { createClient } from '@/lib/modassembly/supabase/client'
 import { createTable, deleteTable, updateTable } from './tables'
 import {
   createSeatsForTable,
@@ -34,7 +34,7 @@ export interface FloorPlanTable {
 export async function saveFloorPlanTables(
   tables: FloorPlanTable[]
 ): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   try {
     // Get current tables from database
@@ -105,7 +105,7 @@ export async function saveFloorPlanTables(
  * @returns Array of floor plan tables
  */
 export async function loadFloorPlanTables(): Promise<FloorPlanTable[]> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   // Fetch tables and their seats with position data
   const [tablesResponse, seatsResponse] = await Promise.all([

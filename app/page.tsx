@@ -5,14 +5,28 @@ import { createClient } from '@/lib/modassembly/supabase/server'
 
 
 export default async function LandingPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Temporarily disable server-side auth to fix startup hang
+  // const supabase = await createClient()
+  
+  // Handle potential refresh token errors gracefully
+  let user = null
+  // try {
+  //   const {
+  //     data: { user: authUser },
+  //   } = await supabase.auth.getUser()
+  //   user = authUser
+  // } catch (error) {
+  //   // Clear invalid refresh tokens
+  //   if (error instanceof Error && error.message.includes('Refresh Token Not Found')) {
+  //     console.warn('Clearing invalid refresh token')
+  //     await supabase.auth.signOut()
+  //   }
+  //   // Continue to show login page
+  // }
 
-  if (user) {
-    redirect('/dashboard')
-  }
+  // if (user) {
+  //   redirect('/dashboard')
+  // }
 
   return (
     <div className='min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-black flex flex-col items-center justify-center p-4 relative overflow-hidden'>

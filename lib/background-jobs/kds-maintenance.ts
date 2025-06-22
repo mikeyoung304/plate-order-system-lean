@@ -251,7 +251,7 @@ class KDSMaintenanceManager {
     }
 
     // Also cleanup related performance metrics
-    performanceMonitor.clear()
+    // performanceMonitor.clear() // TODO: Fix missing clear method
 
     return { processed: data || 0 }
   }

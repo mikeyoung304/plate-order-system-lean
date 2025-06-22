@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/modassembly/supabase/client'
+import type { createClient } from '@/lib/modassembly/supabase/server'
+import { createClient as createBrowserClient } from '@/lib/modassembly/supabase/client'
 import { Security } from '@/lib/security'
 import { measureApiCall } from '@/lib/performance-utils'
 import {
@@ -47,9 +48,8 @@ export type KDSConfiguration = DatabaseKDSConfiguration
 /**
  * Fetch all active KDS stations (secure)
  */
-export async function fetchKDSStations(): Promise<KDSStation[]> {
+export async function fetchKDSStations(supabase: Awaited<ReturnType<typeof createClient>>): Promise<KDSStation[]> {
   return measureApiCall('fetch_kds_stations', async () => {
-    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('kds_stations')
@@ -87,7 +87,8 @@ export async function fetchKDSStations(): Promise<KDSStation[]> {
  * Fetch orders for a specific station with real-time updates (secure)
  */
 export async function fetchStationOrders(
-  stationId: string
+  stationId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<KDSOrderRouting[]> {
   return measureApiCall('fetch_station_orders', async () => {
     // Security: Validate station ID
@@ -96,7 +97,7 @@ export async function fetchStationOrders(
       throw new Error('Invalid station ID')
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { data, error } = await supabase
       .from('kds_order_routing')
@@ -147,9 +148,11 @@ export async function fetchStationOrders(
 /**
  * Fetch all active orders across all stations
  */
-export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
+export async function fetchAllActiveOrders(
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<KDSOrderRouting[]> {
   return measureApiCall('fetch_all_active_orders', async () => {
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { data, error } = await supabase
       .from('kds_order_routing')
@@ -173,12 +176,6 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
       throw error
     }
 
-    // 🔥 DEBUG: Log raw data structure  
-    console.log('🔥 fetchAllActiveOrders DEBUG:', {
-      ordersCount: data?.length || 0,
-      firstOrder: data?.[0] ? JSON.stringify(data[0], null, 2) : 'No orders',
-      error: error
-    });
 
     // Security: Sanitize order data (same as fetchStationOrders)
     return (data || []).map(order => ({
@@ -208,7 +205,8 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
  */
 export async function bumpOrder(
   routingId: string,
-  userId: string
+  userId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
   return measureApiCall('bump_order', async () => {
     // Security: Validate IDs
@@ -229,7 +227,7 @@ export async function bumpOrder(
       throw new Error('Invalid ID format')
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { error } = await supabase
       .from('kds_order_routing')
@@ -254,7 +252,7 @@ export async function bumpOrder(
         .single()
 
       if (!routingError && routingData) {
-        await checkAndCompleteOrder(routingData.order_id)
+        await checkAndCompleteOrder(routingData.order_id, supabase)
       }
     } catch (completionError) {
       console.error(
@@ -269,8 +267,11 @@ export async function bumpOrder(
 /**
  * Recall a bumped order (undo bump)
  */
-export async function recallOrder(routingId: string): Promise<void> {
-  const supabase = await createClient()
+export async function recallOrder(
+  routingId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
+  const supabase = supabaseClient || createBrowserClient()
 
   // First get current recall count
   const { data: currentData, error: fetchError } = await supabase
@@ -304,8 +305,11 @@ export async function recallOrder(routingId: string): Promise<void> {
 /**
  * Start preparation for an order
  */
-export async function startOrderPrep(routingId: string): Promise<void> {
-  const supabase = await createClient()
+export async function startOrderPrep(
+  routingId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
+  const supabase = supabaseClient || createBrowserClient()
 
   const { error } = await supabase
     .from('kds_order_routing')
@@ -325,9 +329,10 @@ export async function startOrderPrep(routingId: string): Promise<void> {
  */
 export async function updateOrderPriority(
   routingId: string,
-  priority: number
+  priority: number,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { error } = await supabase
     .from('kds_order_routing')
@@ -345,7 +350,8 @@ export async function updateOrderPriority(
  */
 export async function addOrderNotes(
   routingId: string,
-  notes: string
+  notes: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
   return measureApiCall('add_order_notes', async () => {
     // Security: Validate routing ID
@@ -370,7 +376,7 @@ export async function addOrderNotes(
       throw new Error('Notes cannot be empty')
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { error } = await supabase
       .from('kds_order_routing')
@@ -390,9 +396,10 @@ export async function addOrderNotes(
 export async function fetchStationMetrics(
   stationId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<KDSMetric[]> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { data, error } = await supabase
     .from('kds_metrics')
@@ -413,8 +420,10 @@ export async function fetchStationMetrics(
 /**
  * Fetch KDS configuration
  */
-export async function fetchKDSConfiguration(): Promise<Record<string, any>> {
-  const supabase = await createClient()
+export async function fetchKDSConfiguration(
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<Record<string, any>> {
+  const supabase = supabaseClient || createBrowserClient()
 
   const { data, error } = await supabase
     .from('kds_configuration')
@@ -439,9 +448,10 @@ export async function fetchKDSConfiguration(): Promise<Record<string, any>> {
  */
 export async function updateKDSConfiguration(
   key: string,
-  value: any
+  value: any,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { error } = await supabase.from('kds_configuration').upsert({
     key,
@@ -459,9 +469,10 @@ export async function updateKDSConfiguration(
  * Create a new KDS station
  */
 export async function createKDSStation(
-  station: Omit<KDSStation, 'id' | 'created_at' | 'updated_at'>
+  station: Omit<KDSStation, 'id' | 'created_at' | 'updated_at'>,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<KDSStation> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { data, error } = await supabase
     .from('kds_stations')
@@ -482,9 +493,10 @@ export async function createKDSStation(
  */
 export async function updateKDSStation(
   stationId: string,
-  updates: Partial<KDSStation>
+  updates: Partial<KDSStation>,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { error } = await supabase
     .from('kds_stations')
@@ -507,7 +519,8 @@ export async function routeOrderToStation(
   orderId: string,
   stationId: string,
   sequence: number = 1,
-  priority: number = 0
+  priority: number = 0,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
   return measureApiCall('route_order_to_station', async () => {
     // Security: Validate all IDs
@@ -532,7 +545,7 @@ export async function routeOrderToStation(
     const sanitizedSequence = Math.max(1, Math.min(10, Math.floor(sequence)))
     const sanitizedPriority = Math.max(0, Math.min(10, Math.floor(priority)))
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { error } = await supabase.from('kds_order_routing').insert({
       order_id: sanitizedOrderId,
@@ -555,9 +568,10 @@ export async function routeOrderToStation(
  */
 export async function calculateAveragePrepTimes(
   stationId: string,
-  days: number = 7
+  days: number = 7,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<number> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
@@ -591,9 +605,10 @@ export async function calculateAveragePrepTimes(
  */
 export async function bulkBumpTableOrders(
   tableId: string,
-  userId: string
+  userId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ): Promise<number> {
-  const supabase = await createClient()
+  const supabase = supabaseClient || createBrowserClient()
 
   const { data, error } = await supabase.rpc('bulk_bump_table_orders', {
     p_table_id: tableId,
@@ -611,9 +626,11 @@ export async function bulkBumpTableOrders(
 /**
  * Fetch table summary for KDS display (secure)
  */
-export async function fetchKDSTableSummary(): Promise<any[]> {
+export async function fetchKDSTableSummary(
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<any[]> {
   return measureApiCall('fetch_kds_table_summary', async () => {
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     const { data, error } = await supabase
       .from('kds_table_summary')
@@ -632,7 +649,10 @@ export async function fetchKDSTableSummary(): Promise<any[]> {
 /**
  * Automatically routes orders to appropriate stations based on order type and items
  */
-export async function intelligentOrderRouting(orderId: string): Promise<void> {
+export async function intelligentOrderRouting(
+  orderId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
   return measureApiCall('intelligent_order_routing', async () => {
     // Security: Validate order ID
     const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
@@ -646,7 +666,7 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
       throw new Error('Invalid order ID format')
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     // Fetch the order details
     const { data: order, error: orderError } = await supabase
@@ -665,7 +685,7 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
     }
 
     // Fetch active stations
-    const stations = await fetchKDSStations()
+    const stations = await fetchKDSStations(supabase)
 
     if (stations.length === 0) {
       throw new Error('No active stations available for routing')
@@ -793,7 +813,8 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
         sanitizedOrderId,
         station.id,
         sequence,
-        priority
+        priority,
+        supabase
       )
     }
 
@@ -804,7 +825,10 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
 /**
  * Updates main order status when all KDS stations have completed their part
  */
-export async function checkAndCompleteOrder(orderId: string): Promise<boolean> {
+export async function checkAndCompleteOrder(
+  orderId: string,
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<boolean> {
   return measureApiCall('check_and_complete_order', async () => {
     // Security: Validate order ID
     const sanitizedOrderId = Security.sanitize.sanitizeIdentifier(orderId)
@@ -812,7 +836,7 @@ export async function checkAndCompleteOrder(orderId: string): Promise<boolean> {
       throw new Error('Invalid order ID')
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseClient || createBrowserClient()
 
     // Check if all routing entries for this order are completed
     const { data: routings, error } = await supabase

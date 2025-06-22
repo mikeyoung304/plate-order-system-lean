@@ -1,0 +1,60 @@
+
+> my-v0-project@0.1.0 build
+> next build
+
+   ▲ Next.js 15.2.4
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/18) ...
+   Generating static pages (4/18) 
+   Generating static pages (8/18) 
+   Generating static pages (13/18) 
+KDS Server Component Error: Error: Dynamic server usage: Route /kitchen/kds couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/4243.js:12:41612)
+    at f (.next/server/chunks/4999.js:1:14197)
+    at o (.next/server/app/auth/confirm/route.js:1:1905)
+    at c (.next/server/app/(auth)/kitchen/kds/page.js:1:484)
+    at stringify (<anonymous>) {
+  description: "Route /kitchen/kds couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ ✓ Generating static pages (18/18)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    5.98 kB         155 kB
+├ ○ /_not-found                            982 B         102 kB
+├ ƒ /admin                                6.1 kB         156 kB
+├ ƒ /api/health                            175 B         101 kB
+├ ƒ /api/kds/orders                        175 B         101 kB
+├ ƒ /api/kds/stations                      175 B         101 kB
+├ ƒ /api/metrics                           175 B         101 kB
+├ ƒ /api/openai/usage                      175 B         101 kB
+├ ƒ /api/performance                       175 B         101 kB
+├ ƒ /api/transcribe                        175 B         101 kB
+├ ƒ /api/transcribe/analytics              175 B         101 kB
+├ ƒ /api/transcribe/batch                  175 B         101 kB
+├ ƒ /auth/confirm                          175 B         101 kB
+├ ƒ /dashboard                           1.04 kB         149 kB
+├ ƒ /expo                                3.98 kB         202 kB
+├ ƒ /kitchen                               175 B         101 kB
+├ ƒ /kitchen/kds                           48 kB         268 kB
+├ ƒ /kitchen/metrics                     1.25 kB         149 kB
+└ ƒ /server                              11.3 kB         237 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/1684-da07df5bd21908cb.js      45.4 kB
+  ├ chunks/4bd1b696-379d530eac11647e.js  53.2 kB
+  └ other shared chunks (total)          2.18 kB
+
+
+ƒ Middleware                             64.6 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

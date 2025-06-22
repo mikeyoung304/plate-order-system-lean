@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { getKDSClient } from '@/lib/database-connection-pool'
 import { Security } from '@/lib/security'
 import { measureApiCall } from '@/lib/performance-utils'
 import { KDSCacheManager } from '@/lib/cache/kds-cache'
@@ -29,7 +28,7 @@ export async function fetchKDSStations(): Promise<KDSStation[]> {
   }
 
   return measureApiCall('fetch_kds_stations_db', async () => {
-    const supabase = getKDSClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from('kds_stations')
@@ -85,7 +84,7 @@ export async function fetchStationOrders(
 
   return KDSCacheManager.getStationOrders(sanitizedStationId, async () => {
     return measureApiCall('fetch_station_orders_db', async () => {
-      const supabase = getKDSClient()
+      const supabase = createClient()
 
       const { data, error } = await supabase
         .from('kds_order_routing')
@@ -248,7 +247,7 @@ export async function bumpOrder(
       throw new Error('Invalid ID format')
     }
 
-    const supabase = getKDSClient()
+    const supabase = createClient()
 
     const { error } = await supabase
       .from('kds_order_routing')
@@ -312,7 +311,7 @@ export async function bumpOrder(
  * Recall a bumped order (undo bump)
  */
 export async function recallOrder(routingId: string): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   // First get current recall count
   const { data: currentData, error: fetchError } = await supabase
@@ -357,7 +356,7 @@ export async function recallOrder(routingId: string): Promise<void> {
  * Start preparation for an order
  */
 export async function startOrderPrep(routingId: string): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { error } = await supabase
     .from('kds_order_routing')
@@ -382,7 +381,7 @@ export async function updateOrderPriority(
   routingId: string,
   priority: number
 ): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { error } = await supabase
     .from('kds_order_routing')
@@ -428,7 +427,7 @@ export async function addOrderNotes(
       throw new Error('Notes cannot be empty')
     }
 
-    const supabase = getKDSClient()
+    const supabase = createClient()
 
     const { error } = await supabase
       .from('kds_order_routing')
@@ -451,7 +450,7 @@ export async function addOrderNotes(
 export async function createKDSStation(
   station: Omit<KDSStation, 'id' | 'created_at' | 'updated_at'>
 ): Promise<KDSStation> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('kds_stations')
@@ -477,7 +476,7 @@ export async function updateKDSStation(
   stationId: string,
   updates: Partial<KDSStation>
 ): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { error } = await supabase
     .from('kds_stations')
@@ -503,7 +502,7 @@ export async function bulkBumpTableOrders(
   tableId: string,
   userId: string
 ): Promise<number> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase.rpc('bulk_bump_table_orders', {
     p_table_id: tableId,

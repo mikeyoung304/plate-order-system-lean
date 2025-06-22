@@ -1,4 +1,4 @@
-import { getKDSClient } from '@/lib/database-connection-pool'
+import { createClient } from '@/lib/modassembly/supabase/client'
 
 /**
  * Fetch a seat ID based on table and seat label
@@ -7,7 +7,7 @@ export async function fetchSeatId(
   tableId: string,
   seatLabel: string | number
 ): Promise<string | null> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
   const seatData = await supabase
     .from('seats')
     .select('id')
@@ -40,7 +40,7 @@ export async function createSeatsForTable(
   tableId: string,
   seatCount: number
 ): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   // Create seats with basic labels ("1", "2", "3", etc.)
   const seats = Array.from({ length: seatCount }, (_, i) => ({
@@ -62,7 +62,7 @@ export async function updateSeatsForTable(
   tableId: string,
   newSeatCount: number
 ): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   // Get current seats for this table
   const { data: currentSeats, error: fetchError } = await supabase
@@ -118,7 +118,7 @@ export async function updateSeatsForTable(
 }
 
 export async function deleteSeatsForTable(tableId: string): Promise<void> {
-  const supabase = getKDSClient()
+  const supabase = createClient()
 
   const { error } = await supabase
     .from('seats')

@@ -47,7 +47,15 @@ const OrderItem = memo(({ item }: { item: any }) => {
     return item?.name || String(item)
   }, [item])
 
-  return <div className='pl-4'>• {formattedItem}</div>
+  return (
+    <div className='flex items-center gap-2 py-1'>
+      {/* 🎯 AGENT 2 ENHANCEMENT: Enhanced item visibility with bullet styling */}
+      <div className='w-2 h-2 bg-blue-500 rounded-full flex-shrink-0'></div>
+      <span className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+        {formattedItem}
+      </span>
+    </div>
+  )
 })
 OrderItem.displayName = 'OrderItem'
 
@@ -80,8 +88,12 @@ const SeatOrder = memo(
     return (
       <div
         className={cn(
-          'pl-6 space-y-1 transition-opacity duration-200',
-          order.completed_at && 'opacity-60'
+          // 🎯 AGENT 2 ENHANCEMENT: Enhanced visual hierarchy for seat-level clarity
+          'pl-4 space-y-2 border-l-2 border-gray-200 dark:border-gray-700',
+          'transition-all duration-200',
+          order.completed_at && 'opacity-60 border-green-300',
+          order.started_at && !order.completed_at && 'border-blue-400',
+          !order.started_at && !order.completed_at && 'border-orange-300'
         )}
       >
         {/* Order header */}
@@ -91,15 +103,27 @@ const SeatOrder = memo(
               #{order.order?.id?.slice(-6) || 'N/A'}
             </Badge>
             {orderIdx > 0 && (
-              <Badge variant='secondary' className='text-xs'>
-                Late arrival
+              <Badge variant='secondary' className='text-xs bg-orange-100 text-orange-800'>
+                Late +{orderIdx}
               </Badge>
             )}
             {order.started_at && !order.completed_at && (
-              <Play className='h-3 w-3 text-blue-500' />
+              <div className='flex items-center gap-1 text-blue-600'>
+                <Play className='h-3 w-3' />
+                <span className='text-xs font-medium'>Preparing</span>
+              </div>
             )}
             {order.completed_at && (
-              <CheckCircle className='h-3 w-3 text-green-500' />
+              <div className='flex items-center gap-1 text-green-600'>
+                <CheckCircle className='h-3 w-3' />
+                <span className='text-xs font-medium'>Ready</span>
+              </div>
+            )}
+            {!order.started_at && !order.completed_at && (
+              <div className='flex items-center gap-1 text-orange-600'>
+                <Clock className='h-3 w-3' />
+                <span className='text-xs font-medium'>Waiting</span>
+              </div>
             )}
           </div>
 
@@ -112,7 +136,7 @@ const SeatOrder = memo(
                   variant='outline'
                   onClick={() => startPrep.execute(order.id)}
                   disabled={isStarting}
-                  className='h-6 px-2 text-xs'
+                  className='h-7 px-3 text-xs font-medium border-blue-300 text-blue-700 hover:bg-blue-50'
                 >
                   {isStarting ? (
                     <Loader2 className='h-3 w-3 animate-spin' />
@@ -125,7 +149,7 @@ const SeatOrder = memo(
                 size='sm'
                 onClick={() => bumpOrder.execute(order.id)}
                 disabled={isBumping}
-                className='h-6 px-2 text-xs bg-green-600 hover:bg-green-700 text-white'
+                className='h-7 px-3 text-xs font-medium bg-green-600 hover:bg-green-700 text-white'
               >
                 {isBumping ? (
                   <Loader2 className='h-3 w-3 animate-spin' />
@@ -148,8 +172,8 @@ const SeatOrder = memo(
 
         {/* Order notes */}
         {order.notes && (
-          <div className='pl-4 text-xs text-gray-500 italic'>
-            Note: {order.notes}
+          <div className='pl-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800'>
+            <strong>Note:</strong> {order.notes}
           </div>
         )}
       </div>
@@ -169,7 +193,9 @@ export const TableGroupCard = memo(function TableGroupCard({
   showActions = true,
   className,
 }: TableGroupCardProps) {
-  const [isExpanded, setIsExpanded] = useState(!isCompact)
+  // 🎯 AGENT 2 ENHANCEMENT: Always expanded by default for kitchen visibility
+  // Kitchen staff need immediate access to seat-level details without extra clicks
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // Async action hooks replace the bloated error handling patterns
   const bumpTable = useAsyncAction(async () => {
@@ -242,6 +268,8 @@ export const TableGroupCard = memo(function TableGroupCard({
         colors.bg,
         group.isOverdue && 'animate-pulse',
         'hover:shadow-xl',
+        // 🎯 AGENT 2 ENHANCEMENT: Enhanced spacing for multi-table visibility
+        'mb-4',
         className
       )}
     >

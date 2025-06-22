@@ -1,4 +1,4 @@
-import { getOrderClient } from '@/lib/database-connection-pool'
+import { createClient } from '@/lib/modassembly/supabase/client'
 import { intelligentOrderRouting } from './kds'
 
 interface OrderRow {
@@ -29,7 +29,7 @@ export interface Order extends OrderRow {
 }
 
 export async function fetchRecentOrders(limit = 5): Promise<Order[]> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('orders')
     .select(
@@ -66,7 +66,7 @@ export async function createOrder(orderData: {
   estimated_prep_time?: number
   actual_prep_time?: number
 }): Promise<Order> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
 
   // Validate required data
   if (
@@ -126,7 +126,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderRow['status']
 ): Promise<void> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
   const { error } = await supabase
     .from('orders')
     .update({ status })
@@ -139,7 +139,7 @@ export async function updateOrderStatus(
 
 // Additional CRUD functions following Luis's patterns
 export async function deleteOrder(orderId: string): Promise<void> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
 
   const { error } = await supabase.from('orders').delete().eq('id', orderId)
 
@@ -153,7 +153,7 @@ export async function getOrders(filters?: {
   tableId?: string
   limit?: number
 }): Promise<Order[]> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
 
   let query = supabase
     .from('orders')
@@ -196,7 +196,7 @@ export async function updateOrder(
   orderId: string,
   updates: Partial<OrderRow>
 ): Promise<Order | null> {
-  const supabase = getOrderClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('orders')

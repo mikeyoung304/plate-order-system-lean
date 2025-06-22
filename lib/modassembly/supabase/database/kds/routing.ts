@@ -36,7 +36,7 @@ export async function routeOrderToStation(
     const sanitizedSequence = Math.max(1, Math.min(10, Math.floor(sequence)))
     const sanitizedPriority = Math.max(0, Math.min(10, Math.floor(priority)))
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { error } = await supabase.from('kds_order_routing').insert({
       order_id: sanitizedOrderId,
@@ -195,7 +195,7 @@ export async function intelligentOrderRouting(orderId: string): Promise<void> {
       throw new Error('Invalid order ID format')
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     // Fetch the order details
     const { data: order, error: orderError } = await supabase
@@ -249,7 +249,7 @@ export async function checkAndCompleteOrder(orderId: string): Promise<boolean> {
       throw new Error('Invalid order ID')
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     // Check if all routing entries for this order are completed
     const { data: routings, error } = await supabase

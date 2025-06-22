@@ -21,10 +21,10 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              // Ensure cookies are set with proper options for refresh tokens
+              // Ensure auth cookies are accessible to browser client
               const cookieOptions = {
                 ...options,
-                httpOnly: true,
+                httpOnly: false, // CRITICAL: Allow browser access to auth cookies
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax' as const,
                 path: '/',

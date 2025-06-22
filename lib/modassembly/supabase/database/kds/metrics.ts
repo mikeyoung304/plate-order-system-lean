@@ -10,7 +10,7 @@ export async function fetchStationMetrics(
   startDate: string,
   endDate: string
 ): Promise<KDSMetric[]> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('kds_metrics')
@@ -35,7 +35,7 @@ export async function calculateAveragePrepTimes(
   stationId: string,
   days: number = 7
 ): Promise<number> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
@@ -72,7 +72,7 @@ export async function getStationPerformanceAnalytics(
   days: number = 7
 ): Promise<StationPerformance> {
   return measureApiCall('get_station_performance_analytics', async () => {
-    const supabase = await createClient()
+    const supabase = createClient()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
@@ -137,7 +137,7 @@ export async function recordStationMetric(
   valueNumber?: number,
   valueText?: string
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { error } = await supabase.from('kds_metrics').insert({
     station_id: stationId,
@@ -165,7 +165,7 @@ export async function getSystemPerformanceMetrics(days: number = 7): Promise<{
   topPerformingStations: string[]
 }> {
   return measureApiCall('get_system_performance_metrics', async () => {
-    const supabase = await createClient()
+    const supabase = createClient()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
@@ -251,7 +251,7 @@ export async function getSystemPerformanceMetrics(days: number = 7): Promise<{
  * Fetch KDS configuration
  */
 export async function fetchKDSConfiguration(): Promise<Record<string, any>> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('kds_configuration')
@@ -278,7 +278,7 @@ export async function updateKDSConfiguration(
   key: string,
   value: any
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { error } = await supabase.from('kds_configuration').upsert({
     key,

@@ -15,6 +15,7 @@ import {
   filterOrdersByStation,
 } from './stations'
 import { getClientUser } from '@/lib/modassembly/supabase/auth/session'
+import { createClient } from '@/lib/modassembly/supabase/client'
 import {
   addOrderNotes,
   bumpOrder,
@@ -76,6 +77,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
       try {
         const user = await getClientUser()
         const userId = user?.id || 'unknown-user'
+        const supabase = createClient()
         
         switch (action) {
           case 'start':
@@ -83,7 +85,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
             kdsState.optimisticUpdate(orderId, {
               started_at: new Date().toISOString()
             })
-            await startOrderPrep(orderId)
+            await startOrderPrep(supabase, orderId)
             toast({
               title: 'Preparation started',
               description: 'Order preparation has begun',
@@ -96,7 +98,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
               completed_at: new Date().toISOString(),
               bumped_at: new Date().toISOString()
             })
-            await bumpOrder(orderId, userId)
+            await bumpOrder(supabase, orderId, userId)
             toast({
               title: 'Order completed',
               description: 'Order marked as ready for pickup',
@@ -110,7 +112,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
               bumped_at: null,
               recalled_at: new Date().toISOString()
             })
-            await recallOrder(orderId)
+            await recallOrder(supabase, orderId)
             toast({
               title: 'Order recalled',
               description: 'Order has been recalled to the kitchen',

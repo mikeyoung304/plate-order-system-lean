@@ -233,6 +233,20 @@ export const getRealtimeClient = () => connectionPool.getRealtimeClient()
 export const getOrderClient = () => connectionPool.getOrderClient()
 export const getAuthClient = () => connectionPool.getAuthClient()
 
-// React hooks are now in /hooks/use-performance-stats.ts
+// React hook for connection pool stats
+export function useConnectionPoolStats() {
+  if (typeof window === 'undefined') {
+    return {
+      activeConnections: 0,
+      totalCreated: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      lastCleanup: Date.now(),
+      efficiency: 0
+    }
+  }
+  
+  return connectionPool.getStats()
+}
 
 export default connectionPool

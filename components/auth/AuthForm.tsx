@@ -183,6 +183,24 @@ export function AuthForm() {
       </form>
 
       <div className='text-center space-y-4'>
+        {/* Guest Demo Login Button */}
+        <Button
+          variant='default'
+          onClick={() => {
+            actions.setStatus('loading')
+            const guestFormData = new FormData()
+            guestFormData.set('email', 'guest@restaurant.plate')
+            guestFormData.set('password', 'guest12345')
+            startTransition(() => {
+              signInAction(guestFormData)
+            })
+          }}
+          className='w-full bg-blue-600 hover:bg-blue-700 text-white'
+          disabled={isLoading}
+        >
+          🍽️ Guest Demo Login
+        </Button>
+
         <Button
           variant='outline'
           onClick={() =>

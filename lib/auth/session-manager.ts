@@ -1,7 +1,7 @@
 'use client'
 
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 
 interface SessionContextType {
@@ -23,6 +23,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshSession = async () => {
     try {
       console.log('🔄 [Session Manager] Refreshing session...')
+      
+      // Debug: Check cookies
+      console.log('🍪 [Session Manager] Available cookies:', document.cookie)
+      
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
@@ -36,7 +40,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         hasSession: !!session,
         userId: session?.user?.id,
         email: session?.user?.email,
-        expiresAt: session?.expires_at
+        expiresAt: session?.expires_at,
+        accessToken: session?.access_token ? '***PRESENT***' : 'MISSING'
       })
 
       setSession(session)

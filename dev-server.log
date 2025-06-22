@@ -1,0 +1,365 @@
+
+> my-v0-project@0.1.0 dev
+> next dev -p 3000
+
+(node:60729) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mike/Plate-Restaurant-System-App/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mike/Plate-Restaurant-System-App/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.137:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+(node:60730) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mike/Plate-Restaurant-System-App/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mike/Plate-Restaurant-System-App/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ Ready in 1136ms
+ ○ Compiling /api/health ...
+ ✓ Compiled /api/health in 621ms (454 modules)
+ GET /api/health 200 in 1870ms
+ ✓ Compiled /middleware in 187ms (173 modules)
+ ○ Compiling /kitchen/kds ...
+ ✓ Compiled /kitchen/kds in 2.5s (1790 modules)
+🔐 [KDS Server] Session check: {
+  hasSession: false,
+  userId: undefined,
+  email: undefined,
+  role: undefined,
+  expiresAt: undefined,
+  timestamp: '2025-06-22T00:02:25.416Z'
+}
+🚨 [KDS Server] No session found - redirecting to auth
+KDS Server Component Error: Error: Authentication required for KDS access
+    at KDSPage (app/(auth)/kitchen/kds/page.tsx:27:12)
+  25 |     if (!session) {
+  26 |       console.error('🚨 [KDS Server] No session found - redirecting to auth')
+> 27 |       throw new Error('Authentication required for KDS access')
+     |            ^
+  28 |     }
+  29 |
+  30 |     // Fetch initial station data server-side
+ GET /kitchen/kds 200 in 3240ms
+ ✓ Compiled in 702ms (692 modules)
+ ✓ Compiled / in 217ms (1893 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 395ms
+🔐 [KDS Server] Session check: {
+  hasSession: false,
+  userId: undefined,
+  email: undefined,
+  role: undefined,
+  expiresAt: undefined,
+  timestamp: '2025-06-22T00:02:26.465Z'
+}
+🚨 [KDS Server] No session found - redirecting to auth
+KDS Server Component Error: Error: Authentication required for KDS access
+    at KDSPage (app/(auth)/kitchen/kds/page.tsx:27:12)
+  25 |     if (!session) {
+  26 |       console.error('🚨 [KDS Server] No session found - redirecting to auth')
+> 27 |       throw new Error('Authentication required for KDS access')
+     |            ^
+  28 |     }
+  29 |
+  30 |     // Fetch initial station data server-side
+ GET /kitchen/kds 200 in 73ms
+ GET / 200 in 25ms
+🔑 AUTH DEBUG: Attempting login for: guest@restaurant.plate
+✅ AUTH DEBUG: Session created successfully
+📋 AUTH DEBUG: User ID: b0055f8c-d2c3-425f-add2-e4ee6572829e
+📋 AUTH DEBUG: User Email: guest@restaurant.plate
+📋 AUTH DEBUG: Access Token Present: true
+ ✓ Compiled /dashboard in 350ms (1959 modules)
+ GET /dashboard 200 in 732ms
+ POST / 303 in 1275ms
+ ✓ Compiled /kitchen in 301ms (1961 modules)
+ GET /kitchen 200 in 538ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:03:25.805Z'
+}
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:03:25.816Z'
+}
+ GET /kitchen/kds 200 in 92ms
+ GET /kitchen/kds 200 in 77ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:04:06.046Z'
+}
+🔥 KDSMainContent Render DEBUG: {
+  propsOrders: 0,
+  fallbackOrders: 0,
+  actualOrders: 0,
+  actualLoading: true,
+  actualError: null,
+  actualViewMode: 'table',
+  actualFilterBy: 'all',
+  firstActualOrder: 'No actual orders',
+  willShowLoading: true,
+  willShowError: false,
+  willShowEmpty: true,
+  willShowOrders: false,
+  actuallyRendering: 'NO - SHOWING LOADING/ERROR/EMPTY'
+}
+ GET /kitchen/kds 200 in 521ms
+ ✓ Compiled in 1030ms (2132 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:05:31.885Z'
+}
+ GET /kitchen/kds 200 in 600ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:05:32.046Z'
+}
+ GET /kitchen/kds 200 in 22ms
+ ⚠ ./app/api/fix-guest-permissions/route.ts
+Attempted import error: 'createServerClient' is not exported from '@/lib/modassembly/supabase/server' (imported as 'createServerClient').
+
+Import trace for requested module:
+./app/api/fix-guest-permissions/route.ts
+
+./app/api/fix-guest-permissions/route.ts
+Attempted import error: 'createServerClient' is not exported from '@/lib/modassembly/supabase/server' (imported as 'createServerClient').
+
+Import trace for requested module:
+./app/api/fix-guest-permissions/route.ts
+Fix guest permissions error: TypeError: (0 , _lib_modassembly_supabase_server__WEBPACK_IMPORTED_MODULE_0__.createServerClient) is not a function
+    at POST (app/api/fix-guest-permissions/route.ts:6:39)
+  4 | export async function POST() {
+  5 |   try {
+> 6 |     const supabase = createServerClient()
+    |                                       ^
+  7 |
+  8 |     // Step 1: Update guest user profile to admin role
+  9 |     const { data: userData, error: userError } = await supabase
+ POST /api/fix-guest-permissions 500 in 567ms
+ ○ Compiling /api/fix-guest-permissions ...
+ ✓ Compiled /api/fix-guest-permissions in 290ms (1989 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:05:47.048Z'
+}
+ GET /kitchen/kds 200 in 99ms
+ ✓ Compiled in 290ms (1989 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:05:52.013Z'
+}
+ GET /kitchen/kds 200 in 156ms
+ ✓ Compiled in 380ms (1989 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:06:09.330Z'
+}
+ GET /kitchen/kds 200 in 73ms
+ POST /api/fix-guest-permissions 500 in 95ms
+ ✓ Compiled in 371ms (1989 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:07:14.429Z'
+}
+ GET /kitchen/kds 200 in 120ms
+ POST /api/fix-guest-permissions 500 in 115ms
+ ✓ Compiled in 618ms (1989 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:07:25.443Z'
+}
+ GET /kitchen/kds 200 in 161ms
+ POST /api/fix-guest-permissions 200 in 204ms
+ ✓ Compiled in 189ms (735 modules)
+ ✓ Compiled in 393ms (2132 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:07:40.137Z'
+}
+ GET /kitchen/kds 200 in 412ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:07:40.271Z'
+}
+ GET /kitchen/kds 200 in 14ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'server',
+  expiresAt: 1750554196,
+  timestamp: '2025-06-22T00:07:40.446Z'
+}
+ GET /kitchen/kds 200 in 24ms
+ ✓ Compiled /kitchen in 408ms (1240 modules)
+ GET /kitchen 200 in 719ms
+ GET / 200 in 107ms
+🔑 AUTH DEBUG: Attempting login for: guest@restaurant.plate
+✅ AUTH DEBUG: Session created successfully
+📋 AUTH DEBUG: User ID: b0055f8c-d2c3-425f-add2-e4ee6572829e
+📋 AUTH DEBUG: User Email: guest@restaurant.plate
+📋 AUTH DEBUG: Access Token Present: true
+ GET /dashboard 200 in 265ms
+ POST / 303 in 836ms
+ GET /kitchen 200 in 118ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'admin',
+  expiresAt: 1750554502,
+  timestamp: '2025-06-22T00:08:25.199Z'
+}
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'admin',
+  expiresAt: 1750554502,
+  timestamp: '2025-06-22T00:08:25.249Z'
+}
+ GET /kitchen/kds 200 in 115ms
+ GET /kitchen/kds 200 in 83ms
+ ⨯ ./components/kds/KDSMainContent.tsx
+Error:   [31mx[0m Expected ';', '}' or <eof>
+     ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/kds/KDSMainContent.tsx[0m:237:1]
+ [2m234[0m |       const { toast } = useToast()
+ [2m235[0m |     
+ [2m236[0m |       // Table grouping results
+ [2m237[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m     inputOrders: orders.length,
+ [2m238[0m | [35;1m|[0m[35;1m-[0m[35;1m>[0m     tableGroups: tableGroups.length,
+     : [35;1m`[0m[35;1m---[0m[33;1m               ^[0m
+     : [35;1m`[0m[35;1m---[0m[35;1m-[0m [35;1mThis is the expression part of an expression statement[0m
+ [2m239[0m |         firstGroup: tableGroups[0] ? {
+ [2m240[0m |           tableLabel: tableGroups[0].tableLabel,
+ [2m241[0m |           ordersCount: tableGroups[0].orders?.length || 0
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/kds/KDSMainContent.tsx
+./components/kds/index.ts
+./components/kds/KDSInterface.tsx
+ ✓ Compiled in 645ms (1973 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'admin',
+  expiresAt: 1750554502,
+  timestamp: '2025-06-22T00:10:20.742Z'
+}
+ GET /kitchen/kds 200 in 126ms
+ ⨯ ./components/kds/KDSMainContent.tsx
+Error:   [31mx[0m Expected ';', '}' or <eof>
+     ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/kds/KDSMainContent.tsx[0m:431:1]
+ [2m428[0m |       const actualFilterBy = filterBy || kdsState.filterBy
+ [2m429[0m |     
+ [2m430[0m |       // Component rendering logic
+ [2m431[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m     propsOrders: orders.length,
+ [2m432[0m | [35;1m|[0m[35;1m-[0m[35;1m>[0m     fallbackOrders: fallbackOrders.length,
+     : [35;1m`[0m[35;1m---[0m[33;1m                  ^[0m
+     : [35;1m`[0m[35;1m---[0m[35;1m-[0m [35;1mThis is the expression part of an expression statement[0m
+ [2m433[0m |         actualOrders: actualOrders.length,
+ [2m434[0m |         actualLoading,
+ [2m435[0m |         actualError,
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/kds/KDSMainContent.tsx
+./components/kds/index.ts
+./components/kds/KDSInterface.tsx
+ ✓ Compiled in 307ms (1973 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'admin',
+  expiresAt: 1750554502,
+  timestamp: '2025-06-22T00:10:47.471Z'
+}
+ GET /kitchen/kds 200 in 138ms
+ ✓ Compiled in 229ms (1973 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+🔐 [KDS Server] Session check: {
+  hasSession: true,
+  userId: 'b0055f8c-d2c3-425f-add2-e4ee6572829e',
+  email: 'guest@restaurant.plate',
+  role: 'admin',
+  expiresAt: 1750554502,
+  timestamp: '2025-06-22T00:10:56.013Z'
+}
+ GET /kitchen/kds 200 in 86ms
+[?25h

@@ -471,24 +471,13 @@ export function RestaurantStateProvider({
         payload: { key: 'tables', loading: true },
       })
 
-      // Fetch tables with seat counts
-      const { data: tables, error: tablesError } = await supabaseRef.current
-        .from('tables')
-        .select('*')
-        .order('label')
-
-      if (tablesError) {
-        throw tablesError
-      }
-
-      // Fetch seats for occupancy data
-      const { data: seats, error: seatsError } = await supabaseRef.current
-        .from('seats')
-        .select('*')
-
-      if (seatsError) {
-        throw seatsError
-      }
+      // Use database functions instead of direct queries
+      const { fetchAllTables } = await import('@/lib/modassembly/supabase/database/tables')
+      const { fetchAllSeats } = await import('@/lib/modassembly/supabase/database/seats')
+      
+      // Pass the client to the database functions (dependency injection)
+      const tables = await fetchAllTables(supabaseRef.current)
+      const seats = await fetchAllSeats(supabaseRef.current)
 
       // Transform to Table format with seat counts and occupancy
       const seatCountMap =
@@ -551,28 +540,16 @@ export function RestaurantStateProvider({
         payload: { key: 'orders', loading: true },
       })
 
-      const { data, error } = await supabaseRef.current
-        .from('orders')
-        .select(
-          `
-          *,
-          tables!inner(label),
-          seats!inner(label),
-          resident:profiles!resident_id(name),
-          server:profiles!server_id(name)
-        `
-        )
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) {
-        throw error
-      }
+      // Use database functions instead of direct queries
+      const { fetchOrdersWithDetails } = await import('@/lib/modassembly/supabase/database/orders')
+      
+      // Pass the client to the database functions (dependency injection)
+      const data = await fetchOrdersWithDetails(supabaseRef.current)
 
       const transformedOrders: Order[] = (data || []).map(order => ({
         ...order,
-        table: `Table ${order.tables.label}`,
-        seat: order.seats.label,
+        table: `Table ${order.tables?.label || 'Unknown'}`,
+        seat: order.seats?.label || 'Unknown',
       }))
 
       dispatch({ type: 'SET_ORDERS', payload: transformedOrders })

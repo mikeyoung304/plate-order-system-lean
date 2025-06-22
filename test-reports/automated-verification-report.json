@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-06-21T22:25:09.711Z",
+  "successRate": 17,
+  "testResults": {
+    "serverStart": true,
+    "authentication": false,
+    "kdsLoad": false,
+    "sessionPropagation": false,
+    "realTimeConnection": false,
+    "dataFetching": false,
+    "overallSuccess": false
+  },
+  "overallSuccess": false,
+  "recommendations": [
+    "Check individual test failures above",
+    "Review console logs for specific errors",
+    "Verify environment configuration"
+  ]
+}

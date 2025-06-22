@@ -17,10 +17,23 @@ export async function signIn(prevState: ActionResult | null, formData: FormData)
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  console.log('🔑 AUTH DEBUG: Attempting login for:', data.email)
+
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
+    console.log('❌ AUTH DEBUG: Login failed:', error.message)
     return { error: error.message }
+  }
+
+  // Check if session was created
+  if (authData.session) {
+    console.log('✅ AUTH DEBUG: Session created successfully')
+    console.log('📋 AUTH DEBUG: User ID:', authData.user?.id)
+    console.log('📋 AUTH DEBUG: User Email:', authData.user?.email)
+    console.log('📋 AUTH DEBUG: Access Token Present:', !!authData.session.access_token)
+  } else {
+    console.log('⚠️ AUTH DEBUG: No session in auth response')
   }
 
   revalidatePath('/', 'layout')

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { transcribeAudioFile } from '@/lib/modassembly/openai/transcribe'
 
 // Voice recording state machine types
 export type VoiceRecordingStep =
@@ -203,23 +204,8 @@ export function useVoiceRecordingState(options: VoiceRecordingOptions = {}) {
 
       const recordingResult = await audioRecorderRef.current.stopRecording()
 
-      // Send to transcription service
-      const formData = new FormData()
-      formData.append('audio', recordingResult.audioBlob)
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(
-          `Transcription failed: ${response.status} - ${errorText}`
-        )
-      }
-
-      const result = await response.json()
+      // Send to transcription service using direct function call
+      const result = await transcribeAudioFile(recordingResult.audioBlob, 'recording.webm')
 
       // The API returns both transcription and items
       const transcription = result.transcription || ''

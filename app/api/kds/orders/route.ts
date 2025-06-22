@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchAllActiveOrders, fetchStationOrders } from '@/lib/modassembly/supabase/database/kds/core'
+import { fetchAllActiveOrders, fetchStationOrders } from '@/lib/modassembly/supabase/database/kds'
 import { withAPIOptimization } from '@/lib/api/optimization'
 import { measureApiCall } from '@/lib/performance-utils'
 

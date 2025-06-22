@@ -2,13 +2,15 @@
  * Custom Jest matchers for enhanced testing
  */
 
+/* eslint-disable @typescript-eslint/no-namespace, no-unused-vars */
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toBeOneOf(expected: any[]): R;
+      toBeOneOf(_expected: any[]): R;
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace, no-unused-vars */
 
 // Custom matcher for checking if a value is one of several options
 expect.extend({

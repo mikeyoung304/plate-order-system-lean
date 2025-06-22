@@ -2,11 +2,16 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/modassembly/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  // Skip redirect for dashboard to prevent loops
-  if (request.nextUrl.pathname === '/dashboard') {
-    return await updateSession(request)
+  // Skip middleware for API routes and static files
+  if (
+    request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/_next/') ||
+    request.nextUrl.pathname.includes('.')
+  ) {
+    return NextResponse.next()
   }
   
+  // Handle session updates for authenticated routes
   return await updateSession(request)
 }
 
@@ -24,6 +29,7 @@ export const config = {
      * - api/metrics (metrics endpoint)
      * - public files with extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/test-env|api/vercel-auth|api/auth-check|api/health|api/metrics|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Exclude ALL API routes from middleware auth checks - they handle their own auth
+    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

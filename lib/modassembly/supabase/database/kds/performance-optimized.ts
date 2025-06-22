@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
-import { getKDSClient } from '@/lib/database-connection-pool'
 import { measureApiCall } from '@/lib/performance-utils'
 import type { KDSOrderRouting, KDSStation } from './types'
 

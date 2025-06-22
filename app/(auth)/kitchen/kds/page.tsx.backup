@@ -1,0 +1,32 @@
+import { KDSInterface } from '@/components/kds/KDSInterface'
+import { PageLoadingState } from '@/components/loading-states'
+import { createClient } from '@/lib/modassembly/supabase/server'
+import { fetchKDSStations } from '@/lib/modassembly/supabase/database/kds'
+
+export default async function KDSPage() {
+  try {
+    // Server-side data fetching with authenticated server client
+    const supabase = await createClient()
+    
+    // Verify authentication
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      throw new Error('Authentication required for KDS access')
+    }
+
+    // Fetch initial station data server-side
+    const stations = await fetchKDSStations()
+
+    return <KDSInterface initialStations={stations} />
+  } catch (error) {
+    console.error('KDS Server Component Error:', error)
+    
+    return (
+      <PageLoadingState
+        message='Failed to load Kitchen Display System'
+        showProgress={false}
+      />
+    )
+  }
+}

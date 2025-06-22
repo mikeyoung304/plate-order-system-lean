@@ -10,11 +10,13 @@ declare global {
     voiceProcessor?: any;
   }
 
+  /* eslint-disable @typescript-eslint/no-namespace */
   namespace jest {
     interface Matchers<R> {
-      toBeOneOf(expected: any[]): R;
+      toBeOneOf(_expected: any[]): R;
     }
   }
+  /* eslint-enable @typescript-eslint/no-namespace */
 }
 
 export {}

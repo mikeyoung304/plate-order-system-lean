@@ -172,7 +172,7 @@ export function generateTableSummary(orders: KDSOrderRouting[]): TableSummary {
  */
 export async function fetchKDSTableSummary(): Promise<TableSummary[]> {
   return measureApiCall('fetch_kds_table_summary', async () => {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from('kds_table_summary')

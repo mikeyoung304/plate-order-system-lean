@@ -13,7 +13,7 @@ npm run supabase:start && npm run supabase:migrate
 npm run dev:clean
 ```
 
-Visit http://localhost:3000 - login with `guest@restaurant.plate` / `password`
+Visit http://localhost:3000 - login with `guest@restaurant.plate` / `guest12345`
 
 ## Key Features
 

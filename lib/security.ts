@@ -79,12 +79,34 @@ export const Security = {
     },
 
     sanitizeOrderItem(item: unknown): string {
-      if (typeof item !== 'string') {
-        return ''
+      let itemText: string
+      
+      if (typeof item === 'string') {
+        itemText = item
+      } else if (typeof item === 'object' && item !== null) {
+        // Handle object items like {name: "Belgian Waffle Stack", price: 9.99}
+        const obj = item as any
+        itemText = obj.name || obj.title || obj.description || JSON.stringify(item)
+      } else {
+        // Handle other types
+        itemText = String(item)
       }
-      return DOMPurify.sanitize(item, { ALLOWED_TAGS: [] })
+      
+      const cleaned = DOMPurify.sanitize(itemText, { ALLOWED_TAGS: [] })
         .trim()
         .slice(0, 200) // Limit item length
+      
+      // Only filter out exact hex color codes, not food items with hex-like patterns
+      if (cleaned.match(/^#[0-9A-Fa-f]{6}$/) && cleaned.length === 7) {
+        return '' // Hide exact color codes only
+      }
+      
+      // Only filter out exact timestamp patterns, not food names with numbers
+      if (cleaned.match(/^\d{4}:\d{2}$/) && cleaned.length === 7) {
+        return '' // Hide exact timestamp-like values only
+      }
+      
+      return cleaned
     }
   },
 

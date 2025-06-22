@@ -71,19 +71,26 @@ ErrorDisplay.displayName = 'ErrorDisplay'
 
 // Grid layout for different view modes
 const getGridClasses = (viewMode: string, orderCount: number) => {
-  switch (viewMode) {
-    case 'list':
-      return 'grid-cols-1'
-    case 'grid':
-      if (orderCount <= 4) {return 'grid-cols-1 md:grid-cols-2'}
-      if (orderCount <= 9) {return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}
-      return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-    case 'table':
-      return 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
-    default:
-      return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-  }
-}
+        switch (viewMode) {
+          case 'list':
+            return 'grid-cols-1'
+          case 'grid':
+            if (orderCount <= 4) {return 'grid-cols-1 md:grid-cols-2'}
+            if (orderCount <= 9) {return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}
+            return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          case 'table':
+            // 🎯 AGENT 2 ENHANCEMENT: Optimized responsive breakpoints for kitchen multi-table workflow
+            // Kitchen staff need to see multiple tables simultaneously without scrolling
+            if (orderCount <= 2) {return 'grid-cols-1'}
+            if (orderCount <= 4) {return 'grid-cols-1 lg:grid-cols-2'}
+            if (orderCount <= 6) {return 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}
+            // Enhanced for large screens - kitchen displays are typically 24"+ monitors
+            return 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          default:
+            return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+        }
+      }
+
 
 // Individual order view
 const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
@@ -233,19 +240,7 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
   const tableGroups = useTableGroupedOrders(orders)
   const { toast } = useToast()
 
-  // 🔥 DEBUG: Log table grouping results
-  console.log('🔥 TableGroupedView DEBUG:', {
-    inputOrders: orders.length,
-    tableGroups: tableGroups.length,
-    firstGroup: tableGroups[0] ? {
-      tableLabel: tableGroups[0].tableLabel,
-      ordersCount: tableGroups[0].orders?.length || 0
-    } : 'No groups',
-    groupDetails: tableGroups.map(g => ({
-      table: g.tableLabel,
-      orders: g.orders?.length || 0
-    }))
-  });
+  // Table grouping complete
   
   // Real action handlers for table operations
   const handleBumpOrder = async (routingId: string) => {
@@ -356,9 +351,6 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
   
   return (
     <>
-      <div style={{backgroundColor: 'green', color: 'white', padding: '10px', margin: '10px'}}>
-        🔥 DEBUG: TableGroupedView rendering {tableGroups.length} groups
-      </div>
       {tableGroups.map((group) => (
         <TableGroupCard
           key={`${group.tableId}-${group.earliestOrderTime.getTime()}`}
@@ -439,29 +431,7 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
   const actualViewMode = viewMode || kdsState.viewMode
   const actualFilterBy = filterBy || kdsState.filterBy
 
-  // 🔥 DEBUG: Log component rendering data with decision path
-  console.log('🔥 KDSMainContent Render DEBUG:', {
-    propsOrders: orders.length,
-    fallbackOrders: fallbackOrders.length,
-    actualOrders: actualOrders.length,
-    actualLoading,
-    actualError,
-    actualViewMode,
-    actualFilterBy,
-    firstActualOrder: actualOrders?.[0] ? {
-      id: actualOrders[0].id,
-      orderExists: !!actualOrders[0].order,
-      tableLabel: actualOrders[0].order?.table?.label,
-      seatLabel: actualOrders[0].order?.seat?.label,
-      items: actualOrders[0].order?.items?.length || 0
-    } : 'No actual orders',
-    // Decision path debugging
-    willShowLoading: actualLoading,
-    willShowError: !!actualError,
-    willShowEmpty: actualOrders.length === 0,
-    willShowOrders: !actualLoading && !actualError && actualOrders.length > 0,
-    actuallyRendering: !actualLoading && !actualError && actualOrders.length > 0 ? 'YES - SHOULD RENDER ORDERS' : 'NO - SHOWING LOADING/ERROR/EMPTY'
-  });
+  // Component rendering logic complete
   
   if (actualLoading) {
     return (
@@ -499,10 +469,11 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
     <div className={cn("flex-1", className)}>
       <div className="h-full overflow-auto">
         {actualViewMode === 'table' ? (
-          <div className="p-4 space-y-4">
-            <div style={{backgroundColor: 'red', color: 'white', padding: '10px', margin: '10px'}}>
-              🔥 DEBUG: Table View - {actualOrders.length} orders
-            </div>
+          <div className={cn(
+            "p-4 grid gap-4",
+            // 🎯 AGENT 2 ENHANCEMENT: Enhanced grid layout for kitchen multi-table visibility
+            getGridClasses(actualViewMode, actualOrders.length)
+          )}>
             <TableGroupedView orders={actualOrders} />
           </div>
         ) : (
@@ -510,9 +481,6 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
             "p-4 grid gap-4",
             getGridClasses(actualViewMode, actualOrders.length)
           )}>
-            <div style={{backgroundColor: 'blue', color: 'white', padding: '10px', margin: '10px'}}>
-              🔥 DEBUG: Grid View - {actualOrders.length} orders
-            </div>
             <IndividualOrderView orders={actualOrders} />
           </div>
         )}
