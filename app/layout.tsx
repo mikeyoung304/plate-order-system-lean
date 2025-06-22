@@ -6,6 +6,7 @@ import { createClient } from '@/lib/modassembly/supabase/server'
 import { headers } from 'next/headers'
 import { FooterAttribution } from '@/components/footer-attribution'
 import { SecurityPerformanceInit } from '@/components/security-performance-init'
+import { SessionProvider } from '@/lib/auth/session-manager'
 // Temporarily removed emergency error boundary
 import './globals.css'
 
@@ -30,28 +31,41 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Server-side auth check
-  const supabase = await createClient()
-  const {
-    data: { session: _session },
-  } = await supabase.auth.getSession()
+  // Temporarily disable server-side auth check to fix startup hang
+  // const supabase = await createClient()
+  let _session = null
+  // try {
+  //   const {
+  //     data: { session },
+  //   } = await supabase.auth.getSession()
+  //   _session = session
+  // } catch (error) {
+  //   // Handle refresh token errors gracefully
+  //   if (error instanceof Error && error.message.includes('Refresh Token Not Found')) {
+  //     console.warn('Clearing invalid refresh token in layout')
+  //     await supabase.auth.signOut()
+  //   }
+  //   // Continue with no session
+  // }
 
   // Get current path using headers
-  const headersList = await headers()
-  const url = headersList.get('x-url') || 'http://localhost'
-  const _pathname = new URL(url).pathname
+  // const headersList = await headers()
+  // const url = headersList.get('x-url') || 'http://localhost'
+  // const _pathname = new URL(url).pathname
 
   return (
     <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme='dark'>
-          <div className='min-h-screen flex flex-col'>
-            <main className='flex-grow pb-10'>{children}</main>
-            <FooterAttribution />
-          </div>
-          <Toaster />
-          <SecurityPerformanceInit />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider defaultTheme='dark'>
+            <div className='min-h-screen flex flex-col'>
+              <main className='flex-grow pb-10'>{children}</main>
+              <FooterAttribution />
+            </div>
+            <Toaster />
+            {/* <SecurityPerformanceInit /> */}
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )

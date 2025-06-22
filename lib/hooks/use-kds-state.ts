@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { useSession } from '@/lib/auth/session-manager'
 import {
   type KDSOrderRouting,
   fetchAllActiveOrders,
@@ -43,6 +44,7 @@ export interface KDSActions {
 }
 
 export function useKDSState(stationId?: string) {
+  const { session, loading: sessionLoading } = useSession()
   const [state, setState] = useState<KDSState>({
     orders: [],
     loading: true,
@@ -55,6 +57,7 @@ export function useKDSState(stationId?: string) {
   })
 
   const supabaseRef = useRef(createClient())
+  const sessionCheckRef = useRef(false)
   const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(
     new Map()
   )
@@ -64,9 +67,33 @@ export function useKDSState(stationId?: string) {
     try {
       setState(prev => ({ ...prev, error: null }))
 
+      // Check session from session manager
+      if (!session) {
+        console.error('🚨 [KDS Client] No session available from session manager')
+        setState(prev => ({ 
+          ...prev, 
+          error: 'Authentication required for KDS data access',
+          loading: false,
+          connectionStatus: 'disconnected'
+        }))
+        return
+      }
+
+      if (!sessionCheckRef.current) {
+        console.log('🔐 [KDS Client] Session available from session manager:', {
+          hasSession: !!session,
+          userId: session.user.id,
+          email: session.user.email,
+          role: session.user.user_metadata?.role,
+          timestamp: new Date().toISOString()
+        })
+        sessionCheckRef.current = true
+      }
+
+      const supabase = createClient()
       const data = stationId
-        ? await fetchStationOrders(stationId)
-        : await fetchAllActiveOrders()
+        ? await fetchStationOrders(supabase, stationId)
+        : await fetchAllActiveOrders(supabase)
 
       // Apply optimistic updates
       const updatedData = data.map(order => {
@@ -90,7 +117,7 @@ export function useKDSState(stationId?: string) {
         connectionStatus: 'disconnected',
       }))
     }
-  }, [stationId])
+    }, [stationId, session])
 
   // Optimistic update
   const optimisticUpdate = useCallback(
@@ -132,29 +159,77 @@ export function useKDSState(stationId?: string) {
   useEffect(() => {
     const supabase = supabaseRef.current
 
-    const channel = supabase
-      .channel(`kds-orders-${stationId || 'all'}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'kds_order_routing' },
-        () => fetchOrders()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => fetchOrders()
-      )
-      .subscribe()
+    // Verify session before setting up subscriptions
+    const setupSubscription = async () => {
+      // Don't attempt subscription setup until session loading is complete
+      if (sessionLoading) {
+        console.log('🔄 [KDS Client] Waiting for session to load...')
+        return null
+      }
+
+      if (!session) {
+        console.error('🚨 [KDS Client] No session for real-time subscription')
+        setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
+        return null
+      }
+
+      console.log('🔐 [KDS Client] Setting up real-time subscription with session:', {
+        userId: session.user.id,
+        stationId: stationId || 'all'
+      })
+
+      return supabase
+        .channel(`kds-orders-${stationId || 'all'}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'kds_order_routing' },
+          (payload) => {
+            console.log('📡 [KDS Client] Real-time update received:', payload.eventType)
+            fetchOrders()
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            console.log('📡 [KDS Client] Orders table update received:', payload.eventType)
+            fetchOrders()
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 [KDS Client] Subscription status:', status)
+          setState(prev => ({
+            ...prev,
+            connectionStatus: status === 'SUBSCRIBED' ? 'connected' : 'disconnected'
+          }))
+        })
+    }
+
+    let channel: any = null
+    setupSubscription().then(ch => { 
+      channel = ch 
+    })
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
-  }, [stationId, fetchOrders])
+  }, [stationId, fetchOrders, session, sessionLoading])
 
-  // Initial fetch
+  // Initial fetch - only when session is available
   useEffect(() => {
-    fetchOrders()
-  }, [fetchOrders])
+    if (!sessionLoading && session) {
+      fetchOrders()
+    } else if (!sessionLoading && !session) {
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'No authentication session available',
+        connectionStatus: 'disconnected'
+      }))
+    }
+  }, [fetchOrders, sessionLoading, session])
 
   // Filtered and sorted orders
   const filteredAndSortedOrders = useMemo(() => {
