@@ -400,28 +400,4 @@ describe('Deployment Verification', () => {
   })
 })
 
-// Custom Jest matchers
-expect.extend({
-  toBeOneOf(received: any, array: any[]) {
-    const pass = array.includes(received)
-    if (pass) {
-      return {
-        message: () => `expected ${received} not to be one of ${array.join(', ')}`,
-        pass: true,
-      }
-    } else {
-      return {
-        message: () => `expected ${received} to be one of ${array.join(', ')}`,
-        pass: false,
-      }
-    }
-  },
-})
-
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeOneOf(array: any[]): R
-    }
-  }
-}
+// Import the jest matcher instead of redefining it

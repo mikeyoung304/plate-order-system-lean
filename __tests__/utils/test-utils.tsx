@@ -151,8 +151,11 @@ export const createMockSupabaseClient = () => ({
         eq: jest.fn(),
         gte: jest.fn(),
         lte: jest.fn(),
+        lt: jest.fn(),
+        gt: jest.fn(),
         order: jest.fn(),
         limit: jest.fn(),
+        range: jest.fn(),
         single: jest.fn().mockResolvedValue({
           data: null,
           error: null,
@@ -171,8 +174,11 @@ export const createMockSupabaseClient = () => ({
       queryBuilder.eq.mockReturnValue(queryBuilder);
       queryBuilder.gte.mockReturnValue(queryBuilder);
       queryBuilder.lte.mockReturnValue(queryBuilder);
+      queryBuilder.lt.mockReturnValue(queryBuilder);
+      queryBuilder.gt.mockReturnValue(queryBuilder);
       queryBuilder.order.mockReturnValue(queryBuilder);
       queryBuilder.limit.mockReturnValue(queryBuilder);
+      queryBuilder.range.mockReturnValue(queryBuilder);
       
       // Add mockResolvedValue to chainable methods
       queryBuilder.select.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
@@ -182,8 +188,11 @@ export const createMockSupabaseClient = () => ({
       queryBuilder.eq.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
       queryBuilder.gte.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
       queryBuilder.lte.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.lt.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.gt.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
       queryBuilder.order.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
       queryBuilder.limit.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
+      queryBuilder.range.mockResolvedValue = jest.fn().mockResolvedValue({ data: [], error: null });
       
       return queryBuilder;
     };
