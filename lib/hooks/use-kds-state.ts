@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import { useSession } from '@/lib/auth/session-manager'
 import {
   type KDSOrderRouting,
@@ -56,7 +57,6 @@ export function useKDSState(stationId?: string) {
     connectionStatus: 'disconnected',
   })
 
-  const supabaseRef = useRef(createClient())
   const sessionCheckRef = useRef(false)
   const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(
     new Map()
@@ -92,8 +92,8 @@ export function useKDSState(stationId?: string) {
 
       const supabase = createClient()
       const data = stationId
-        ? await fetchStationOrders(supabase, stationId)
-        : await fetchAllActiveOrders(supabase)
+        ? await fetchStationOrders(stationId)
+        : await fetchAllActiveOrders()
 
       // Apply optimistic updates
       const updatedData = data.map(order => {
@@ -155,64 +155,84 @@ export function useKDSState(stationId?: string) {
     setState(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }))
   }, [])
 
-  // Set up real-time subscription
+  // Set up real-time subscription with session-aware manager
   useEffect(() => {
-    const supabase = supabaseRef.current
-
-    // Verify session before setting up subscriptions
-    const setupSubscription = async () => {
-      // Don't attempt subscription setup until session loading is complete
-      if (sessionLoading) {
-        console.log('🔄 [KDS Client] Waiting for session to load...')
-        return null
-      }
-
-      if (!session) {
-        console.error('🚨 [KDS Client] No session for real-time subscription')
-        setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
-        return null
-      }
-
-      console.log('🔐 [KDS Client] Setting up real-time subscription with session:', {
-        userId: session.user.id,
-        stationId: stationId || 'all'
-      })
-
-      return supabase
-        .channel(`kds-orders-${stationId || 'all'}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'kds_order_routing' },
-          (payload) => {
-            console.log('📡 [KDS Client] Real-time update received:', payload.eventType)
-            fetchOrders()
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            console.log('📡 [KDS Client] Orders table update received:', payload.eventType)
-            fetchOrders()
-          }
-        )
-        .subscribe((status) => {
-          console.log('📡 [KDS Client] Subscription status:', status)
-          setState(prev => ({
-            ...prev,
-            connectionStatus: status === 'SUBSCRIBED' ? 'connected' : 'disconnected'
-          }))
-        })
+    // Don't attempt subscription until session is loaded
+    if (sessionLoading) {
+      console.log('🔄 [KDS] Waiting for session to load...')
+      return
     }
 
-    let channel: any = null
-    setupSubscription().then(ch => { 
-      channel = ch 
-    })
+    if (!session) {
+      console.error('🚨 [KDS] No session for real-time subscription')
+      setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
+      return
+    }
+
+    const realtimeManager = getRealtimeManager()
+    let subscriptionId: string | null = null
+
+    const setupSubscription = async () => {
+      try {
+        console.log('🔐 [KDS] Setting up real-time subscription with session:', {
+          userId: session.user.id,
+          stationId: stationId || 'all'
+        })
+
+        // Subscribe to kds_order_routing table
+        const kdsSubscriptionId = await realtimeManager.subscribe({
+          table: 'kds_order_routing',
+          event: '*',
+          filter: stationId ? `station_id=eq.${stationId}` : undefined,
+          onData: (payload) => {
+            console.log('📡 [KDS] Real-time update received:', payload.eventType)
+            fetchOrders()
+          },
+          onConnect: () => {
+            setState(prev => ({ ...prev, connectionStatus: 'connected' }))
+          },
+          onDisconnect: () => {
+            setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
+          },
+          onError: (error) => {
+            console.error('❌ [KDS] Real-time error:', error)
+            setState(prev => ({ 
+              ...prev, 
+              connectionStatus: 'disconnected',
+              error: error.message 
+            }))
+          }
+        })
+
+        subscriptionId = kdsSubscriptionId
+
+        // Also subscribe to orders table for updates
+        await realtimeManager.subscribe({
+          table: 'orders',
+          event: '*',
+          onData: (payload) => {
+            console.log('📡 [KDS] Orders table update received:', payload.eventType)
+            fetchOrders()
+          }
+        })
+
+      } catch (error) {
+        console.error('❌ [KDS] Failed to setup subscription:', error)
+        setState(prev => ({ 
+          ...prev, 
+          connectionStatus: 'disconnected',
+          error: error instanceof Error ? error.message : 'Failed to connect'
+        }))
+      }
+    }
+
+    setupSubscription()
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
+      if (subscriptionId) {
+        realtimeManager.unsubscribe(subscriptionId).catch(error =>
+          console.error('Error unsubscribing:', error)
+        )
       }
     }
   }, [stationId, fetchOrders, session, sessionLoading])
