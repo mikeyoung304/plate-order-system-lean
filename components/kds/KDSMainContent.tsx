@@ -1,11 +1,12 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useCallback } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getKDSOrderStatus } from '@/lib/utils/kds-helpers'
 import { OrderCard } from './order-card'
 import { TableGroupCard } from './table-group-card'
 import { useKDSState } from '@/lib/hooks/use-kds-state'
@@ -98,7 +99,7 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
   const { toast } = useToast()
   
   // Real action handlers connected to KDS database functions
-  const handleBump = async (routingId: string) => {
+  const handleBump = useCallback(async (routingId: string) => {
     try {
       const user = await getClientUser()
       const userId = user?.id || 'unknown-user'
@@ -115,7 +116,6 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order marked as ready for pickup',
       })
     } catch (error) {
-      console.error('Error bumping order:', error)
       kdsState.refetch() // Restore correct state
       toast({
         title: 'Error',
@@ -123,9 +123,9 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleRecall = async (routingId: string) => {
+  const handleRecall = useCallback(async (routingId: string) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, {
@@ -140,7 +140,6 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order has been recalled to the kitchen',
       })
     } catch (error) {
-      console.error('Error recalling order:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -148,9 +147,9 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleStartPrep = async (routingId: string) => {
+  const handleStartPrep = useCallback(async (routingId: string) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, {
@@ -163,7 +162,6 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order preparation has begun',
       })
     } catch (error) {
-      console.error('Error starting prep:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -171,9 +169,9 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleUpdatePriority = async (routingId: string, priority: number) => {
+  const handleUpdatePriority = useCallback(async (routingId: string, priority: number) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, { priority })
@@ -184,7 +182,6 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         description: `Order priority set to ${priority}`,
       })
     } catch (error) {
-      console.error('Error updating priority:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -192,9 +189,9 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleAddNotes = async (routingId: string, notes: string) => {
+  const handleAddNotes = useCallback(async (routingId: string, notes: string) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, { notes })
@@ -205,7 +202,6 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order notes have been updated',
       })
     } catch (error) {
-      console.error('Error adding notes:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -213,7 +209,7 @@ const IndividualOrderView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
   return (
     <>
@@ -243,7 +239,7 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
   // Table grouping complete
   
   // Real action handlers for table operations
-  const handleBumpOrder = async (routingId: string) => {
+  const handleBumpOrder = useCallback(async (routingId: string) => {
     try {
       const user = await getClientUser()
       const userId = user?.id || 'unknown-user'
@@ -260,7 +256,6 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order marked as ready for pickup',
       })
     } catch (error) {
-      console.error('Error bumping order:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -268,9 +263,9 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleBumpTable = async (tableId: string, orderIds: string[]) => {
+  const handleBumpTable = useCallback(async (tableId: string, orderIds: string[]) => {
     try {
       const user = await getClientUser()
       const userId = user?.id || 'unknown-user'
@@ -291,7 +286,6 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         description: `All orders for table ${tableId} marked as ready`,
       })
     } catch (error) {
-      console.error('Error bumping table:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -299,9 +293,9 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleStartPrep = async (routingId: string) => {
+  const handleStartPrep = useCallback(async (routingId: string) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, {
@@ -314,7 +308,6 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order preparation has begun',
       })
     } catch (error) {
-      console.error('Error starting prep:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -322,9 +315,9 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
-  const handleRecallOrder = async (routingId: string) => {
+  const handleRecallOrder = useCallback(async (routingId: string) => {
     try {
       // Optimistic update
       kdsState.optimisticUpdate(routingId, {
@@ -339,7 +332,6 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         description: 'Order has been recalled to the kitchen',
       })
     } catch (error) {
-      console.error('Error recalling order:', error)
       kdsState.refetch()
       toast({
         title: 'Error',
@@ -347,7 +339,7 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
         variant: 'destructive',
       })
     }
-  }
+  }, [kdsState, toast])
   
   return (
     <>
@@ -366,12 +358,7 @@ const TableGroupedView = memo(({ orders }: { orders: any[] }) => {
 })
 TableGroupedView.displayName = 'TableGroupedView'
 
-// Helper function to derive order status from KDS routing fields
-const getOrderStatus = (order: any) => {
-  if (order.completed_at) {return 'ready'}
-  if (order.started_at) {return 'preparing'}  // Match KDSFilterBy type
-  return 'new'
-}
+// Use shared KDS helper for status
 
 // Filter and sort orders
 function useFilteredAndSortedOrders() {
@@ -385,7 +372,7 @@ function useFilteredAndSortedOrders() {
     // Apply filters
     if (kdsState.filterBy !== 'all') {
       filtered = filtered.filter(order => {
-        const status = getOrderStatus(order)
+        const status = getKDSOrderStatus(order)
         return status === kdsState.filterBy
       })
     }
@@ -457,13 +444,6 @@ export const KDSMainContent = memo<KDSMainContentProps>(({
     )
   }
   
-  // 🔥 DEBUG: Log which render path is being taken
-  console.log('🔥 KDSMainContent Final Render Path:', {
-    actualViewMode,
-    willRenderTable: actualViewMode === 'table',
-    ordersForTableView: actualViewMode === 'table' ? actualOrders.length : 'N/A',
-    ordersForGridView: actualViewMode !== 'table' ? actualOrders.length : 'N/A'
-  });
 
   return (
     <div className={cn("flex-1", className)}>

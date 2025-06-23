@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useKDSState } from '@/lib/hooks/use-kds-state'
+import { getKDSOrderStatus } from '@/lib/utils/kds-helpers'
 
 interface KDSHeaderProps {
   className?: string
@@ -167,12 +168,7 @@ const AudioControls = memo(() => {
 })
 AudioControls.displayName = 'AudioControls'
 
-// Helper function to derive order status from KDS routing fields
-const getOrderStatus = (order: any) => {
-  if (order.completed_at) {return 'ready'}
-  if (order.started_at) {return 'preparing'}
-  return 'new'
-}
+// Use shared KDS helper for status - no more duplication!
 
 // Order metrics display
 const OrderMetrics = memo(() => {
@@ -180,7 +176,7 @@ const OrderMetrics = memo(() => {
   
   const totalOrders = kdsState.orders?.length || 0
   const activeOrders = kdsState.orders?.filter(order => {
-    const status = getOrderStatus(order)
+    const status = getKDSOrderStatus(order)
     return status === 'new' || status === 'preparing'
   }).length || 0
   

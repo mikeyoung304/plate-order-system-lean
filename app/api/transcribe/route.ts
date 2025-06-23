@@ -5,11 +5,21 @@ import { Security } from '@/lib/security'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { measureApiCall } from '@/lib/performance-utils'
 import { ApiResponse, TranscriptionResult } from '@/types/api'
+import { rateLimitMiddleware, RateLimitConfigs } from '@/lib/rate-limiter'
+
+// Apply rate limiting to voice transcription
+const voiceRateLimiter = rateLimitMiddleware(RateLimitConfigs.voice)
 
 type TranscribeResponse = ApiResponse<TranscriptionResult>
 
 export async function POST(request: NextRequest) {
   return measureApiCall('transcribe_api', async () => {
+    // Check rate limit first
+    const rateLimitResponse = voiceRateLimiter(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     // 1. Fort Knox Request Validation
     const validation = Security.validate.validateRequest(request)
     if (!validation.isValid) {

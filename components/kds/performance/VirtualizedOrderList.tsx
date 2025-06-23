@@ -1,7 +1,7 @@
 'use client'
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList, ListChildComponentProps } from 'react-window'
 import AutoSizer, { Size } from 'react-virtualized-auto-sizer'
 import InfiniteLoader from 'react-window-infinite-loader'
 import { cn } from '@/lib/utils'
@@ -43,16 +43,25 @@ interface VirtualizedOrderListProps {
   className?: string
 }
 
+// Item data interface
+interface ItemData {
+  items: (KDSOrderRouting | TableGroup)[]
+  viewMode: 'grid' | 'list' | 'table'
+  onBumpOrder: (routingId: string) => Promise<void>
+  onRecallOrder?: (routingId: string) => Promise<void>
+  onStartPrep?: (routingId: string) => Promise<void>
+  onUpdatePriority?: (routingId: string, priority: number) => Promise<void>
+  onAddNotes?: (routingId: string, notes: string) => Promise<void>
+  onBumpTable?: (tableId: string, orderIds: string[]) => Promise<void>
+}
+
 // Memoized order item renderer for virtual list
-const OrderItemRenderer = memo(({ 
+const OrderItemRenderer = memo<ListChildComponentProps<ItemData>>(({ 
   index, 
   style, 
   data 
-}: { 
-  index: number
-  style: React.CSSProperties
-  data: any 
 }) => {
+  if (!data) return null
   const { 
     items, 
     viewMode, 
@@ -81,16 +90,16 @@ const OrderItemRenderer = memo(({
           group={item as TableGroup}
           onBumpOrder={onBumpOrder}
           onBumpTable={onBumpTable!}
-          onStartPrep={onStartPrep}
-          onRecallOrder={onRecallOrder!}
-          isCompact={viewMode === 'list'}
+          onStartPrep={onStartPrep || (() => Promise.resolve())}
+          onRecallOrder={onRecallOrder || (() => Promise.resolve())}
+          isCompact={false}
         />
       ) : (
         <OrderCard
           order={item as KDSOrderRouting}
           onBump={onBumpOrder}
           onRecall={onRecallOrder}
-          onStartPrep={onStartPrep}
+          onStartPrep={onStartPrep || (() => Promise.resolve())}
           onUpdatePriority={onUpdatePriority}
           onAddNotes={onAddNotes}
           isCompact={viewMode === 'list'}
@@ -102,8 +111,8 @@ const OrderItemRenderer = memo(({
   // Custom comparison for better performance
   return (
     prevProps.index === nextProps.index &&
-    prevProps.data.items === nextProps.data.items &&
-    prevProps.data.viewMode === nextProps.data.viewMode
+    prevProps.data?.items === nextProps.data?.items &&
+    prevProps.data?.viewMode === nextProps.data?.viewMode
   )
 })
 OrderItemRenderer.displayName = 'OrderItemRenderer'
@@ -294,23 +303,26 @@ export const VirtualizedOrderList = memo<VirtualizedOrderListProps>(({
               loadMoreItems={handleLoadMore}
               threshold={LOAD_MORE_THRESHOLD}
             >
-              {({ onItemsRendered, ref }: any) => (
-                <List
-                  ref={(list) => {
-                    listRef.current = list
-                    ref(list)
-                  }}
-                  height={height || 600}
-                  width={width}
-                  itemCount={itemCount}
-                  itemSize={itemHeight}
-                  itemData={itemData}
-                  onItemsRendered={onItemsRendered}
-                  overscanCount={OVERSCAN_COUNT}
-                >
-                  {OrderItemRenderer}
-                </List>
-              )}
+              {({ onItemsRendered, ref }: any) => {
+                const List = FixedSizeList as any
+                return (
+                  <List
+                    ref={(list: any) => {
+                      listRef.current = list
+                      ref(list)
+                    }}
+                    height={height || 600}
+                    width={width}
+                    itemCount={itemCount}
+                    itemSize={itemHeight}
+                    itemData={itemData}
+                    onItemsRendered={onItemsRendered}
+                    overscanCount={OVERSCAN_COUNT}
+                  >
+                    {OrderItemRenderer}
+                  </List>
+                )
+              }}
             </InfiniteLoader>
           )
         }}

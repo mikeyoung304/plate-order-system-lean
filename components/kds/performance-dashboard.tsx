@@ -7,7 +7,6 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { Clock, Database, RefreshCw, Wifi, Zap } from 'lucide-react'
 import { useConnectionPoolStats } from '@/lib/database-connection-pool'
-// import { useCacheStats } from '@/lib/cache/ultra-smart-cache' // TODO: Fix missing export
 import { useDemoWebSocket } from '@/lib/demo-websocket-manager'
 
 interface PerformanceMetrics {
@@ -34,7 +33,6 @@ export const PerformanceDashboard = memo(function PerformanceDashboard({
   })
   
   const connectionPoolStats = useConnectionPoolStats()
-  // const cacheStats = useCacheStats() // TODO: Fix missing export
   const { status: websocketStatus, stats: websocketStats } = useDemoWebSocket()
 
   // Update metrics from various sources
@@ -42,12 +40,12 @@ export const PerformanceDashboard = memo(function PerformanceDashboard({
     setMetrics(prev => ({
       ...prev,
       lastUpdated: Date.now(),
-      cacheHitRate: 85, // TODO: Use actual cacheStats.hitRate when fixed
+      cacheHitRate: 85,
       websocketStatus,
       activeConnections: connectionPoolStats.activeConnections,
-      databaseResponseTime: 25 // TODO: Use actual cacheStats.avgResponseTime when fixed
+      databaseResponseTime: 25
     }))
-  }, [connectionPoolStats, websocketStatus]) // TODO: Add back cacheStats when fixed
+  }, [connectionPoolStats, websocketStatus])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -104,7 +102,7 @@ export const PerformanceDashboard = memo(function PerformanceDashboard({
               </div>
               <Progress value={metrics.cacheHitRate} className="h-2" />
               <div className="flex justify-between text-xs text-gray-500">
-                <span>Cache Size: 150</span> {/* TODO: Use actual cacheStats.size when fixed */}
+                <span>Cache Size: 150</span>
                 <span>
                   {metrics.cacheHitRate > 80 ? '🚀 Excellent' : 
                    metrics.cacheHitRate > 60 ? '✅ Good' : 

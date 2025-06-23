@@ -23,6 +23,7 @@ import React, {
   useState,
 } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 // Note: optimized-realtime-context removed - using simplified approach
 import type { Order } from '@/lib/modassembly/supabase/database/orders'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
@@ -748,7 +749,7 @@ export function OptimizedOrdersProvider({
     }
   }, [state.orders.size, state.cacheStats])
 
-  // Set up real-time subscription following Luis's patterns with safety measures
+  // Set up real-time subscription with session-aware manager
   useEffect(() => {
     // Feature flag for real-time - can be disabled if problematic
     const ENABLE_REALTIME = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== 'false'
@@ -758,84 +759,54 @@ export function OptimizedOrdersProvider({
       return
     }
 
-    const supabase = supabaseRef.current
-    let channel: any = null
-    let retryTimeout: NodeJS.Timeout | null = null
+    const realtimeManager = getRealtimeManager()
+    let subscriptionId: string | null = null
 
     const setupRealtimeConnection = async () => {
       try {
-        setConnectionStatus('connecting')
+        console.log('🔄 [Orders] Setting up real-time subscription...')
 
-        // Test basic connectivity first
-        const { error: testError } = await supabase
-          .from('orders')
-          .select('count')
-          .limit(1)
-        if (testError) {
-          console.error('Database connectivity test failed:', testError)
-          setConnectionStatus('error')
-          return
-        }
-
-        // Create channel for orders table with error boundary
-        channel = supabase
-          .channel('orders-realtime')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'orders',
-            },
-            payload => {
-              try {
-                handleRealtimeUpdate(payload)
-              } catch (error) {
-                console.error('Error handling real-time update:', error)
-                // Don't let real-time errors crash the app
-              }
+        subscriptionId = await realtimeManager.subscribe({
+          table: 'orders',
+          event: '*',
+          onData: (payload) => {
+            try {
+              handleRealtimeUpdate(payload)
+            } catch (error) {
+              console.error('Error handling real-time update:', error)
+              // Don't let real-time errors crash the app
             }
-          )
-          .subscribe((status: string) => {
-            if (status === 'SUBSCRIBED') {
-              setIsConnected(true)
-              setConnectionStatus('connected')
-              console.warn('✅ Real-time orders subscription active')
-            } else if (status === 'CHANNEL_ERROR') {
-              setIsConnected(false)
-              setConnectionStatus('error')
-              console.error('❌ Real-time subscription error')
-              // Auto-retry after 5 seconds
-              retryTimeout = setTimeout(setupRealtimeConnection, 5000)
-            } else if (status === 'TIMED_OUT') {
-              setIsConnected(false)
-              setConnectionStatus('disconnected')
-              console.warn('⏰ Real-time subscription timed out')
-              // Auto-retry after 10 seconds
-              retryTimeout = setTimeout(setupRealtimeConnection, 10000)
-            }
-          })
+          },
+          onConnect: () => {
+            setIsConnected(true)
+            setConnectionStatus('connected')
+            console.log('✅ [Orders] Real-time subscription active')
+          },
+          onDisconnect: () => {
+            setIsConnected(false)
+            setConnectionStatus('disconnected')
+            console.warn('🔌 [Orders] Real-time subscription disconnected')
+          },
+          onError: (error) => {
+            console.error('❌ [Orders] Real-time error:', error)
+            setIsConnected(false)
+            setConnectionStatus('error')
+          }
+        })
       } catch (error) {
         console.error('Failed to setup real-time connection:', error)
         setIsConnected(false)
         setConnectionStatus('error')
-        // Don't retry on setup errors - likely configuration issue
       }
     }
 
     setupRealtimeConnection()
 
     return () => {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout)
-      }
-      if (channel) {
-        try {
-          channel.unsubscribe()
-          console.warn('🔌 Real-time subscription cleaned up')
-        } catch (error) {
-          console.error('Error cleaning up real-time subscription:', error)
-        }
+      if (subscriptionId) {
+        realtimeManager.unsubscribe(subscriptionId).catch(error =>
+          console.error('Error cleaning up subscription:', error)
+        )
       }
       setIsConnected(false)
       setConnectionStatus('disconnected')

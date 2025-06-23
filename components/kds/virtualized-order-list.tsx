@@ -1,7 +1,7 @@
 'use client'
 
-import { memo, useCallback, useMemo } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import React, { memo, useCallback, useMemo } from 'react'
+import { FixedSizeList, ListChildComponentProps } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import { OrderCard } from './order-card'
 import { TableGroupCard } from './table-group-card'
@@ -19,19 +19,19 @@ interface VirtualizedOrderListProps {
   className?: string
 }
 
+// Item data interface
+interface ItemData {
+  items: (KDSOrderRouting | TableGroup)[]
+  viewMode: 'grid' | 'list' | 'table'
+  onBumpOrder?: (routingId: string) => Promise<void>
+  onRecallOrder?: (routingId: string) => Promise<void>
+  onStartPrep?: (routingId: string) => Promise<void>
+  onBumpTable?: (tableId: string, orderIds: string[]) => Promise<void>
+}
+
 // Item renderer for virtualized list
-const ItemRenderer = memo<{
-  index: number
-  style: React.CSSProperties
-  data: {
-    items: (KDSOrderRouting | TableGroup)[]
-    viewMode: 'grid' | 'list' | 'table'
-    onBumpOrder?: (routingId: string) => Promise<void>
-    onRecallOrder?: (routingId: string) => Promise<void>
-    onStartPrep?: (routingId: string) => Promise<void>
-    onBumpTable?: (tableId: string, orderIds: string[]) => Promise<void>
-  }
-}>(({ index, style, data }) => {
+const ItemRenderer = memo<ListChildComponentProps<ItemData>>(({ index, style, data }) => {
+  if (!data) return null
   const item = data.items[index]
   
   // Type guard to check if item is a TableGroup
@@ -135,18 +135,21 @@ export const VirtualizedOrderList = memo<VirtualizedOrderListProps>(({
   return (
     <div className={`h-full w-full ${className}`}>
       <AutoSizer>
-        {({ height, width }) => (
-          <List
-            height={height}
-            width={width}
-            itemCount={items.length}
-            itemSize={averageItemHeight}
-            itemData={listData}
-            overscanCount={5} // Render 5 extra items above/below viewport
-          >
-            {ItemRenderer}
-          </List>
-        )}
+        {({ height, width }: { height: number; width: number }) => {
+          const List = FixedSizeList as any
+          return (
+            <List
+              height={height}
+              width={width}
+              itemCount={items.length}
+              itemSize={averageItemHeight}
+              itemData={listData}
+              overscanCount={5}
+            >
+              {ItemRenderer}
+            </List>
+          )
+        }}
       </AutoSizer>
     </div>
   )
@@ -236,7 +239,7 @@ export const VirtualizedOrderGrid = memo<VirtualizedGridProps>(({
   return (
     <div className={`h-full w-full ${className}`}>
       <AutoSizer>
-        {({ height, width }) => {
+        {({ height, width }: { height: number; width: number }) => {
           // Dynamically calculate column count based on available width
           const dynamicColumnCount = Math.max(1, Math.floor(width / columnWidth))
           const actualColumnWidth = width / dynamicColumnCount

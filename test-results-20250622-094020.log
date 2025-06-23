@@ -1,0 +1,13 @@
+✅ Landing Page - Status: 200
+✅ Health API - Status: 200
+✅ Health API Performance - Response time: 504ms (Grade: D)
+✅ Landing Page Performance - Response time: 152ms (Grade: B)
+❌ KDS Page (Redirect Expected) - Expected: 200, Got: 307
+❌ Admin Page (Redirect Expected) - Expected: 200, Got: 307
+❌ Server Page (Redirect Expected) - Expected: 200, Got: 307
+❌ KDS Orders API - Expected: 401, Got: 200
+✅ KDS Stations API - Status: 200
+✅ Metrics API - Status: 200
+✅ Performance API - Status: 200
+✅ Concurrent requests - Completed in ms
+❌ TypeScript check - Errors found

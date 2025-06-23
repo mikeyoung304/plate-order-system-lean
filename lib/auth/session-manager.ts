@@ -22,32 +22,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      console.log('🔄 [Session Manager] Refreshing session...')
-      
-      // Debug: Check cookies
-      console.log('🍪 [Session Manager] Available cookies:', document.cookie)
+      // Refreshing session...
       
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('🚨 [Session Manager] Session refresh error:', error)
+        // Session refresh error
         setSession(null)
         setUser(null)
         return
       }
 
-      console.log('✅ [Session Manager] Session refreshed:', {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        email: session?.user?.email,
-        expiresAt: session?.expires_at,
-        accessToken: session?.access_token ? '***PRESENT***' : 'MISSING'
-      })
+      // Session refreshed successfully
 
       setSession(session)
       setUser(session?.user ?? null)
     } catch (error) {
-      console.error('❌ [Session Manager] Unexpected error during refresh:', error)
+      // Unexpected error during refresh
       setSession(null)
       setUser(null)
     }
@@ -55,19 +46,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('🚪 [Session Manager] Signing out...')
+      // Signing out...
       const { error } = await supabase.auth.signOut()
       
       if (error) {
-        console.error('🚨 [Session Manager] Sign out error:', error)
+        // Sign out error
       } else {
-        console.log('✅ [Session Manager] Successfully signed out')
+        // Successfully signed out
       }
       
       setSession(null)
       setUser(null)
     } catch (error) {
-      console.error('❌ [Session Manager] Unexpected error during sign out:', error)
+      // Unexpected error during sign out
     }
   }
 
@@ -79,10 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 [Session Manager] Auth state change:', event, {
-        hasSession: !!session,
-        userId: session?.user?.id
-      })
+      // Auth state change
 
       setSession(session)
       setUser(session?.user ?? null)
@@ -90,11 +78,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       // Handle specific auth events
       if (event === 'SIGNED_OUT') {
-        console.log('👋 [Session Manager] User signed out')
+        // User signed out
       } else if (event === 'SIGNED_IN') {
-        console.log('👋 [Session Manager] User signed in')
+        // User signed in
       } else if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 [Session Manager] Token refreshed')
+        // Token refreshed
       }
     })
 

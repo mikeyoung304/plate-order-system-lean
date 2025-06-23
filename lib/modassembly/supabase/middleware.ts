@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, {
                             ...options,
-                            httpOnly: false, // CRITICAL: Allow browser access to auth cookies
+                            httpOnly: true, // Security: Prevent XSS attacks from accessing auth cookies
                             secure: process.env.NODE_ENV === 'production',
                             sameSite: 'lax'
                         })
@@ -52,13 +52,13 @@ export async function updateSession(request: NextRequest) {
     try {
         const result = await Promise.race([
             supabase.auth.getUser(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
+            new Promise<{ data: { user: any } | null }>((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
         ])
-        user = result.data?.user
-    } catch (_error) {
+        user = (result as any).data?.user
+    } catch (_error: unknown) {
         console.warn('Supabase auth check failed:', _error)
         // If there's a refresh token error, clear the session
-        if (_error.message?.includes('Invalid Refresh Token')) {
+        if (_error instanceof Error && _error.message?.includes('Invalid Refresh Token')) {
             try {
                 await supabase.auth.signOut()
             } catch (signOutError) {

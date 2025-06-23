@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-06-22T13:46:47.658Z",
+  "serverPageTests": [],
+  "databaseTests": [
+    {
+      "test": "Tables Query",
+      "status": "failed",
+      "error": "permission denied for table tables",
+      "count": 0,
+      "details": "No tables found"
+    },
+    {
+      "test": "Seats Query",
+      "status": "failed",
+      "error": "permission denied for table seats",
+      "count": 0
+    },
+    {
+      "test": "Residents Query",
+      "status": "failed",
+      "error": "relation \"public.residents\" does not exist",
+      "count": 0
+    },
+    {
+      "test": "Active Orders Query",
+      "status": "failed",
+      "error": "Could not find a relationship between 'orders' and 'residents' in the schema cache",
+      "count": 0,
+      "details": []
+    }
+  ],
+  "orderCreationTests": [
+    {
+      "test": "Order Creation API",
+      "status": "failed",
+      "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "initial-load",
+      "filename": "server-page-initial-load-1750600013116.png"
+    },
+    {
+      "name": "after-interaction",
+      "filename": "server-page-after-interaction-1750600023599.png"
+    }
+  ]
+}

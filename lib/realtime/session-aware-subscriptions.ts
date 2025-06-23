@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { performanceMonitor } from '@/lib/performance-utils'
+import { LRUCache } from '@/lib/utils/lru-cache'
 
 interface SubscriptionOptions {
   table: string
@@ -26,8 +27,8 @@ interface ConnectionState {
 
 export class SessionAwareRealtimeManager {
   private supabase: SupabaseClient
-  private channels = new Map<string, RealtimeChannel>()
-  private connectionStates = new Map<string, ConnectionState>()
+  private channels: LRUCache<string, RealtimeChannel>
+  private connectionStates: LRUCache<string, ConnectionState>
   private retryTimeouts = new Map<string, NodeJS.Timeout>()
   
   // Configuration
@@ -35,10 +36,13 @@ export class SessionAwareRealtimeManager {
   private readonly baseRetryDelay = 1000
   private readonly maxRetryDelay = 30000
   private readonly heartbeatInterval = 25000
+  private readonly maxConnections = 100 // Prevent memory leaks
   private heartbeatTimer?: NodeJS.Timeout
 
   constructor() {
     this.supabase = createClient()
+    this.channels = new LRUCache<string, RealtimeChannel>(this.maxConnections)
+    this.connectionStates = new LRUCache<string, ConnectionState>(this.maxConnections)
     this.startHeartbeat()
   }
 
@@ -69,10 +73,6 @@ export class SessionAwareRealtimeManager {
           presence: { key: session.user.id },
           broadcast: { self: false },
           private: true
-        },
-        params: {
-          // Pass session token for authentication
-          apikey: session.access_token
         }
       })
 
@@ -185,7 +185,7 @@ export class SessionAwareRealtimeManager {
     options: SubscriptionOptions
   ): void {
     // Database changes
-    channel.on(
+    ;(channel as any).on(
       'postgres_changes',
       {
         event: options.event || '*',
@@ -193,7 +193,7 @@ export class SessionAwareRealtimeManager {
         table: options.table,
         filter: options.filter
       },
-      (payload) => {
+      (payload: any) => {
         const state = this.connectionStates.get(channelId)
         if (state?.status === 'connected') {
           options.onData(payload)
@@ -327,7 +327,10 @@ export class SessionAwareRealtimeManager {
     this.retryTimeouts.clear()
 
     // Unsubscribe from all channels
-    const unsubscribePromises = Array.from(this.channels.keys()).map(channelId =>
+    const channelIds: string[] = []
+    this.channels.forEach((_, channelId) => channelIds.push(channelId))
+    
+    const unsubscribePromises = channelIds.map(channelId =>
       this.unsubscribe(channelId).catch(error =>
         console.error(`Error unsubscribing ${channelId} during destroy:`, error)
       )

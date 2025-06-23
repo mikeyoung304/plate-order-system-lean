@@ -53,7 +53,9 @@ class UltraFastCache {
     // Prevent memory bloat - keep cache size reasonable
     if (this.cache.size > 100) {
       const oldestKey = this.cache.keys().next().value
-      this.cache.delete(oldestKey)
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey)
+      }
     }
   }
 

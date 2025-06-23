@@ -4,6 +4,7 @@ import { measureApiCall } from '@/lib/performance-utils'
 import { KDSCacheManager } from '@/lib/cache/kds-cache'
 import { KDSCache } from '@/lib/cache/ultra-smart-cache'
 import type { KDSOrderRouting, KDSStation } from './types'
+import type { OrderType } from '@/types/database'
 
 // Import ultra-fast performance optimizations
 import {
@@ -142,7 +143,7 @@ export async function fetchStationOrders(
  * This function now uses performance-optimized queries with aggressive caching
  * to achieve sub-50ms response times even under high load.
  */
-export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
+export async function fetchAllActiveOrders(): Promise<any[]> {
   return measureApiCall('fetch_all_active_orders_ultra_optimized', async () => {
     // Step 1: Get basic order data ultra-fast
     const basicOrders = await fetchActiveOrdersUltraFast()
@@ -200,22 +201,18 @@ export async function fetchAllActiveOrders(): Promise<KDSOrderRouting[]> {
         updated_at: routingOrder.routed_at,
         order: orderDetail ? {
           id: orderDetail.id,
+          table_id: orderDetail.table_id,
+          seat_id: orderDetail.seat_id,
           items: Array.isArray(orderDetail.items) 
             ? orderDetail.items.slice(0, 10) // Limit items for performance
             : [],
           status: 'active',
-          type: 'dine-in',
+          type: 'dine-in' as OrderType,
           created_at: orderDetail.created_at,
-          seat_id: orderDetail.seat_id,
           table: table ? { id: table.id, label: table.label } : null,
           seat: seat ? { id: seat.id, label: seat.label } : null
         } : null,
-        station: station ? {
-          id: station.id,
-          name: station.name,
-          type: station.type,
-          color: station.color
-        } : null
+        station: station as any
       }
     })
   })

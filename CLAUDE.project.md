@@ -74,13 +74,16 @@ USING (auth.jwt() ->> 'user_metadata' ->> 'role' IN ('server', 'cook', 'admin'))
 ────────────────────────────────────────────
 🔑  GUEST LOGIN (Demo Access)
 ────────────────────────────────────────────
-• **User:** guest@restaurant.plate  
-• **Pass:** guest12345  
+• **User:** [Set in .env.demo - see .env.demo.example]
+• **Pass:** [Set in .env.demo - see .env.demo.example] 
 • **Role:** admin (full demo access)
 
 This account provides complete restaurant system access for 
 demonstration, with RLS policies allowing all operations 
 while maintaining data isolation.
+
+⚠️  Security Note: Never commit actual credentials to the repository.
+    Configure demo credentials in .env.demo (git-ignored)
 
 ## Operational Notes
 

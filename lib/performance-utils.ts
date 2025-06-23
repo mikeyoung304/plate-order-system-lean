@@ -64,7 +64,7 @@ export function throttle<T extends (...args: any[]) => any>(
   let timeout: NodeJS.Timeout | null = null
   let previous = 0
 
-  return function(...args: Parameters<T>) {
+  return function(this: any, ...args: Parameters<T>) {
     const now = Date.now()
     const remaining = wait - (now - previous)
 
@@ -92,7 +92,7 @@ export function debounce<T extends (...args: any[]) => any>(
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null
 
-  return function(...args: Parameters<T>) {
+  return function(this: any, ...args: Parameters<T>) {
     if (timeout) {
       clearTimeout(timeout)
     }
@@ -154,6 +154,10 @@ class SimplePerformanceMonitor {
     
     const successful = nameMetrics.filter(m => m.success).length
     return successful / nameMetrics.length
+  }
+
+  getRecentMetrics(count: number): PerformanceMetric[] {
+    return this.metrics.slice(-count)
   }
 
   clear() {

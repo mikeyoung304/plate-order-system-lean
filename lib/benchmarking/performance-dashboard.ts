@@ -557,8 +557,8 @@ ${recommendations.slice(0, 5).map(rec =>
     // Calculate based on recent performance metrics
     const recentMetrics = performanceMonitor.getRecentMetrics(50)
     const timeWindow = 60000 // 1 minute
-    const recentCount = recentMetrics.filter(m => 
-      Date.now() - m.timestamp < timeWindow
+    const recentCount = recentMetrics.filter((m: any) => 
+      Date.now() - new Date(m.timestamp).getTime() < timeWindow
     ).length
     return (recentCount / timeWindow) * 1000 // requests per second
   }

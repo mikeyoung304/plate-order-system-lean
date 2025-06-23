@@ -69,7 +69,7 @@ export function useKDSState(stationId?: string) {
 
       // Check session from session manager
       if (!session) {
-        console.error('🚨 [KDS Client] No session available from session manager')
+        // No session available from session manager
         setState(prev => ({ 
           ...prev, 
           error: 'Authentication required for KDS data access',
@@ -80,13 +80,7 @@ export function useKDSState(stationId?: string) {
       }
 
       if (!sessionCheckRef.current) {
-        console.log('🔐 [KDS Client] Session available from session manager:', {
-          hasSession: !!session,
-          userId: session.user.id,
-          email: session.user.email,
-          role: session.user.user_metadata?.role,
-          timestamp: new Date().toISOString()
-        })
+        // Session available from session manager
         sessionCheckRef.current = true
       }
 
@@ -108,7 +102,7 @@ export function useKDSState(stationId?: string) {
         connectionStatus: 'connected',
       }))
     } catch (error) {
-      console.error('Error fetching KDS orders:', error)
+      // Error fetching KDS orders
       setState(prev => ({
         ...prev,
         error:
@@ -159,12 +153,12 @@ export function useKDSState(stationId?: string) {
   useEffect(() => {
     // Don't attempt subscription until session is loaded
     if (sessionLoading) {
-      console.log('🔄 [KDS] Waiting for session to load...')
+      // Waiting for session to load
       return
     }
 
     if (!session) {
-      console.error('🚨 [KDS] No session for real-time subscription')
+      // No session for real-time subscription
       setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
       return
     }
@@ -174,10 +168,7 @@ export function useKDSState(stationId?: string) {
 
     const setupSubscription = async () => {
       try {
-        console.log('🔐 [KDS] Setting up real-time subscription with session:', {
-          userId: session.user.id,
-          stationId: stationId || 'all'
-        })
+        // Setting up real-time subscription with session
 
         // Subscribe to kds_order_routing table
         const kdsSubscriptionId = await realtimeManager.subscribe({
@@ -185,7 +176,7 @@ export function useKDSState(stationId?: string) {
           event: '*',
           filter: stationId ? `station_id=eq.${stationId}` : undefined,
           onData: (payload) => {
-            console.log('📡 [KDS] Real-time update received:', payload.eventType)
+            // Real-time update received
             fetchOrders()
           },
           onConnect: () => {
@@ -195,7 +186,7 @@ export function useKDSState(stationId?: string) {
             setState(prev => ({ ...prev, connectionStatus: 'disconnected' }))
           },
           onError: (error) => {
-            console.error('❌ [KDS] Real-time error:', error)
+            // Real-time error
             setState(prev => ({ 
               ...prev, 
               connectionStatus: 'disconnected',
@@ -211,13 +202,13 @@ export function useKDSState(stationId?: string) {
           table: 'orders',
           event: '*',
           onData: (payload) => {
-            console.log('📡 [KDS] Orders table update received:', payload.eventType)
+            // Orders table update received
             fetchOrders()
           }
         })
 
       } catch (error) {
-        console.error('❌ [KDS] Failed to setup subscription:', error)
+        // Failed to setup subscription
         setState(prev => ({ 
           ...prev, 
           connectionStatus: 'disconnected',
@@ -230,9 +221,9 @@ export function useKDSState(stationId?: string) {
 
     return () => {
       if (subscriptionId) {
-        realtimeManager.unsubscribe(subscriptionId).catch(error =>
-          console.error('Error unsubscribing:', error)
-        )
+        realtimeManager.unsubscribe(subscriptionId).catch(() => {
+          // Error unsubscribing
+        })
       }
     }
   }, [stationId, fetchOrders, session, sessionLoading])
@@ -352,7 +343,7 @@ export function useKDSAudio() {
         oscillator.start(audioRef.current.currentTime)
         oscillator.stop(audioRef.current.currentTime + duration)
       } catch (error) {
-        console.error('Error playing sound:', error)
+        // Error playing sound
       }
     },
     []

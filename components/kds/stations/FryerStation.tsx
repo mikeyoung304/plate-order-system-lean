@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle, Timer, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { OrderCard } from '../order-card'
+import type { Order } from '@/types/restaurant'
 
 interface FryerStationProps {
-  orders: any[]
+  orders: Order[]
   onOrderAction: (action: string, orderId: string) => void
   className?: string
 }
@@ -61,7 +62,7 @@ const FryerOrderCard = memo(({
   order, 
   onAction 
 }: { 
-  order: any
+  order: Order & { elapsed_seconds?: number }
   onAction: (action: string, orderId: string) => void 
 }) => {
   const estimatedTime = getEstimatedFryTime(order.items || [])

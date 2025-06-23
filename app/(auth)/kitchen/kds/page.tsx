@@ -1,7 +1,12 @@
-import { KDSInterface } from '@/components/kds/KDSInterface'
+import dynamic from 'next/dynamic'
 import { PageLoadingState } from '@/components/loading-states'
 import { createClient } from '@/lib/modassembly/supabase/server'
 import { fetchKDSStations } from '@/lib/modassembly/supabase/database/kds'
+
+const KDSInterface = dynamic(() => import('@/components/kds/KDSInterface').then(mod => mod.KDSInterface), {
+  loading: () => <PageLoadingState message='Loading Kitchen Display System...' showProgress />,
+  ssr: true
+})
 
 export default async function KDSPage() {
   try {

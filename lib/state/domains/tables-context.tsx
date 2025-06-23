@@ -18,6 +18,7 @@ import React, {
   useRef,
 } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import { deleteTable, fetchTables, updateTable } from '@/lib/modassembly/supabase/database/tables'
 import type { Table } from '@/lib/floor-plan-utils'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -164,7 +165,7 @@ export function TablesProvider({
 }: TablesProviderProps) {
   const [state, dispatch] = useReducer(tablesReducer, initialState)
   const supabaseRef = useRef(createClient())
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const subscriptionIdRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
   
   // Load tables from database
@@ -251,54 +252,75 @@ export function TablesProvider({
     return state.tables.filter(table => table.status === status)
   }, [state.tables])
   
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions with session-aware manager
   useEffect(() => {
     if (!enableRealtime || !mountedRef.current) {return}
     
-    const supabase = supabaseRef.current
+    const realtimeManager = getRealtimeManager()
     
-    // Clean up existing channel
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current)
+    const setupSubscription = async () => {
+      try {
+        // Clean up existing subscription
+        if (subscriptionIdRef.current) {
+          await realtimeManager.unsubscribe(subscriptionIdRef.current)
+          subscriptionIdRef.current = null
+        }
+        
+        // Subscribe to tables with session awareness
+        subscriptionIdRef.current = await realtimeManager.subscribe({
+          table: 'tables',
+          event: '*',
+          filter: floorPlanId ? `floor_plan_id=eq.${floorPlanId}` : undefined,
+          onData: (payload) => {
+            if (!mountedRef.current) {return}
+            
+            switch (payload.eventType) {
+              case 'INSERT':
+                dispatch({ type: 'ADD_TABLE', payload: payload.new as Table })
+                break
+              case 'UPDATE':
+                dispatch({ type: 'UPDATE_TABLE', payload: payload.new as Table })
+                break
+              case 'DELETE':
+                dispatch({ type: 'REMOVE_TABLE', payload: payload.old.id })
+                break
+            }
+            
+            dispatch({ type: 'REFRESH_TIMESTAMP' })
+          },
+          onConnect: () => {
+            console.log('✅ [Tables] Real-time subscription connected')
+          },
+          onDisconnect: () => {
+            console.warn('🔌 [Tables] Real-time subscription disconnected')
+          },
+          onError: (error) => {
+            console.error('❌ [Tables] Real-time error:', error)
+            dispatch({ 
+              type: 'SET_ERROR', 
+              payload: `Real-time connection error: ${error.message}`
+            })
+          }
+        })
+      } catch (error) {
+        console.error('Failed to setup tables subscription:', error)
+        if (mountedRef.current) {
+          dispatch({ 
+            type: 'SET_ERROR', 
+            payload: error instanceof Error ? error.message : 'Failed to connect to real-time updates'
+          })
+        }
+      }
     }
     
-    // Create new channel for tables
-    const channel = supabase
-      .channel('tables-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tables',
-          filter: floorPlanId ? `floor_plan_id=eq.${floorPlanId}` : undefined,
-        },
-        (payload) => {
-          if (!mountedRef.current) {return}
-          
-          switch (payload.eventType) {
-            case 'INSERT':
-              dispatch({ type: 'ADD_TABLE', payload: payload.new as Table })
-              break
-            case 'UPDATE':
-              dispatch({ type: 'UPDATE_TABLE', payload: payload.new as Table })
-              break
-            case 'DELETE':
-              dispatch({ type: 'REMOVE_TABLE', payload: payload.old.id })
-              break
-          }
-          
-          dispatch({ type: 'REFRESH_TIMESTAMP' })
-        }
-      )
-      .subscribe()
-    
-    channelRef.current = channel
+    setupSubscription()
     
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
+      if (subscriptionIdRef.current) {
+        realtimeManager.unsubscribe(subscriptionIdRef.current).catch(error =>
+          console.error('Error unsubscribing from tables:', error)
+        )
+        subscriptionIdRef.current = null
       }
     }
   }, [floorPlanId, enableRealtime])

@@ -85,7 +85,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
             kdsState.optimisticUpdate(orderId, {
               started_at: new Date().toISOString()
             })
-            await startOrderPrep(supabase, orderId)
+            await startOrderPrep(orderId)
             toast({
               title: 'Preparation started',
               description: 'Order preparation has begun',
@@ -98,7 +98,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
               completed_at: new Date().toISOString(),
               bumped_at: new Date().toISOString()
             })
-            await bumpOrder(supabase, orderId, userId)
+            await bumpOrder(orderId, userId)
             toast({
               title: 'Order completed',
               description: 'Order marked as ready for pickup',
@@ -112,7 +112,7 @@ export const KDSLayoutRefactored = memo<KDSLayoutRefactoredProps>(({
               bumped_at: null,
               recalled_at: new Date().toISOString()
             })
-            await recallOrder(supabase, orderId)
+            await recallOrder(orderId)
             toast({
               title: 'Order recalled',
               description: 'Order has been recalled to the kitchen',

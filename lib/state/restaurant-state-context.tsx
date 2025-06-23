@@ -472,33 +472,21 @@ export function RestaurantStateProvider({
       })
 
       // Use database functions instead of direct queries
-      const { fetchAllTables } = await import('@/lib/modassembly/supabase/database/tables')
-      const { fetchAllSeats } = await import('@/lib/modassembly/supabase/database/seats')
+      const { fetchTables } = await import('@/lib/modassembly/supabase/database/tables')
       
-      // Pass the client to the database functions (dependency injection)
-      const tables = await fetchAllTables(supabaseRef.current)
-      const seats = await fetchAllSeats(supabaseRef.current)
+      // Fetch tables (which includes seats)
+      const tables = await fetchTables()
 
-      // Transform to Table format with seat counts and occupancy
-      const seatCountMap =
-        seats?.reduce(
-          (acc, seat) => {
-            acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
-            return acc
-          },
-          {} as Record<string, number>
-        ) || {}
+      // Tables already include seat information from fetchTables
+      const seatCountMap = {} as Record<string, number>
+      const occupiedSeatMap = {} as Record<string, number>
 
-      const occupiedSeatMap =
-        seats?.reduce(
-          (acc, seat) => {
-            if (seat.status === 'occupied') {
-              acc[seat.table_id] = (acc[seat.table_id] || 0) + 1
-            }
-            return acc
-          },
-          {} as Record<string, number>
-        ) || {}
+      // Extract seat counts from the fetched tables
+      tables.forEach(table => {
+        seatCountMap[table.id] = table.seats || 0
+        // For now, default occupied seats to 0 since it's not provided
+        occupiedSeatMap[table.id] = 0
+      })
 
       const transformedTables: Table[] = (tables || []).map((table, index) => ({
         id: table.id,
@@ -507,8 +495,8 @@ export function RestaurantStateProvider({
         type: table.type as 'circle' | 'rectangle' | 'square',
         seats: seatCountMap[table.id] || 0,
         occupiedSeats: occupiedSeatMap[table.id] || 0,
-        x: table.position_x || 100 + (index % 3) * 150,
-        y: table.position_y || 100 + Math.floor(index / 3) * 150,
+        x: table.x || 100 + (index % 3) * 150,
+        y: table.y || 100 + Math.floor(index / 3) * 150,
         width: table.width || (table.type === 'circle' ? 80 : 120),
         height: table.height || 80,
         rotation: table.rotation || 0,
@@ -541,12 +529,12 @@ export function RestaurantStateProvider({
       })
 
       // Use database functions instead of direct queries
-      const { fetchOrdersWithDetails } = await import('@/lib/modassembly/supabase/database/orders')
+      const { getOrders } = await import('@/lib/modassembly/supabase/database/orders')
       
-      // Pass the client to the database functions (dependency injection)
-      const data = await fetchOrdersWithDetails(supabaseRef.current)
+      // Fetch all orders
+      const data = await getOrders()
 
-      const transformedOrders: Order[] = (data || []).map(order => ({
+      const transformedOrders: Order[] = (data || []).map((order: any) => ({
         ...order,
         table: `Table ${order.tables?.label || 'Unknown'}`,
         seat: order.seats?.label || 'Unknown',

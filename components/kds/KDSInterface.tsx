@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo, useCallback } from 'react'
 import { KDSLayout } from '@/components/kds'
 import { KDSErrorBoundary } from '@/components/error-boundaries'
 import { PageLoadingState } from '@/components/loading-states'
@@ -31,7 +31,7 @@ interface KDSInterfaceProps {
   initialStations: KDSStation[]
 }
 
-export function KDSInterface({ initialStations }: KDSInterfaceProps) {
+export const KDSInterface = memo(function KDSInterface({ initialStations }: KDSInterfaceProps) {
   // Add session validation for client component
   useEffect(() => {
     const validateClientSession = async () => {
@@ -73,17 +73,17 @@ export function KDSInterface({ initialStations }: KDSInterfaceProps) {
   }, [stations, selectedStationId, splitStations.length])
 
   // Handle fullscreen toggle
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       document.documentElement.requestFullscreen?.()
     } else {
       document.exitFullscreen?.()
     }
     setIsFullscreen(!isFullscreen)
-  }
+  }, [isFullscreen])
 
   // Handle split view station selection
-  const toggleSplitStation = (stationId: string) => {
+  const toggleSplitStation = useCallback((stationId: string) => {
     setSplitStations(prev => {
       if (prev.includes(stationId)) {
         return prev.filter(id => id !== stationId)
@@ -93,7 +93,7 @@ export function KDSInterface({ initialStations }: KDSInterfaceProps) {
       }
       return prev
     })
-  }
+  }, [])
 
   // Get layout classes for split view
   const getSplitLayoutClasses = () => {
@@ -343,4 +343,4 @@ export function KDSInterface({ initialStations }: KDSInterfaceProps) {
         )}
     </div>
   )
-}
+})

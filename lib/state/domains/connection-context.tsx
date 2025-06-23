@@ -18,6 +18,7 @@ import React, {
   useState,
 } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
 // Connection state interface
@@ -62,7 +63,7 @@ export function ConnectionProvider({
   })
   
   const supabaseRef = useRef<SupabaseClient | null>(null)
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const subscriptionIdRef = useRef<string | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const mountedRef = useRef(true)
@@ -110,65 +111,61 @@ export function ConnectionProvider({
     [onConnectionChange]
   )
   
-  // Connect to Supabase realtime
+  // Connect to Supabase realtime with session awareness
   const connect = useCallback(async () => {
-    if (!supabaseRef.current || !mountedRef.current) {return}
+    if (!mountedRef.current) {return}
     
     try {
-      // Clean up existing channel
-      if (channelRef.current) {
-        await supabaseRef.current.removeChannel(channelRef.current)
-        channelRef.current = null
+      // Clean up existing subscription
+      if (subscriptionIdRef.current) {
+        const realtimeManager = getRealtimeManager()
+        await realtimeManager.unsubscribe(subscriptionIdRef.current)
+        subscriptionIdRef.current = null
       }
       
       updateConnectionStatus('reconnecting')
       
-      // Create new channel for connection monitoring
-      const channel = supabaseRef.current.channel('connection-monitor')
+      // Use session-aware manager for connection monitoring
+      const realtimeManager = getRealtimeManager()
       
-      channel
-        .on('presence', { event: 'sync' }, () => {
-          updateConnectionStatus('connected', true)
-        })
-        .on('presence', { event: 'join' }, () => {
-          updateConnectionStatus('connected')
-        })
-        .on('presence', { event: 'leave' }, () => {
+      // Create a dummy subscription for connection monitoring
+      // We'll use the presence feature on a dedicated table
+      subscriptionIdRef.current = await realtimeManager.subscribe({
+        table: 'profiles', // Use profiles table for presence
+        event: '*',
+        onData: () => {
+          // We don't actually care about profile changes,
+          // just using this for connection monitoring
+        },
+        onConnect: () => {
+          if (mountedRef.current) {
+            updateConnectionStatus('connected', true)
+          }
+        },
+        onDisconnect: () => {
           if (mountedRef.current) {
             updateConnectionStatus('disconnected')
-            // Auto-reconnect after a short delay
-            scheduleReconnect()
+            // Auto-reconnect handled by session-aware manager
           }
-        })
-      
-      // Subscribe and track the channel
-      const subscription = await channel.subscribe((status) => {
-        if (!mountedRef.current) {return}
-        
-        switch (status) {
-          case 'SUBSCRIBED':
-            updateConnectionStatus('connected', true)
-            break
-          case 'CHANNEL_ERROR':
-          case 'TIMED_OUT':
-          case 'CLOSED':
+        },
+        onError: (error) => {
+          console.error('❌ [Connection] Real-time error:', error)
+          if (mountedRef.current) {
             updateConnectionStatus('disconnected')
-            scheduleReconnect()
-            break
+            // Session-aware manager will handle retry
+          }
         }
       })
-      
-      channelRef.current = channel
       
     } catch (error) {
       console.error('Connection error:', error)
       updateConnectionStatus('disconnected')
-      scheduleReconnect()
+      // Don't manually schedule reconnect - let session-aware manager handle it
     }
   }, [updateConnectionStatus])
   
   // Disconnect from Supabase
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
@@ -179,41 +176,16 @@ export function ConnectionProvider({
       stabilityTimeoutRef.current = null
     }
     
-    if (channelRef.current && supabaseRef.current) {
-      supabaseRef.current.removeChannel(channelRef.current)
-      channelRef.current = null
+    if (subscriptionIdRef.current) {
+      const realtimeManager = getRealtimeManager()
+      await realtimeManager.unsubscribe(subscriptionIdRef.current)
+      subscriptionIdRef.current = null
     }
     
     updateConnectionStatus('disconnected', true)
   }, [updateConnectionStatus])
   
-  // Schedule reconnection with exponential backoff
-  const scheduleReconnect = useCallback(() => {
-    if (!mountedRef.current) {return}
-    
-    const maxAttempts = 10
-    const baseDelay = 1000
-    
-    setConnectionState(prev => {
-      const attempts = prev.reconnectAttempts + 1
-      
-      if (attempts <= maxAttempts) {
-        const delay = Math.min(baseDelay * Math.pow(2, attempts - 1), 30000)
-        
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current)
-        }
-        
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (mountedRef.current) {
-            connect()
-          }
-        }, delay)
-      }
-      
-      return { ...prev, reconnectAttempts: attempts }
-    })
-  }, [connect])
+  // Note: scheduleReconnect is no longer needed as session-aware manager handles retries
   
   // Manual reconnect
   const reconnect = useCallback(async () => {

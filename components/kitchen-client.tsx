@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,7 @@ export function KitchenClientComponent({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<
-    'connecting' | 'connected' | 'error'
+    'connecting' | 'connected' | 'disconnected' | 'error'
   >('connecting')
 
   const supabase = createClient()
@@ -175,43 +176,62 @@ export function KitchenClientComponent({
     return 'bg-green-500'
   }
 
-  // Setup real-time subscription
+  // Setup real-time subscription with session awareness
   useEffect(() => {
     let mounted = true
+    let subscriptionIdKds: string | null = null
+    let subscriptionIdOrders: string | null = null
+    const realtimeManager = getRealtimeManager()
 
-    const setupRealtimeSubscription = () => {
-      const channel = supabase
-        .channel('kitchen-orders')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'kds_order_routing',
+    const setupRealtimeSubscription = async () => {
+      try {
+        setConnectionStatus('connecting')
+        
+        // Subscribe to KDS order routing
+        subscriptionIdKds = await realtimeManager.subscribe({
+          table: 'kds_order_routing',
+          event: '*',
+          onData: (_payload) => {
+            if (mounted) {
+              loadKitchenOrders()
+            }
           },
-          _payload => {
+          onConnect: () => {
+            if (mounted) {
+              setConnectionStatus('connected')
+              console.log('✅ [Kitchen] KDS real-time subscription connected')
+            }
+          },
+          onDisconnect: () => {
+            if (mounted) {
+              setConnectionStatus('disconnected')
+            }
+          },
+          onError: (error) => {
+            console.error('❌ [Kitchen] KDS real-time error:', error)
+            if (mounted) {
+              setConnectionStatus('disconnected')
+              setError(`Real-time connection error: ${error.message}`)
+            }
+          }
+        })
+
+        // Subscribe to orders table
+        subscriptionIdOrders = await realtimeManager.subscribe({
+          table: 'orders',
+          event: '*',
+          onData: (_payload) => {
             if (mounted) {
               loadKitchenOrders()
             }
           }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-          },
-          _payload => {
-            if (mounted) {
-              loadKitchenOrders()
-            }
-          }
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
+        })
+      } catch (error) {
+        console.error('Failed to setup real-time subscriptions:', error)
+        if (mounted) {
+          setConnectionStatus('disconnected')
+          setError(`Failed to connect to real-time updates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
       }
     }
 
@@ -219,13 +239,22 @@ export function KitchenClientComponent({
     loadKitchenOrders()
 
     // Setup real-time
-    const cleanup = setupRealtimeSubscription()
+    setupRealtimeSubscription()
 
     return () => {
       mounted = false
-      cleanup()
+      if (subscriptionIdKds) {
+        realtimeManager.unsubscribe(subscriptionIdKds).catch(error =>
+          console.error('Error unsubscribing KDS:', error)
+        )
+      }
+      if (subscriptionIdOrders) {
+        realtimeManager.unsubscribe(subscriptionIdOrders).catch(error =>
+          console.error('Error unsubscribing Orders:', error)
+        )
+      }
     }
-  }, [loadKitchenOrders, supabase])
+  }, [loadKitchenOrders])
 
   // Loading state
   if (loading) {

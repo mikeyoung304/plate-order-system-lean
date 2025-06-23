@@ -8,8 +8,8 @@
 Or double-click **"Plate Restaurant"** on your Desktop!
 
 ## Guest Login
-- **Email:** `guest@restaurant.plate`
-- **Password:** `guest12345`
+- **Email:** [Configure in .env.demo - see .env.demo.example]
+- **Password:** [Configure in .env.demo - see .env.demo.example]
 
 ## Key URLs
 - Main App: http://localhost:3000

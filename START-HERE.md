@@ -29,8 +29,8 @@ or
 - 📊 **Dashboard**: http://localhost:3000/dashboard
 
 ## Demo Login:
-- 📧 **Email**: guest@restaurant.plate
-- 🔒 **Password**: guest12345
+- 📧 **Email**: [Configure in .env.demo]
+- 🔒 **Password**: [Configure in .env.demo]
 
 ## If Something Goes Wrong:
 

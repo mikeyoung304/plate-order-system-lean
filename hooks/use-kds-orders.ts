@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import {
   fetchStationOrders,
   fetchAllActiveOrders,
@@ -45,7 +46,8 @@ export function useKDSOrders(
   >('disconnected')
 
   const supabaseRef = useRef<SupabaseClient | null>(null)
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const subscriptionIdKdsRef = useRef<string | null>(null)
+  const subscriptionIdOrdersRef = useRef<string | null>(null)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const optimisticUpdatesRef = useRef<Map<string, Partial<KDSOrderRouting>>>(
     new Map()
@@ -131,117 +133,101 @@ export function useKDSOrders(
   )
 
   const setupRealtimeSubscription = useCallback(async () => {
-    if (!supabaseRef.current || !autoRefresh || !isMountedRef.current) return
+    if (!autoRefresh || !isMountedRef.current) return
 
     try {
       setConnectionStatus('reconnecting')
 
-      if (channelRef.current) {
-        await supabaseRef.current.removeChannel(channelRef.current)
-        channelRef.current = null
+      const realtimeManager = getRealtimeManager()
+
+      // Clean up existing subscriptions
+      if (subscriptionIdKdsRef.current) {
+        await realtimeManager.unsubscribe(subscriptionIdKdsRef.current)
+        subscriptionIdKdsRef.current = null
+      }
+      if (subscriptionIdOrdersRef.current) {
+        await realtimeManager.unsubscribe(subscriptionIdOrdersRef.current)
+        subscriptionIdOrdersRef.current = null
       }
 
-      const channel = supabaseRef.current
-        .channel(`kds-orders-updates-${stationId || 'all'}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'kds_order_routing',
-            ...(stationId ? { filter: `station_id=eq.${stationId}` } : {}),
-          },
-          (payload: any) => {
-            console.log('KDS order routing update:', payload)
+      // Subscribe to KDS order routing
+      subscriptionIdKdsRef.current = await realtimeManager.subscribe({
+        table: 'kds_order_routing',
+        event: '*',
+        filter: stationId ? `station_id=eq.${stationId}` : undefined,
+        onData: (payload) => {
+          console.log('KDS order routing update:', payload.eventType)
 
-            if (payload.new?.id) {
-              optimisticUpdatesRef.current.delete(payload.new.id)
-            }
-            if (isMountedRef.current) {
-              fetchOrders()
-            }
+          if (payload.new?.id) {
+            optimisticUpdatesRef.current.delete(payload.new.id)
           }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-          },
-          (payload: any) => {
-            console.log('Order update:', payload)
-
-            if (
-              payload.new?.status !== payload.old?.status &&
-              isMountedRef.current
-            ) {
-              fetchOrders()
-            }
+          if (isMountedRef.current) {
+            fetchOrders()
           }
-        )
-        .subscribe((status: string) => {
-          console.log('KDS subscription status:', status)
-
-          if (!isMountedRef.current) return
-
-          if (status === 'SUBSCRIBED') {
+        },
+        onConnect: () => {
+          if (isMountedRef.current) {
             setConnectionStatus('connected')
             retryAttemptsRef.current = 0
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setConnectionStatus('disconnected')
-            handleRetry()
           }
-        })
+        },
+        onDisconnect: () => {
+          if (isMountedRef.current) {
+            setConnectionStatus('disconnected')
+          }
+        },
+        onError: (error) => {
+          console.error('❌ [KDS Orders] Real-time error:', error)
+          if (isMountedRef.current) {
+            setConnectionStatus('disconnected')
+            setError(error.message)
+          }
+        }
+      })
 
-      channelRef.current = channel
+      // Subscribe to orders table
+      subscriptionIdOrdersRef.current = await realtimeManager.subscribe({
+        table: 'orders',
+        event: '*',
+        onData: (payload) => {
+          console.log('Order update:', payload.eventType)
+
+          if (
+            payload.new?.status !== payload.old?.status &&
+            isMountedRef.current
+          ) {
+            fetchOrders()
+          }
+        }
+      })
     } catch (err) {
       console.error('Error setting up real-time subscription:', err)
 
       if (!isMountedRef.current) return
 
       setConnectionStatus('disconnected')
-      handleRetry()
+      setError(err instanceof Error ? err.message : 'Failed to connect')
     }
   }, [stationId, autoRefresh, fetchOrders])
 
-  const handleRetry = useCallback(() => {
-    if (!isMountedRef.current) return
-
-    if (retryAttemptsRef.current >= MAX_RETRY_ATTEMPTS) {
-      console.error('Max retry attempts reached, stopping reconnection')
-      setError('Connection lost. Please refresh the page.')
-      return
-    }
-
-    const delay = Math.min(
-      INITIAL_RETRY_DELAY * Math.pow(2, retryAttemptsRef.current),
-      MAX_RETRY_DELAY
-    )
-
-    console.log(
-      `Retrying connection in ${delay}ms (attempt ${retryAttemptsRef.current + 1}/${MAX_RETRY_ATTEMPTS})`
-    )
-
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current)
-    }
-
-    retryTimeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current) {
-        retryAttemptsRef.current++
-        setupRealtimeSubscription()
-      }
-    }, delay)
-  }, [setupRealtimeSubscription])
+  // Note: handleRetry is no longer needed as session-aware manager handles retries
 
   useEffect(() => {
     setupRealtimeSubscription()
 
     return () => {
-      if (channelRef.current && supabaseRef.current) {
-        supabaseRef.current.removeChannel(channelRef.current)
-        channelRef.current = null
+      const realtimeManager = getRealtimeManager()
+      if (subscriptionIdKdsRef.current) {
+        realtimeManager.unsubscribe(subscriptionIdKdsRef.current).catch(error =>
+          console.error('Error unsubscribing KDS:', error)
+        )
+        subscriptionIdKdsRef.current = null
+      }
+      if (subscriptionIdOrdersRef.current) {
+        realtimeManager.unsubscribe(subscriptionIdOrdersRef.current).catch(error =>
+          console.error('Error unsubscribing Orders:', error)
+        )
+        subscriptionIdOrdersRef.current = null
       }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
@@ -296,8 +282,12 @@ export function useKDSOrders(
     return () => {
       isMountedRef.current = false
 
-      if (channelRef.current && supabaseRef.current) {
-        supabaseRef.current.removeChannel(channelRef.current)
+      const realtimeManager = getRealtimeManager()
+      if (subscriptionIdKdsRef.current) {
+        realtimeManager.unsubscribe(subscriptionIdKdsRef.current).catch(() => {})
+      }
+      if (subscriptionIdOrdersRef.current) {
+        realtimeManager.unsubscribe(subscriptionIdOrdersRef.current).catch(() => {})
       }
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)

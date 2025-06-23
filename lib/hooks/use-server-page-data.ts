@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import type { Table } from '@/lib/floor-plan-utils'
 
 const supabase = createClient()
@@ -200,37 +201,62 @@ export function useServerPageData(floorPlanId: string = 'default') {
     }
   }, [])
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions with session awareness
   useEffect(() => {
     loadData()
 
-    // Subscribe to table changes
-    const tablesSubscription = supabase
-      .channel('tables_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tables' },
-        () => {
-          refreshTables()
-        }
-      )
-      .subscribe()
+    const realtimeManager = getRealtimeManager()
+    let tablesSubscriptionId: string | null = null
+    let ordersSubscriptionId: string | null = null
 
-    // Subscribe to order changes
-    const ordersSubscription = supabase
-      .channel('orders_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          refreshRecentOrders()
-        }
-      )
-      .subscribe()
+    const setupSubscriptions = async () => {
+      try {
+        // Subscribe to table changes
+        tablesSubscriptionId = await realtimeManager.subscribe({
+          table: 'tables',
+          event: '*',
+          onData: () => {
+            refreshTables()
+          },
+          onError: (error) => {
+            console.error('❌ [ServerPageData] Tables real-time error:', error)
+            setData(prev => ({ ...prev, error: `Real-time error: ${error.message}` }))
+          }
+        })
+
+        // Subscribe to order changes
+        ordersSubscriptionId = await realtimeManager.subscribe({
+          table: 'orders',
+          event: '*',
+          onData: () => {
+            refreshRecentOrders()
+          },
+          onError: (error) => {
+            console.error('❌ [ServerPageData] Orders real-time error:', error)
+          }
+        })
+      } catch (error) {
+        console.error('Failed to setup real-time subscriptions:', error)
+        setData(prev => ({ 
+          ...prev, 
+          error: `Failed to connect to real-time updates: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }))
+      }
+    }
+
+    setupSubscriptions()
 
     return () => {
-      supabase.removeChannel(tablesSubscription)
-      supabase.removeChannel(ordersSubscription)
+      if (tablesSubscriptionId) {
+        realtimeManager.unsubscribe(tablesSubscriptionId).catch(error =>
+          console.error('Error unsubscribing tables:', error)
+        )
+      }
+      if (ordersSubscriptionId) {
+        realtimeManager.unsubscribe(ordersSubscriptionId).catch(error =>
+          console.error('Error unsubscribing orders:', error)
+        )
+      }
     }
   }, [loadData, refreshTables, refreshRecentOrders])
 

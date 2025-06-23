@@ -1,0 +1,203 @@
+
+> my-v0-project@0.1.0 dev
+> next dev -p 3000
+
+(node:79697) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mike/Plate-Restaurant-System-App/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mike/Plate-Restaurant-System-App/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.137:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+(node:79698) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mike/Plate-Restaurant-System-App/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mike/Plate-Restaurant-System-App/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ Ready in 1306ms
+ ○ Compiling /api/health ...
+ ✓ Compiled /api/health in 525ms (454 modules)
+ GET /api/health 200 in 1525ms
+ ✓ Compiled /middleware in 221ms (173 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 2.7s (1390 modules)
+ GET / 200 in 3290ms
+ ✓ Compiled in 653ms (515 modules)
+ GET / 200 in 48ms
+🔑 AUTH DEBUG: Attempting login for: guest@restaurant.plate
+✅ AUTH DEBUG: Session created successfully
+📋 AUTH DEBUG: User ID: b0055f8c-d2c3-425f-add2-e4ee6572829e
+📋 AUTH DEBUG: User Email: guest@restaurant.plate
+📋 AUTH DEBUG: Access Token Present: true
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 515ms (1540 modules)
+ GET /dashboard 200 in 923ms
+ POST / 303 in 1498ms
+ ○ Compiling /server ...
+ ✓ Compiled /server in 814ms (1833 modules)
+ GET /server 200 in 1219ms
+ ✓ Compiled in 433ms (668 modules)
+ ✓ Compiled in 178ms (668 modules)
+ GET /server 200 in 53ms
+ GET /server 200 in 18ms
+ GET /server 200 in 631ms
+ ✓ Compiled in 424ms (668 modules)
+ ✓ Compiled in 236ms (668 modules)
+ GET /server 200 in 94ms
+ GET /server 200 in 20ms
+ ✓ Compiled in 1530ms (1829 modules)
+ GET /server 200 in 264ms
+ ✓ Compiled in 791ms (1829 modules)
+ GET /server 200 in 294ms
+ ✓ Compiled in 445ms (668 modules)
+ GET /server 200 in 26ms
+ ✓ Compiled in 966ms (1829 modules)
+ GET /server 200 in 221ms
+ ⨯ ./components/server-client.tsx
+Error:   [31mx[0m Expected a semicolon
+     ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/server-client.tsx[0m:603:1]
+ [2m600[0m |   }
+ [2m601[0m | 
+ [2m602[0m |   // Setup real-time subscription with session awareness
+ [2m603[0m |   useEffect(() => {
+     : [35;1m  ^[0m
+ [2m604[0m |     let mounted = true
+ [2m605[0m |     let subscriptionId: string | null = null
+ [2m606[0m |     const realtimeManager = getRealtimeManager()
+     `----
+  [31mx[0m Expected '}', got '<eof>'
+      ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/server-client.tsx[0m:1401:1]
+ [2m1398[0m |       </div>
+ [2m1399[0m |     </Shell>
+ [2m1400[0m |   )
+ [2m1401[0m | }
+      : [35;1m^[0m
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/server-client.tsx
+./app/(auth)/server/page.tsx
+ ○ Compiling /_error ...
+ ⨯ ./components/server-client.tsx
+Error:   [31mx[0m Expected a semicolon
+     ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/server-client.tsx[0m:603:1]
+ [2m600[0m |   }
+ [2m601[0m | 
+ [2m602[0m |   // Setup real-time subscription with session awareness
+ [2m603[0m |   useEffect(() => {
+     : [35;1m  ^[0m
+ [2m604[0m |     let mounted = true
+ [2m605[0m |     let subscriptionId: string | null = null
+ [2m606[0m |     const realtimeManager = getRealtimeManager()
+     `----
+  [31mx[0m Expected '}', got '<eof>'
+      ,-[[36;1;4m/Users/mike/Plate-Restaurant-System-App/components/server-client.tsx[0m:1401:1]
+ [2m1398[0m |       </div>
+ [2m1399[0m |     </Shell>
+ [2m1400[0m |   )
+ [2m1401[0m | }
+      : [35;1m^[0m
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/server-client.tsx
+./app/(auth)/server/page.tsx
+ GET /server 500 in 2472ms
+ GET /server 500 in 28ms
+ GET /server 500 in 9ms
+ GET /server 500 in 8ms
+ ✓ Compiled /_not-found in 1038ms (2148 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /server 200 in 517ms
+ ✓ Compiled in 289ms (913 modules)
+ GET /server 200 in 22ms
+ ✓ Compiled in 444ms (910 modules)
+ GET /server 200 in 30ms
+ ✓ Compiled in 274ms (910 modules)
+ GET /server 200 in 19ms
+ ✓ Compiled in 199ms (910 modules)
+ GET /server 200 in 33ms
+ ✓ Compiled in 307ms (910 modules)
+ ✓ Compiled in 125ms (910 modules)
+ ✓ Compiled in 413ms (910 modules)
+ ✓ Compiled in 148ms (910 modules)
+ ✓ Compiled in 107ms (910 modules)
+ ✓ Compiled in 145ms (910 modules)
+ ✓ Compiled in 101ms (910 modules)
+ ✓ Compiled in 119ms (910 modules)
+ ✓ Compiled in 98ms (910 modules)
+ ✓ Compiled in 138ms (910 modules)
+ ✓ Compiled in 127ms (910 modules)
+ ✓ Compiled in 105ms (910 modules)
+ ✓ Compiled in 113ms (910 modules)
+ ✓ Compiled in 102ms (910 modules)
+ ✓ Compiled in 123ms (910 modules)
+ ✓ Compiled in 104ms (910 modules)
+ ✓ Compiled in 110ms (910 modules)
+ ✓ Compiled in 106ms (910 modules)
+ ✓ Compiled in 124ms (910 modules)
+ ✓ Compiled in 103ms (910 modules)
+ ✓ Compiled in 386ms (910 modules)
+ ✓ Compiled in 378ms (910 modules)
+ ✓ Compiled in 367ms (910 modules)
+ ✓ Compiled in 154ms (910 modules)
+ ✓ Compiled in 129ms (910 modules)
+ ✓ Compiled in 132ms (910 modules)
+ ✓ Compiled in 114ms (910 modules)
+ ✓ Compiled in 117ms (910 modules)
+ ✓ Compiled in 105ms (910 modules)
+ ✓ Compiled in 147ms (910 modules)
+ ✓ Compiled in 117ms (910 modules)
+ ✓ Compiled in 295ms (910 modules)
+ ✓ Compiled in 289ms (910 modules)
+ ✓ Compiled in 163ms (910 modules)
+ ✓ Compiled in 285ms (910 modules)
+ ✓ Compiled in 394ms (1083 modules)
+ ✓ Compiled in 129ms (910 modules)
+ ✓ Compiled in 448ms (2158 modules)
+ ✓ Compiled in 230ms (2158 modules)
+ ✓ Compiled in 266ms (2160 modules)
+ ✓ Compiled in 312ms (2160 modules)
+ ✓ Compiled in 140ms (911 modules)
+ ✓ Compiled in 146ms (911 modules)
+ ✓ Compiled in 141ms (911 modules)
+ ✓ Compiled in 146ms (911 modules)
+ ✓ Compiled in 165ms (911 modules)
+ ✓ Compiled in 116ms (911 modules)
+ ✓ Compiled in 126ms (911 modules)
+ ✓ Compiled in 189ms (911 modules)
+ ✓ Compiled in 120ms (911 modules)
+ ✓ Compiled in 107ms (911 modules)
+ ✓ Compiled in 154ms (911 modules)
+ ✓ Compiled in 767ms (2160 modules)
+ ✓ Compiled in 124ms (911 modules)
+ ✓ Compiled in 114ms (911 modules)
+ ✓ Compiled in 123ms (911 modules)
+ ✓ Compiled in 146ms (911 modules)
+ ✓ Compiled in 144ms (911 modules)
+ ✓ Compiled in 114ms (911 modules)
+ ✓ Compiled in 154ms (911 modules)
+ ✓ Compiled in 110ms (911 modules)
+ ✓ Compiled in 269ms (1084 modules)
+ ✓ Compiled in 114ms (911 modules)
+ ✓ Compiled in 126ms (911 modules)
+ ✓ Compiled in 410ms (2319 modules)
+ ✓ Compiled in 117ms (911 modules)
+ ✓ Compiled in 114ms (911 modules)
+ ✓ Compiled in 160ms (911 modules)
+ ✓ Compiled in 118ms (911 modules)
+ ✓ Compiled in 190ms (911 modules)
+ ✓ Compiled in 133ms (911 modules)
+ ✓ Compiled in 192ms (911 modules)
+ ✓ Compiled in 143ms (911 modules)
+ ✓ Compiled in 117ms (911 modules)
+ ✓ Compiled in 112ms (911 modules)
+ ✓ Compiled in 114ms (911 modules)

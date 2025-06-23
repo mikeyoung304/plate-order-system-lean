@@ -1,7 +1,7 @@
 'use client'
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList, ListChildComponentProps } from 'react-window'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,22 +31,21 @@ interface OrderQueueProps {
   filterBy?: 'all' | 'new' | 'preparing' | 'overdue'
 }
 
-interface OrderItemProps {
-  index: number
-  style: React.CSSProperties
-  data: {
-    orders: KDSOrderRouting[]
-    operations: any
-    viewMode: string
-    onOrderClick: (_order: KDSOrderRouting) => void
-  }
+interface OrderItemData {
+  orders: KDSOrderRouting[]
+  operations: any
+  viewMode: string
+  onOrderClick: (_order: KDSOrderRouting) => void
 }
+
+type OrderItemProps = ListChildComponentProps<OrderItemData>
 
 /**
  * Individual Order Item Component
  * Memoized for performance in virtual scrolling
  */
 const OrderItem = memo<OrderItemProps>(({ index, style, data }) => {
+  if (!data) return null
   const { orders, operations, viewMode, onOrderClick } = data
   const order = orders[index]
 
@@ -303,7 +302,7 @@ export const KDSOrderQueue = memo<OrderQueueProps>(({
   const { filteredAndSortedOrders, loading, error } = useKDSContext()
   const operations = useKDSOperations()
   const [_selectedOrder, setSelectedOrder] = useState<KDSOrderRouting | null>(null)
-  const listRef = useRef<List>(null)
+  const listRef = useRef<any>(null)
 
   // Filter orders by station if specified
   const stationOrders = useMemo(() => {
@@ -437,7 +436,7 @@ export const KDSOrderQueue = memo<OrderQueueProps>(({
       </div>
 
       {/* Virtual scrolling list */}
-      <List
+      <FixedSizeList
         ref={listRef}
         height={height - 50} // Subtract header height
         width="100%"
@@ -452,7 +451,7 @@ export const KDSOrderQueue = memo<OrderQueueProps>(({
         className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
       >
         {OrderItem}
-      </List>
+      </FixedSizeList>
     </div>
   )
 })

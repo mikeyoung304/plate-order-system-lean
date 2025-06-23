@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/modassembly/supabase/client'
+import { getRealtimeManager } from '@/lib/realtime/session-aware-subscriptions'
 import { createOrder } from '@/lib/modassembly/supabase/database/orders'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,7 +72,7 @@ type ServerClientComponentProps = {
 }
 
 // Helper function to safely render order items
-const getItemDisplayName = (item: any): string => {
+const getItemDisplayName = (item: { name?: string; item?: string } | string): string => {
   if (typeof item === 'string') {
     return item
   }
@@ -237,15 +238,17 @@ export function ServerClientComponent({
       setLoading(true)
       setError(null)
 
-      // Debug: Log current authentication state
+      // Check authentication state
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      console.log('[ServerClient] Current user:', user ? { id: user.id, email: user.email } : 'No user')
-      if (userError) {
-        console.log('[ServerClient] User error:', userError)
+      if (userError || !user) {
+        // Silently fall back to mock data if not authenticated
+        setTables(createMockTables())
+        setError(`Please sign in to access live data. Using demo mode.`)
+        setLoading(false)
+        return
       }
 
-      // Debug: Log query details
-      console.log('[ServerClient] Executing loadTables query...')
+      // Execute table query
       
       // Get tables with orders - handle potential RLS issues
       const { data: tablesData, error: tablesError } = await supabase
@@ -268,26 +271,14 @@ export function ServerClientComponent({
         .order('label', { ascending: true })
 
       if (tablesError) {
-        console.error('[ServerClient] Tables query error:', tablesError)
-        console.error('[ServerClient] Error code:', tablesError.code)
-        console.error('[ServerClient] Error message:', tablesError.message)
-        console.error('[ServerClient] Error details:', tablesError.details)
-        console.error('[ServerClient] Error hint:', tablesError.hint)
-        
-        // If we can't access tables due to RLS, create mock data
-        if (tablesError.code === 'PGRST116' || tablesError.message.includes('policy')) {
-          console.log('[ServerClient] Using mock data due to RLS restrictions')
-          setTables(createMockTables())
-          setLoading(false)
-          return
-        }
-        setError(`Database error: ${tablesError.message}`)
+        // Silently fall back to mock data on any database error
+        setTables(createMockTables())
+        setError(`Database unavailable. Using demo data.`)
+        setLoading(false)
         return
       }
 
-      // Debug: Log successful query result
-      console.log('[ServerClient] Query succeeded! Retrieved tables:', tablesData?.length || 0)
-      console.log('[ServerClient] First table sample:', tablesData?.[0])
+      // Process successful query result
 
       // Demo restaurant layout positions
       const demoPositions = [
@@ -375,10 +366,9 @@ export function ServerClientComponent({
 
       setTables(transformedTables)
     } catch (err) {
-      console.error('[ServerClient] Load error:', err)
-      setError(
-        `Failed to load tables: ${err instanceof Error ? err.message : 'Unknown error'}`
-      )
+      // Silently fall back to mock data on any error
+      setTables(createMockTables())
+      setError(`Failed to load tables. Using demo data.`)
     } finally {
       setLoading(false)
     }
@@ -426,9 +416,16 @@ export function ServerClientComponent({
     try {
       const table = tables.find(t => t.id === tableId)
       if (!table) {
+        setError('Table not found')
         return
       }
 
+      // Reset any previous state
+      setError(null)
+      setOrderStep({ step: 'resident' })
+      setCurrentSuggestionIndex(0)
+      setShowVoiceRecording(false)
+      
       setOrderFormData({
         tableId,
         seatNumber,
@@ -437,6 +434,7 @@ export function ServerClientComponent({
       setShowOrderForm(true)
     } catch (err) {
       console.error('Error opening order form:', err)
+      setError('Failed to open order form')
     }
   }
 
@@ -445,6 +443,7 @@ export function ServerClientComponent({
     setOrderFormData(null)
     setOrderStep({ step: 'resident' })
     setCurrentSuggestionIndex(0)
+    setShowVoiceRecording(false) // Reset voice recording state
   }
 
   const handleSelectResident = (resident: Resident) => {
@@ -453,46 +452,73 @@ export function ServerClientComponent({
   }
 
   const handleSelectMeal = async (meal: string) => {
-    console.log('🍽️ handleSelectMeal called with:', {
-      meal,
-      orderFormData,
-      selectedResident: orderStep.selectedResident
-    })
+    // Process meal selection
 
     if (!orderFormData || !orderStep.selectedResident) {
-      console.error('Missing order form data or selected resident')
+      // Silently return if data is missing
       return
     }
 
     try {
       // Get current user ID for server_id
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.error('No authenticated user')
-        setError('Authentication required to place order')
+      if (!user && !orderFormData.tableId.startsWith('mock-')) {
+        setError('Please sign in to place orders')
         return
       }
 
-      // Debug: Log the lookup parameters
-      console.log('Looking for seat with:', {
-        table_id: orderFormData.tableId,
-        seat_number: orderFormData.seatNumber
-      })
+      // Look up seat parameters
 
-      // First validate that we have a real UUID table ID
-      if (!orderFormData.tableId || orderFormData.tableId.startsWith('mock-')) {
-        console.error('Cannot create order: using mock table ID', orderFormData.tableId)
-        setError('Cannot create order: table not properly loaded from database')
+      // Handle mock table IDs gracefully - allow demo mode
+      const isMockTable = orderFormData.tableId.startsWith('mock-')
+      
+      // For mock tables, create a mock seat ID
+      if (isMockTable) {
+        const mockSeatId = `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}`
+        
+        // Create order with mock IDs
+        const orderData = {
+          table_id: orderFormData.tableId,
+          seat_id: mockSeatId,
+          resident_id: orderStep.selectedResident.id,
+          server_id: user.id || 'mock-server-id',
+          items: [meal],
+          transcript: `Order for ${meal}`,
+          type: 'food' as const
+        }
+        
+        try {
+          await createOrder(orderData)
+          // Successfully created order
+          handleCloseOrderForm()
+          await loadTables()
+        } catch (err) {
+          // In demo mode, just update the UI locally
+          const mockOrder: Order = {
+            id: `mock-order-${Date.now()}`,
+            items: [meal],
+            status: 'new',
+            type: 'food',
+            created_at: new Date().toISOString(),
+            seat_label: orderFormData.seatNumber.toString()
+          }
+          
+          // Update the table's orders locally
+          setTables(prevTables => 
+            prevTables.map(table => 
+              table.id === orderFormData.tableId
+                ? { ...table, orders: [...table.orders, mockOrder] }
+                : table
+            )
+          )
+          
+          handleCloseOrderForm()
+          setError(null) // Clear any previous errors
+        }
         return
       }
 
-      // Get seat_id from seat number with better error handling
-      console.log('🔍 Looking up seat:', {
-        table_id: orderFormData.tableId,
-        seat_label: orderFormData.seatNumber,
-        table_id_type: typeof orderFormData.tableId,
-        seat_label_type: typeof orderFormData.seatNumber
-      })
+      // Get seat_id from seat number
       
       let seatData = null
       let seatError = null
@@ -508,15 +534,12 @@ export function ServerClientComponent({
         seatData = result.data
         seatError = result.error
         
-        console.log('🪑 Seat lookup result:', { seatData, seatError })
       } catch (err) {
-        console.error('Seat lookup failed:', err)
         seatError = err
       }
 
-      // If seat lookup fails, try to create the seat or use a fallback
+      // If seat lookup fails, try to create the seat
       if (seatError || !seatData) {
-        console.log('Seat lookup failed, attempting to create or use fallback...')
         
         // Try to create the missing seat
         try {
@@ -531,22 +554,19 @@ export function ServerClientComponent({
             .single()
             
           if (!createError && newSeat) {
-            console.log('Created missing seat:', newSeat)
             seatData = newSeat
             seatError = null
           }
         } catch (createErr) {
-          console.log('Could not create seat, using mock seat ID')
+          // Silent fallback
         }
         
-        // If we still can't get a seat, use a mock ID for testing
+        // If we still can't get a seat, show error
         if (!seatData) {
-          console.log('Using mock seat ID for testing purposes')
-          seatData = { id: `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}` }
+          setError('Unable to find or create seat. Please try again.')
+          return
         }
       }
-
-      console.log('Using seat:', seatData)
 
       // Create the order in the database
       const orderData = {
@@ -559,15 +579,7 @@ export function ServerClientComponent({
         type: 'food' as const
       }
       
-      console.log('📝 Creating order with data:', {
-        table_id: orderData.table_id,
-        seat_id: orderData.seat_id, 
-        resident_id: orderData.resident_id,
-        server_id: orderData.server_id,
-        resident_name: orderStep.selectedResident.name,
-        items: orderData.items,
-        type: orderData.type
-      })
+      // Create order with prepared data
       
       await createOrder(orderData)
 
@@ -575,35 +587,51 @@ export function ServerClientComponent({
       handleCloseOrderForm()
       loadTables()
     } catch (err) {
-      console.error('Error creating order:', err)
-      setError(`Failed to create order: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(`Failed to create order. Please try again.`)
     }
   }
 
-  // Setup real-time subscription
+  // Setup real-time subscription with session awareness
   useEffect(() => {
     let mounted = true
+    let subscriptionId: string | null = null
+    const realtimeManager = getRealtimeManager()
 
-    const setupRealtimeSubscription = () => {
-      const channel = supabase
-        .channel('server-orders')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-          },
-          _payload => {
+    const setupRealtimeSubscription = async () => {
+      try {
+        subscriptionId = await realtimeManager.subscribe({
+          table: 'orders',
+          event: '*',
+          onData: (_payload) => {
             if (mounted) {
               loadTables()
             }
+          },
+          onConnect: () => {
+            // Silently connected
+          },
+          onDisconnect: () => {
+            // Silently disconnected
+          },
+          onError: (error) => {
+            // Don't block UI, just show error banner
+            if (mounted) {
+              setError(`Real-time updates unavailable. Using offline mode.`)
+              // Continue with mock data if no tables loaded
+              if (tables.length === 0) {
+                setTables(createMockTables())
+              }
+            }
           }
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
+        })
+      } catch (error) {
+        if (mounted) {
+          setError(`Real-time updates unavailable. Using offline mode.`)
+          // Continue with mock data if no tables loaded
+          if (tables.length === 0) {
+            setTables(createMockTables())
+          }
+        }
       }
     }
 
@@ -611,13 +639,17 @@ export function ServerClientComponent({
     loadTables()
 
     // Setup real-time
-    const cleanup = setupRealtimeSubscription()
+    setupRealtimeSubscription()
 
     return () => {
       mounted = false
-      cleanup()
+      if (subscriptionId) {
+        realtimeManager.unsubscribe(subscriptionId).catch(() => {
+          // Silently handle unsubscribe errors
+        })
+      }
     }
-  }, [loadTables, supabase])
+  }, [loadTables])
 
   // Loading state
   if (loading) {
@@ -635,19 +667,7 @@ export function ServerClientComponent({
     )
   }
 
-  // Error state
-  if (error) {
-    return (
-      <Shell user={user} profile={profile}>
-        <div className='flex items-center justify-center h-screen'>
-          <div className='text-center text-red-400'>
-            <div className='mb-4'>Error loading tables</div>
-            <div className='text-sm'>{error}</div>
-          </div>
-        </div>
-      </Shell>
-    )
-  }
+  // Don't block the UI for errors - show error banner instead
 
   return (
     <Shell user={user} profile={profile}>
@@ -974,54 +994,92 @@ export function ServerClientComponent({
                 orderType='food'
                 onOrderSubmitted={async orderData => {
                   try {
-                    // Get seat_id with improved error handling and fallback
-                    let seatData = null
-                    try {
-                    const result = await supabase
-                      .from('seats')
-                      .select('id')
-                      .eq('table_id', orderFormData.tableId)
-            .eq('label', orderFormData.seatNumber)
-                        .single()
-                      
-                    seatData = result.data
+                    // Handle mock tables in voice orders
+                    const isMockTable = orderFormData.tableId.startsWith('mock-')
+                    let seatId: string
                     
-                      if (result.error || !seatData) {
-            // Try to create the seat if it doesn't exist
-                        const { data: newSeat } = await supabase
-                        .from('seats')
-                        .insert({
-                            table_id: orderFormData.tableId,
-                label: orderFormData.seatNumber,
-                status: 'available'
-              })
-              .select('id')
-              .single()
-              
-            seatData = newSeat || { id: `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}` }
-          }
-        } catch (err) {
-          console.log('Voice order seat lookup/creation failed, using mock seat')
-          seatData = { id: `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}` }
-        }
+                    if (isMockTable) {
+                      seatId = `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}`
+                    } else {
+                      // Get seat_id with improved error handling and fallback
+                      let seatData = null
+                      try {
+                        const result = await supabase
+                          .from('seats')
+                          .select('id')
+                          .eq('table_id', orderFormData.tableId)
+                          .eq('label', orderFormData.seatNumber)
+                          .single()
+                        
+                        seatData = result.data
+                        
+                        if (result.error || !seatData) {
+                          // Try to create the seat if it doesn't exist
+                          const { data: newSeat } = await supabase
+                            .from('seats')
+                            .insert({
+                              table_id: orderFormData.tableId,
+                              label: orderFormData.seatNumber,
+                              status: 'available'
+                            })
+                            .select('id')
+                            .single()
+                          
+                          seatData = newSeat
+                        }
+                      } catch (err) {
+                        // Fallback to mock seat ID
+                        seatData = { id: `mock-seat-${orderFormData.tableId}-${orderFormData.seatNumber}` }
+                      }
+                      
+                      if (!seatData || !seatData.id) {
+                        throw new Error('Unable to find or create seat')
+                      }
+                      
+                      seatId = seatData.id
+                    }
 
                     // Create the order with the voice data
-                    await createOrder({
-                      table_id: orderFormData.tableId,
-                      seat_id: seatData.id,
-                      resident_id:
-                        orderStep.selectedResident?.id || 'guest-user',
-                      server_id: user.id,
-                      items: orderData.items,
-                      transcript: orderData.transcription,
-                      type: 'food',
-                    })
+                    try {
+                      await createOrder({
+                        table_id: orderFormData.tableId,
+                        seat_id: seatId,
+                        resident_id:
+                          orderStep.selectedResident?.id || 'guest-user',
+                        server_id: user.id || 'mock-server-id',
+                        items: orderData.items,
+                        transcript: orderData.transcription,
+                        type: 'food',
+                      })
+                    } catch (createErr) {
+                      // If order creation fails but we're in mock mode, update UI locally
+                      if (isMockTable) {
+                        const mockOrder: Order = {
+                          id: `mock-order-${Date.now()}`,
+                          items: orderData.items,
+                          status: 'new',
+                          type: 'food',
+                          created_at: new Date().toISOString(),
+                          seat_label: orderFormData.seatNumber.toString()
+                        }
+                        
+                        setTables(prevTables => 
+                          prevTables.map(table => 
+                            table.id === orderFormData.tableId
+                              ? { ...table, orders: [...table.orders, mockOrder] }
+                              : table
+                          )
+                        )
+                      } else {
+                        throw createErr
+                      }
+                    }
+                    
                     setShowVoiceRecording(false)
                     handleCloseOrderForm()
                     await loadTables() // Refresh the tables
                   } catch (error) {
-                    console.error('Error creating voice order:', error)
-                    setError(`Failed to create voice order: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                    setError(`Failed to create voice order. Please try again.`)
                   }
                 }}
                 onCancel={() => setShowVoiceRecording(false)}

@@ -7,6 +7,7 @@
 import { createClient } from '@/lib/modassembly/supabase/client'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { demoLogger } from './demo-optimized-logger'
+import { LRUCache } from '@/lib/utils/lru-cache'
 
 interface ConnectionConfig {
   maxRetries: number
@@ -27,8 +28,8 @@ type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnect
 
 export class DemoWebSocketManager {
   private supabase: SupabaseClient | null = null
-  private channels = new Map<string, RealtimeChannel>()
-  private subscriptions = new Map<string, SubscriptionConfig>()
+  private channels: LRUCache<string, RealtimeChannel>
+  private subscriptions: LRUCache<string, SubscriptionConfig>
   private connectionStatus: ConnectionStatus = 'disconnected'
   private retryAttempts = 0
   private retryTimeouts = new Map<string, NodeJS.Timeout>()
@@ -38,6 +39,7 @@ export class DemoWebSocketManager {
   private circuitBreakerOpenUntil = 0
   private readonly circuitBreakerThreshold = 5
   private readonly circuitBreakerTimeout = 30000 // 30 seconds
+  private readonly maxConnections = 50 // Limit for demo environment
 
   private config: ConnectionConfig = {
     maxRetries: 5,
@@ -51,6 +53,8 @@ export class DemoWebSocketManager {
 
   constructor(customConfig?: Partial<ConnectionConfig>) {
     this.config = { ...this.config, ...customConfig }
+    this.channels = new LRUCache<string, RealtimeChannel>(this.maxConnections)
+    this.subscriptions = new LRUCache<string, SubscriptionConfig>(this.maxConnections)
     this.initialize()
   }
 
@@ -110,7 +114,7 @@ export class DemoWebSocketManager {
         this.reconnectAll()
       }
     } catch (error) {
-      demoLogger.warn('Health check error', { error })
+      demoLogger.warn('Health check error', { error: error instanceof Error ? error.message : String(error) })
       this.reconnectAll()
     }
   }
@@ -169,15 +173,16 @@ export class DemoWebSocketManager {
         
         const channel = this.supabase
           .channel(channelName)
-          .on(
-            'postgres_changes',
-            {
-              event: config.event || '*',
-              schema: 'public',
-              table: config.table,
-              ...(config.filter ? { filter: config.filter } : {}),
-            },
-            (payload: any) => {
+          
+        ;(channel as any).on(
+          'postgres_changes',
+          {
+            event: config.event || '*',
+            schema: 'public',
+            table: config.table,
+            ...(config.filter ? { filter: config.filter } : {}),
+          },
+          (payload: any) => {
               if (!this.isActive) {return}
               
               try {
@@ -187,7 +192,8 @@ export class DemoWebSocketManager {
               }
             }
           )
-          .subscribe((status) => {
+          
+        channel.subscribe((status) => {
             if (!this.isActive) {return}
 
             demoLogger.websocket(`Subscription ${id} status: ${status}`)
@@ -288,7 +294,7 @@ export class DemoWebSocketManager {
       try {
         this.supabase.removeChannel(channel)
       } catch (error) {
-        demoLogger.warn(`Error removing channel ${id}`, { error })
+        demoLogger.warn(`Error removing channel ${id}`, { error: error instanceof Error ? error.message : String(error) })
       }
     }
 
@@ -308,15 +314,18 @@ export class DemoWebSocketManager {
     this.retryAttempts = 0
     
     // Get all current subscriptions
-    const subscriptionsToReconnect = new Map(this.subscriptions)
-    
-    // Clear all existing channels
-    this.channels.forEach((_, id) => {
-      this.unsubscribe(id)
+    const subscriptionsToReconnect: Array<[string, SubscriptionConfig]> = []
+    this.subscriptions.forEach((config, id) => {
+      subscriptionsToReconnect.push([id, config])
     })
     
+    // Clear all existing channels
+    const channelIds: string[] = []
+    this.channels.forEach((_, id) => channelIds.push(id))
+    channelIds.forEach(id => this.unsubscribe(id))
+    
     // Reconnect all subscriptions
-    subscriptionsToReconnect.forEach((config, id) => {
+    subscriptionsToReconnect.forEach(([id, config]) => {
       setTimeout(() => {
         if (this.isActive) {
           this.subscribe(id, config)
@@ -341,7 +350,9 @@ export class DemoWebSocketManager {
   }
 
   public getActiveSubscriptions(): string[] {
-    return Array.from(this.subscriptions.keys())
+    const ids: string[] = []
+    this.subscriptions.forEach((_, id) => ids.push(id))
+    return ids
   }
 
   public getConnectionStats() {
@@ -373,9 +384,9 @@ export class DemoWebSocketManager {
     this.retryTimeouts.clear()
     
     // Remove all channels
-    this.channels.forEach((_, id) => {
-      this.unsubscribe(id)
-    })
+    const channelIds: string[] = []
+    this.channels.forEach((_, id) => channelIds.push(id))
+    channelIds.forEach(id => this.unsubscribe(id))
     
     // Clear callbacks
     this.statusCallbacks.clear()
